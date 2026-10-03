@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { uploadDataUrlToRawajStorage } from '../../lib/storage';
-import { RawajLogo } from '../common/RawajLogo';
+import { BrandLogo } from '../common/BrandLogo';
 import { PWAInstallModal } from '../common/PWAInstallModal';
 import { 
   LayoutDashboard, 
@@ -237,7 +237,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
-  const [imgError, setImgError] = useState(false);
   const subOptionsScrollRef = useRef<HTMLDivElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -375,7 +374,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         fileName: 'rawaj-logo',
       });
       await updateSiteSettings({ logo_url: stored.publicUrl });
-      setImgError(false);
     } catch (error: any) {
       console.error('Supabase logo upload failed:', error);
       alert(error?.message || 'تعذر رفع الشعار.');
@@ -402,7 +400,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         <div className="max-w-md w-full bg-[#1C1A19] border border-[#332F2D] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-2">
             <div className="w-16 h-16 bg-[#B9142D]/20 border border-[#B9142D]/40 rounded-2xl flex items-center justify-center mx-auto text-[#B9142D] mb-3 flex items-center justify-center">
-              <RawajLogo className="w-10 h-10 object-cover" />
+              <BrandLogo
+                src={siteSettings.logo_url}
+                alt={siteSettings.company_name_ar || 'رواج'}
+                className="w-10 h-10 object-contain"
+                fallbackClassName="w-10 h-10 object-contain"
+              />
             </div>
             <h1 className="font-heading font-extrabold text-xl text-white">لوحة تحكم وإدارة رواج</h1>
             <p className="text-xs text-[#A8A29E]">منطقة محمية عبر Supabase Auth — استخدم حساب الإدارة المعتمد</p>
@@ -574,18 +577,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               onClick={() => logoFileInputRef.current?.click()}
               title="انقر لتغيير أو رفع شعار رواج فورياً"
             >
-              {siteSettings.logo_url && !imgError ? (
-                <img
-                  src={siteSettings.logo_url}
-                  alt={siteSettings.company_name_ar || 'رواج'}
-                  className="w-full h-full object-cover p-0"
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="w-full h-full p-0 text-[#171616] dark:text-[#F7F5F0] flex items-center justify-center">
-                  <RawajLogo className="w-full h-full object-cover" />
-                </div>
-              )}
+              <BrandLogo
+                src={siteSettings.logo_url}
+                alt={siteSettings.company_name_ar || 'رواج'}
+                className="w-full h-full object-contain p-1"
+                fallbackClassName="w-full h-full object-contain"
+              />
 
               {/* Quick Upload Hover Overlay */}
               <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white text-[9px] font-bold gap-0.5">
@@ -808,8 +805,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               {/* Drawer Top Header */}
               <div className="p-6 border-b border-[#E8E2D5] dark:border-[#262320] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1A1816] border border-[#E8E2D5] dark:border-[#2D2A26] p-1 flex items-center justify-center">
-                    <RawajLogo className="h-7 w-auto" />
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1A1816] border border-[#E8E2D5] dark:border-[#2D2A26] p-1 flex items-center justify-center overflow-hidden">
+                    <BrandLogo
+                      src={siteSettings.logo_url}
+                      alt={siteSettings.company_name_ar || 'رواج'}
+                      className="w-full h-full object-contain"
+                      fallbackClassName="w-full h-full object-contain"
+                    />
                   </div>
                   <div>
                     <h3 className="font-heading font-black text-sm text-[#171616] dark:text-[#F7F5F0]">
