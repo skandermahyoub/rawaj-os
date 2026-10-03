@@ -143,13 +143,27 @@ export const setDoc = async (
 
     if (error) throw error;
     if (Array.isArray(data) && data.length > 0) return;
+
+    const { error: insertError } = await (supabase.from(tableName as any) as any)
+      .insert({ ...(value || {}), id: ref.id });
+    if (insertError) throw insertError;
+    return;
   }
 
   const payload = { ...(value || {}), id: ref.id };
-  const { error } = await (supabase.from(tableName as any) as any).upsert(payload, {
-    onConflict: 'id',
-  });
-  if (error) throw error;
+  const { error: insertError } = await (supabase.from(tableName as any) as any).insert(payload);
+  if (!insertError) return;
+
+  // A duplicate primary key means this is a full replacement of an existing row.
+  if (insertError.code === '23505') {
+    const { error: updateError } = await (supabase.from(tableName as any) as any)
+      .update(payload)
+      .eq('id', ref.id);
+    if (updateError) throw updateError;
+    return;
+  }
+
+  throw insertError;
 };
 
 export const deleteDoc = async (ref: DocumentRef): Promise<void> => {
