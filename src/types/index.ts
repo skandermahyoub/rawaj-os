@@ -98,6 +98,7 @@ export interface Subcategory {
   name_ar: string;
   name_en: string;
   slug: string;
+  sort_order: number;
 }
 
 export type FieldType = 
