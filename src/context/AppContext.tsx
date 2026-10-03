@@ -47,8 +47,6 @@ import {
   INITIAL_PORTFOLIO,
   INITIAL_BLOG_POSTS,
   INITIAL_SITE_SETTINGS,
-  INITIAL_USERS,
-  INITIAL_DESIGN_TASKS,
   INITIAL_MEDIA,
   INITIAL_HOME_SLIDES,
   INITIAL_MARQUEE_ITEMS,
@@ -62,7 +60,6 @@ import {
   INITIAL_FOOTER_SETTINGS,
   INITIAL_HOME_MODULES_CONFIG,
   INITIAL_THEME_SETTINGS,
-  INITIAL_CONTACT_MESSAGES,
   INITIAL_INDUSTRY_SECTORS
 } from '../data/initialData';
 import {
@@ -157,7 +154,6 @@ interface AppContextType {
   siteSettings: SiteSettings;
   users: User[];
   currentUser: User;
-  setCurrentUser: (user: User) => void;
 
   // Home Page Section Customizer & Order
   homeModulesConfig: HomeModuleConfig[];
@@ -347,6 +343,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
+  const [authRevision, setAuthRevision] = useState(0);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -571,15 +568,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
-    void supabase.auth.getSession().then(({ data }) => {
-      void syncAuthenticatedUser(data.session?.user.id);
+    void supabase.auth.getSession().then(async ({ data }) => {
+      await syncAuthenticatedUser(data.session?.user.id);
+      if (active) setAuthRevision((value) => value + 1);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setTimeout(() => {
-        void syncAuthenticatedUser(session?.user.id);
+      setTimeout(async () => {
+        await syncAuthenticatedUser(session?.user.id);
+        if (active) setAuthRevision((value) => value + 1);
       }, 0);
     });
 
@@ -593,9 +592,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return safeStorageLoad(STORAGE_KEYS.CART, []);
   });
 
-  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.QUOTES, []);
-  });
+  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
 
   // Home Modules State
   const [homeSlides, setHomeSlides] = useState<HomeSlide[]>(() => {
@@ -692,17 +689,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [themeSettings]);
 
-  const [contactMessages, setContactMessages] = useState<ContactFormMessage[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.CONTACT_MESSAGES, INITIAL_CONTACT_MESSAGES);
-  });
+  const [contactMessages, setContactMessages] = useState<ContactFormMessage[]>([]);
 
-  const [designTasks, setDesignTasks] = useState<DesignTask[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.DESIGN_TASKS, INITIAL_DESIGN_TASKS);
-  });
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.DESIGN_TASKS, designTasks);
-  }, [designTasks]);
+  const [designTasks, setDesignTasks] = useState<DesignTask[]>([]);
 
   const [brandsDisplayMode, setBrandsDisplayMode] = useState<BrandDisplayMode>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.BRANDS_MODE);
@@ -1089,7 +1078,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (unsubSubcategories) unsubSubcategories();
       if (unsubIndustrySectors) unsubIndustrySectors();
     };
-  }, []);
+  }, [authRevision]);
 
   // Initial catalog data is migrated once to Supabase; runtime code never self-seeds production data.
   // Save changes to localStorage safely
@@ -1104,10 +1093,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.CART, quoteItems);
   }, [quoteItems]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.QUOTES, quoteRequests);
-  }, [quoteRequests]);
 
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.MEDIA, mediaItems);
@@ -1128,10 +1113,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.SETTINGS, siteSettings);
   }, [siteSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.USERS, users);
-  }, [users]);
 
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.HOME_SLIDES, homeSlides);
@@ -1176,10 +1157,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, themeSettings);
   }, [themeSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.CONTACT_MESSAGES, contactMessages);
-  }, [contactMessages]);
 
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.BRANDS_MODE, brandsDisplayMode);
@@ -2106,7 +2083,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         siteSettings,
         users,
         currentUser,
-        setCurrentUser,
         homeSlides,
         addHomeSlide,
         updateHomeSlide,
