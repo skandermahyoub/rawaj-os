@@ -138,8 +138,8 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
               <Wifi className="w-4 h-4" />
             </div>
             <div className="text-[11px] leading-tight">
-              <div className="font-bold text-[#FAF8F5]">حفظ الكتالوج محلياً</div>
-              <div className="text-[#8E867B] text-[10px] mt-0.5">تصفح الخدمات عند ضعف الشبكة</div>
+              <div className="font-bold text-[#FAF8F5]">بيانات محدثة مباشرة</div>
+              <div className="text-[#8E867B] text-[10px] mt-0.5">قراءة أحدث المحتوى من السحابة</div>
             </div>
           </div>
 
