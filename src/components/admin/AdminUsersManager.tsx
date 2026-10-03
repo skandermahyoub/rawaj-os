@@ -13,28 +13,38 @@ export const AdminUsersManager: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim()) return;
 
-    addUser({
-      name: newUserName,
-      email: newUserEmail,
-      phone: newUserPhone,
-      role: newUserRole,
-    });
+    setErrorMsg('');
+    try {
+      await addUser({
+        name: newUserName,
+        email: newUserEmail,
+        phone: newUserPhone,
+        role: newUserRole,
+      });
 
-    setNewUserName('');
-    setNewUserEmail('');
-    setNewUserPhone('');
-    setShowAddModal(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPhone('');
+      setShowAddModal(false);
+    } catch (error: any) {
+      setErrorMsg(error?.message || 'تعذر دعوة المستخدم عبر Supabase Auth.');
+    }
   };
 
-  const handleDelete = (userId: string) => {
-    const success = deleteUser(userId);
-    if (!success) {
-      setErrorMsg('لا يمكن حذف هذا المستخدم؛ يجب بقاء مالك (Owner) واحد على الأقل في النظام.');
-      setTimeout(() => setErrorMsg(''), 4000);
+  const handleDelete = async (userId: string) => {
+    setErrorMsg('');
+    try {
+      const success = await deleteUser(userId);
+      if (!success) {
+        setErrorMsg('لا يمكن حذف هذا المستخدم أو الحساب الحالي.');
+        setTimeout(() => setErrorMsg(''), 4000);
+      }
+    } catch (error: any) {
+      setErrorMsg(error?.message || 'تعذر حذف المستخدم.');
     }
   };
 
