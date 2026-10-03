@@ -88,6 +88,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const [adminEmailInput, setAdminEmailInput] = useState('');
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
+  const [showOwnerSetup, setShowOwnerSetup] = useState(false);
+  const [ownerSetupName, setOwnerSetupName] = useState('');
+  const [ownerSetupEmail, setOwnerSetupEmail] = useState('');
+  const [ownerSetupPassword, setOwnerSetupPassword] = useState('');
+  const [ownerSetupToken, setOwnerSetupToken] = useState('');
+  const [isBootstrappingOwner, setIsBootstrappingOwner] = useState(false);
 
   const verifyAdministrativeSession = async (userId?: string) => {
     if (!userId) {
@@ -165,6 +171,61 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     }
 
     await verifyAdministrativeSession(data.user.id);
+  };
+
+  const handleOwnerBootstrap = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+
+    const email = ownerSetupEmail.trim().toLowerCase();
+    const name = ownerSetupName.trim();
+    const token = ownerSetupToken.trim();
+
+    if (!name || !email || !token || ownerSetupPassword.length < 10) {
+      setAuthError('أكمل الاسم والبريد ورمز التهيئة، واستخدم كلمة مرور لا تقل عن 10 أحرف.');
+      return;
+    }
+
+    setIsBootstrappingOwner(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('bootstrap-owner', {
+        body: {
+          name,
+          email,
+          password: ownerSetupPassword,
+          bootstrapToken: token,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password: ownerSetupPassword,
+      });
+
+      if (loginError || !loginData.user) {
+        throw loginError || new Error('تم إنشاء حساب المالك لكن تعذر تسجيل الدخول تلقائيًا.');
+      }
+
+      setAdminEmailInput(email);
+      setAdminPasswordInput('');
+      setOwnerSetupToken('');
+      setOwnerSetupPassword('');
+      setShowOwnerSetup(false);
+      await verifyAdministrativeSession(loginData.user.id);
+    } catch (error: any) {
+      const message = error?.message || 'تعذر تهيئة حساب المالك.';
+      setAuthError(
+        message.includes('already completed')
+          ? 'تمت تهيئة حساب المالك مسبقًا. استخدم تسجيل الدخول العادي.'
+          : message
+      );
+    } finally {
+      setIsBootstrappingOwner(false);
+    }
   };
 
   const handleAdminLogout = async () => {
@@ -347,44 +408,124 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             <p className="text-xs text-[#A8A29E]">منطقة محمية عبر Supabase Auth — استخدم حساب الإدارة المعتمد</p>
           </div>
 
-          <form onSubmit={handleAdminLogin} className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-[#D6D3D1]">البريد الإلكتروني</label>
+          {!showOwnerSetup ? (
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-[#D6D3D1]">البريد الإلكتروني</label>
+                <input
+                  type="email"
+                  value={adminEmailInput}
+                  onChange={(e) => setAdminEmailInput(e.target.value)}
+                  placeholder="admin@rawaj.com"
+                  autoComplete="username"
+                  className="w-full bg-[#272322] border border-[#3A3533] rounded-xl px-4 py-3 text-sm text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-[#D6D3D1]">كلمة المرور</label>
+                <input
+                  type="password"
+                  value={adminPasswordInput}
+                  onChange={(e) => setAdminPasswordInput(e.target.value)}
+                  placeholder="كلمة المرور..."
+                  autoComplete="current-password"
+                  className="w-full bg-[#272322] border border-[#3A3533] rounded-xl px-4 py-3 text-sm text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
+                />
+              </div>
+
+              {authError && (
+                <div className="p-3 bg-red-950/60 border border-red-800/80 rounded-xl text-red-300 text-xs text-center font-bold">
+                  {authError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-3 px-4 bg-[#B9142D] hover:bg-[#930F23] text-white text-xs font-bold rounded-xl shadow-lg transition-colors cursor-pointer"
+              >
+                تسجيل الدخول إلى مركز القيادة
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthError('');
+                  setShowOwnerSetup(true);
+                }}
+                className="w-full py-2.5 px-4 border border-[#4A433F] hover:border-[#B9142D] text-[#CFC7BE] hover:text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                تهيئة حساب المالك لأول مرة
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleOwnerBootstrap} className="space-y-3">
+              <div className="p-3 rounded-xl bg-[#272322] border border-[#3A3533] text-[11px] text-[#CFC7BE] leading-relaxed">
+                هذا المسار يعمل مرة واحدة فقط. بعد إنشاء أول Owner يتم تعطيله تلقائيًا من الخادم.
+              </div>
+
+              <input
+                type="text"
+                value={ownerSetupName}
+                onChange={(e) => setOwnerSetupName(e.target.value)}
+                placeholder="اسم المالك"
+                autoComplete="name"
+                className="w-full bg-[#272322] border border-[#3A3533] rounded-xl px-4 py-3 text-sm text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
+              />
+
               <input
                 type="email"
-                value={adminEmailInput}
-                onChange={(e) => setAdminEmailInput(e.target.value)}
-                placeholder="admin@rawaj.com"
-                autoComplete="username"
+                value={ownerSetupEmail}
+                onChange={(e) => setOwnerSetupEmail(e.target.value)}
+                placeholder="البريد الإلكتروني للمالك"
+                autoComplete="email"
                 className="w-full bg-[#272322] border border-[#3A3533] rounded-xl px-4 py-3 text-sm text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
-                autoFocus
               />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-[#D6D3D1]">كلمة المرور</label>
+
               <input
                 type="password"
-                value={adminPasswordInput}
-                onChange={(e) => setAdminPasswordInput(e.target.value)}
-                placeholder="كلمة المرور..."
-                autoComplete="current-password"
+                value={ownerSetupPassword}
+                onChange={(e) => setOwnerSetupPassword(e.target.value)}
+                placeholder="كلمة مرور قوية — 10 أحرف على الأقل"
+                autoComplete="new-password"
                 className="w-full bg-[#272322] border border-[#3A3533] rounded-xl px-4 py-3 text-sm text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
               />
-            </div>
 
-            {authError && (
-              <div className="p-3 bg-red-950/60 border border-red-800/80 rounded-xl text-red-300 text-xs text-center font-bold">
-                {authError}
-              </div>
-            )}
+              <input
+                type="password"
+                value={ownerSetupToken}
+                onChange={(e) => setOwnerSetupToken(e.target.value)}
+                placeholder="رمز تهيئة المالك"
+                autoComplete="off"
+                className="w-full bg-[#272322] border border-[#3A3533] rounded-xl px-4 py-3 text-sm text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
+              />
 
-            <button
-              type="submit"
-              className="w-full py-3 px-4 bg-[#B9142D] hover:bg-[#930F23] text-white text-xs font-bold rounded-xl shadow-lg transition-colors cursor-pointer"
-            >
-              تسجيل الدخول إلى مركز القيادة
-            </button>
-          </form>
+              {authError && (
+                <div className="p-3 bg-red-950/60 border border-red-800/80 rounded-xl text-red-300 text-xs text-center font-bold">
+                  {authError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isBootstrappingOwner}
+                className="w-full py-3 px-4 bg-[#B9142D] hover:bg-[#930F23] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg transition-colors cursor-pointer"
+              >
+                {isBootstrappingOwner ? 'جارٍ إنشاء حساب المالك...' : 'إنشاء حساب المالك وتسجيل الدخول'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthError('');
+                  setShowOwnerSetup(false);
+                }}
+                className="w-full py-2 text-xs text-[#A8A29E] hover:text-white underline"
+              >
+                العودة إلى تسجيل الدخول
+              </button>
+            </form>
+          )}
 
           <div className="pt-2 text-center">
             <button
