@@ -76,6 +76,7 @@ import {
   writeBatch,
 } from '../lib/cloudDb';
 import { supabase } from '../lib/supabase';
+import { removeRawajStorageObject } from '../lib/storage';
 
 export type NavigationTarget =
   | { view: 'home' }
@@ -197,7 +198,7 @@ interface AppContextType {
   // Module 8 & 9: Brands & Testimonials
   clientLogos: ClientLogo[];
   brandsDisplayMode: BrandDisplayMode;
-  updateBrandsDisplayMode: (mode: BrandDisplayMode) => void;
+  updateBrandsDisplayMode: (mode: BrandDisplayMode) => Promise<void>;
   addClientLogo: (cli: Omit<ClientLogo, 'id'>) => void;
   updateClientLogo: (id: string, cli: Partial<ClientLogo>) => void;
   deleteClientLogo: (id: string) => void;
@@ -206,7 +207,7 @@ interface AppContextType {
   addTestimonial: (test: Omit<Testimonial, 'id'>) => void;
   updateTestimonial: (id: string, test: Partial<Testimonial>) => void;
   deleteTestimonial: (id: string) => void;
-  submitPublicTestimonial: (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }) => void;
+  submitPublicTestimonial: (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }) => Promise<void>;
   updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => void;
 
   // Module 10: Featured Offers & Promo Banners
@@ -224,13 +225,13 @@ interface AppContextType {
 
   // Module 13: Contact Messages & Inbox
   contactMessages: ContactFormMessage[];
-  submitContactMessage: (data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>) => void;
-  markContactMessageStatus: (id: string, status: 'unread' | 'read' | 'replied') => void;
-  deleteContactMessage: (id: string) => void;
+  submitContactMessage: (data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>) => Promise<void>;
+  markContactMessageStatus: (id: string, status: 'unread' | 'read' | 'replied') => Promise<void>;
+  deleteContactMessage: (id: string) => Promise<void>;
 
   // Module 14: Global Footer Settings
   footerSettings: FooterSettings;
-  updateFooterSettings: (settings: Partial<FooterSettings>) => void;
+  updateFooterSettings: (settings: Partial<FooterSettings>) => Promise<void>;
 
   // Quote Cart
   quoteItems: QuoteItem[];
@@ -242,14 +243,14 @@ interface AppContextType {
 
   // Quote Requests (Admin)
   quoteRequests: QuoteRequest[];
-  updateQuoteStatus: (quoteId: string, newStatus: QuoteStatus, internalNotes?: string) => void;
-  assignQuoteSalesperson: (quoteId: string, salespersonId: string) => void;
-  updateQuoteNotes: (quoteId: string, internalNotes?: string, supplierNotes?: string) => void;
+  updateQuoteStatus: (quoteId: string, newStatus: QuoteStatus, internalNotes?: string) => Promise<void>;
+  assignQuoteSalesperson: (quoteId: string, salespersonId: string) => Promise<void>;
+  updateQuoteNotes: (quoteId: string, internalNotes?: string, supplierNotes?: string) => Promise<void>;
 
   // Service CRUD (Admin)
-  createService: (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => Service;
-  updateService: (id: string, serviceData: Partial<Service>) => void;
-  deleteService: (id: string) => void;
+  createService: (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => Promise<Service>;
+  updateService: (id: string, serviceData: Partial<Service>) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
   duplicateService: (id: string) => Service;
 
   // Template CRUD (Admin)
@@ -258,8 +259,8 @@ interface AppContextType {
   deleteTemplate: (id: string) => void;
 
   // Media Library
-  uploadMedia: (fileData: { name: string; url: string; size_kb: number; category?: string; alt_ar?: string }) => MediaItem;
-  deleteMedia: (id: string) => void;
+  uploadMedia: (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }) => Promise<MediaItem>;
+  deleteMedia: (id: string) => Promise<void>;
 
   // Packages & Portfolio & Blog CRUD
   createPackage: (pkg: Omit<Package, 'id'>) => void;
@@ -275,7 +276,7 @@ interface AppContextType {
   deletePortfolioProject: (id: string) => void;
 
   // Taxonomy & Settings & Users
-  updateSiteSettings: (settings: Partial<SiteSettings>) => void;
+  updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
   deleteUser: (userId: string) => Promise<boolean>;
 
@@ -1695,25 +1696,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Media Library
-  const uploadMedia = (fileData: { name: string; url: string; size_kb: number; category?: string; alt_ar?: string }): MediaItem => {
-    const id = `med-${Date.now()}`;
+  const uploadMedia = async (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }): Promise<MediaItem> => {
+    const id = `med-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const newMedia: MediaItem = {
       id,
       name: fileData.name,
       url: fileData.url,
+      storage_path: fileData.storage_path,
+      mime_type: fileData.mime_type,
       size_kb: fileData.size_kb,
       category: fileData.category || 'عام',
-      uploaded_at: new Date().toISOString().slice(0, 10),
+      uploaded_at: new Date().toISOString(),
       alt_ar: fileData.alt_ar || fileData.name,
     };
+
+    await setDoc(doc(db, 'media', id), newMedia);
     setMediaItems((prev) => [newMedia, ...prev]);
-    setDoc(doc(db, 'media', id), newMedia).catch((e) => console.warn(e));
     return newMedia;
   };
 
-  const deleteMedia = (id: string) => {
+  const deleteMedia = async (id: string): Promise<void> => {
+    const target = mediaItems.find((m) => m.id === id);
+    if (target?.storage_path) {
+      await removeRawajStorageObject(target.storage_path);
+    }
+    await deleteDoc(doc(db, 'media', id));
     setMediaItems((prev) => prev.filter((m) => m.id !== id));
-    deleteDoc(doc(db, 'media', id)).catch((e) => console.warn(e));
   };
 
   // Packages CRUD
@@ -1783,17 +1791,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Taxonomy & Settings & Users
-  const updateSiteSettings = (settings: Partial<SiteSettings>) => {
-    setSiteSettings((prev) => {
-      const updated = { ...prev, ...settings };
-      try {
-        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
-      } catch (err) {
-        console.warn('localStorage error on updateSiteSettings:', err);
-      }
-      setDoc(doc(db, 'settings', 'general'), updated, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const updateSiteSettings = async (settings: Partial<SiteSettings>): Promise<void> => {
+    const updated = { ...siteSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'general'), updated, { merge: true });
+    setSiteSettings(updated);
+    safeStorageSave(STORAGE_KEYS.SETTINGS, updated);
   };
 
   const addUser = async (userData: Omit<User, 'id' | 'createdAt'>): Promise<User> => {
