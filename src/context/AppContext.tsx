@@ -171,7 +171,7 @@ interface AppContextType {
 
   // Module 1: Collapsible Hero Header
   heroHeaderSettings: HeroHeaderSettings;
-  updateHeroHeaderSettings: (settings: Partial<HeroHeaderSettings>) => void;
+  updateHeroHeaderSettings: (settings: Partial<HeroHeaderSettings>) => Promise<void>;
 
   // Module 2: Cinematic Slider
   homeSlides: HomeSlide[];
@@ -187,7 +187,7 @@ interface AppContextType {
 
   // Module 4: About Us Mini-Module
   aboutUsData: AboutUsModuleData;
-  updateAboutUsData: (data: Partial<AboutUsModuleData>) => void;
+  updateAboutUsData: (data: Partial<AboutUsModuleData>) => Promise<void>;
 
   // Module 5: Features / Why Choose Us
   rawajFeatures: RawajFeature[];
@@ -1177,10 +1177,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [brandsDisplayMode]);
 
   // Module 1: Hero Header settings
-  const updateHeroHeaderSettings = (settings: Partial<HeroHeaderSettings>) => {
+  const updateHeroHeaderSettings = async (settings: Partial<HeroHeaderSettings>): Promise<void> => {
     const updated = { ...heroHeaderSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'hero_header'), updated, { merge: true });
     setHeroHeaderSettings(updated);
-    setDoc(doc(db, 'settings', 'hero_header'), updated, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.HERO_HEADER, updated);
   };
 
   // Theme Customizer
@@ -1886,12 +1887,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // About Us Update
-  const updateAboutUsData = (data: Partial<AboutUsModuleData>) => {
+  const updateAboutUsData = async (data: Partial<AboutUsModuleData>): Promise<void> => {
     const updated = { ...aboutUsData, ...data };
+    await setDoc(doc(db, 'settings', 'about_us'), updated, { merge: true });
     setAboutUsData(updated);
     safeStorageSave(STORAGE_KEYS.ABOUT_US, updated);
-    setDoc(doc(db, 'settings', 'about_us'), updated, { merge: true }).catch((e) => console.warn(e));
-    setDoc(doc(db, 'settings', 'about_us_module'), updated, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Rawaj Features CRUD
