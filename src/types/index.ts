@@ -359,6 +359,8 @@ export interface MediaItem {
   id: string;
   name: string;
   url: string;
+  storage_path?: string;
+  mime_type?: string;
   size_kb: number;
   category: string;
   uploaded_at: string;
