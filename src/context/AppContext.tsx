@@ -72,8 +72,6 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
-  getDocs,
-  writeBatch,
 } from '../lib/cloudDb';
 import { supabase } from '../lib/supabase';
 import { removeRawajStorageObject } from '../lib/storage';
@@ -139,7 +137,6 @@ interface AppContextType {
 
   // Cloud Sync State
   isCloudSynced: boolean;
-  seedInitialDataToCloud: () => Promise<void>;
 
   // Navigation
   currentRoute: NavigationTarget;
@@ -424,10 +421,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // State initialization with localStorage fallback
-  const [departments] = useState<Department[]>(INITIAL_DEPARTMENTS);
-  const [categories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [subcategories] = useState<Subcategory[]>([]);
-  const [industrySectors] = useState<IndustrySector[]>(INITIAL_INDUSTRY_SECTORS);
+  const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [industrySectors, setIndustrySectors] = useState<IndustrySector[]>(INITIAL_INDUSTRY_SECTORS);
 
   const getIndustrySectorById = (id: string) => {
     return industrySectors.find((s) => s.id === id || s.slug === id);
@@ -759,8 +756,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubFaq: (() => void) | undefined;
     let unsubContactMessages: (() => void) | undefined;
     let unsubUsers: (() => void) | undefined;
+    let unsubDepartments: (() => void) | undefined;
+    let unsubCategories: (() => void) | undefined;
+    let unsubSubcategories: (() => void) | undefined;
+    let unsubIndustrySectors: (() => void) | undefined;
 
     try {
+      // Taxonomy listeners
+      unsubDepartments = onSnapshot(collection(db, 'departments'), (snapshot) => {
+        const list: Department[] = [];
+        snapshot.forEach((docSnap) => list.push(docSnap.data() as Department));
+        list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setDepartments(list);
+      }, (err) => console.warn('Supabase departments listener:', err.message));
+
+      unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+        const list: Category[] = [];
+        snapshot.forEach((docSnap) => list.push(docSnap.data() as Category));
+        list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setCategories(list);
+      }, (err) => console.warn('Supabase categories listener:', err.message));
+
+      unsubSubcategories = onSnapshot(collection(db, 'subcategories'), (snapshot) => {
+        const list: Subcategory[] = [];
+        snapshot.forEach((docSnap) => list.push(docSnap.data() as Subcategory));
+        list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setSubcategories(list);
+      }, (err) => console.warn('Supabase subcategories listener:', err.message));
+
+      unsubIndustrySectors = onSnapshot(collection(db, 'industry_sectors'), (snapshot) => {
+        const list: IndustrySector[] = [];
+        snapshot.forEach((docSnap) => list.push(docSnap.data() as IndustrySector));
+        list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setIndustrySectors(list);
+      }, (err) => console.warn('Supabase industry sectors listener:', err.message));
+
       // Quotes Listener
       unsubQuotes = onSnapshot(collection(db, 'quotes'), (snapshot) => {
         {
@@ -1009,6 +1039,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 safeStorageSave(STORAGE_KEYS.HERO_HEADER, cloud);
               }
             }
+            if (docSnap.id === 'brands_display') {
+              const cloud = docSnap.data() as { mode?: BrandDisplayMode };
+              if (cloud?.mode) {
+                setBrandsDisplayMode(cloud.mode);
+                safeStorageSave(STORAGE_KEYS.BRANDS_MODE, cloud.mode);
+              }
+            }
           });
         }
       }, (err) => console.warn('Supabase settings listener:', err.message));
@@ -1047,42 +1084,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (unsubFaq) unsubFaq();
       if (unsubContactMessages) unsubContactMessages();
       if (unsubUsers) unsubUsers();
+      if (unsubDepartments) unsubDepartments();
+      if (unsubCategories) unsubCategories();
+      if (unsubSubcategories) unsubSubcategories();
+      if (unsubIndustrySectors) unsubIndustrySectors();
     };
   }, []);
 
-  // Seed initial Supabase data only when the catalog is empty
-  const seedInitialDataToCloud = async () => {
-    try {
-      const snap = await getDocs(collection(db, 'services'));
-      if (snap.size === 0) {
-        const batch = writeBatch(db);
-        INITIAL_SERVICES.slice(0, 30).forEach((s) => {
-          batch.set(doc(db, 'services', s.id), s);
-        });
-        INITIAL_TEMPLATES.forEach((t) => {
-          batch.set(doc(db, 'templates', t.id), t);
-        });
-        INITIAL_PACKAGES.forEach((p) => {
-          batch.set(doc(db, 'packages', p.id), p);
-        });
-        INITIAL_PORTFOLIO.forEach((p) => {
-          batch.set(doc(db, 'portfolio', p.id), p);
-        });
-        INITIAL_BLOG_POSTS.forEach((b) => {
-          batch.set(doc(db, 'blog', b.id), b);
-        });
-        INITIAL_DESIGN_TASKS.forEach((dt) => {
-          batch.set(doc(db, 'design_tasks', dt.id), dt);
-        });
-        batch.set(doc(db, 'settings', 'general'), siteSettings, { merge: true });
-        await batch.commit();
-        setIsCloudSynced(true);
-      }
-    } catch (err) {
-      console.warn('Seeding note:', err);
-    }
-  };
-
+  // Initial catalog data is migrated once to Supabase; runtime code never self-seeds production data.
   // Save changes to localStorage safely
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.SERVICES, services);
@@ -2081,7 +2090,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isDarkMode,
         toggleTheme,
         isCloudSynced,
-        seedInitialDataToCloud,
         currentRoute,
         navigate,
         departments,
