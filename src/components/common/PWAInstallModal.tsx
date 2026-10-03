@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { BrandLogo } from './BrandLogo';
+import { RawajLogo } from './RawajLogo';
 import { 
   Download, 
   Smartphone, 
