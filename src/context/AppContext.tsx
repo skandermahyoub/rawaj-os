@@ -245,101 +245,15 @@ interface AppContextType {
   updateQuoteNotes: (quoteId: string, internalNotes?: string, supplierNotes?: string) => Promise<void>;
 
   // Service CRUD
-  const createService = async (
-    serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>
-  ): Promise<Service> => {
-    const id = `srv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const now = new Date().toISOString();
-    const newService: Service = {
-      ...serviceData,
-      id,
-      created_at: now,
-      updated_at: now,
-    };
-
-    await setDoc(doc(db, 'services', id), newService);
-    setServices((prev) => {
-      const updated = [newService, ...prev];
-      safeStorageSave(STORAGE_KEYS.SERVICES, updated);
-      return updated;
-    });
-    return newService;
-  };
-
-  const updateService = async (id: string, serviceData: Partial<Service>): Promise<void> => {
-    const existing = services.find((s) => s.id === id);
-    if (!existing) throw new Error('الخدمة غير موجودة.');
-
-    const updatedService: Service = {
-      ...existing,
-      ...serviceData,
-      updated_at: new Date().toISOString(),
-    };
-
-    await setDoc(doc(db, 'services', id), updatedService, { merge: true });
-    setServices((prev) => {
-      const updated = prev.map((s) => (s.id === id ? updatedService : s));
-      safeStorageSave(STORAGE_KEYS.SERVICES, updated);
-      return updated;
-    });
-  };
-
-  const deleteService = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'services', id));
-    setServices((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
-      safeStorageSave(STORAGE_KEYS.SERVICES, updated);
-      return updated;
-    });
-  };
-
-  const duplicateService = async (id: string): Promise<Service> => {
-    const original = services.find((s) => s.id === id);
-    if (!original) throw new Error('Service not found');
-
-    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const duplicated: Service = {
-      ...original,
-      id: `srv-${suffix}`,
-      name_ar: `${original.name_ar} (نسخة جديدة)`,
-      name_en: `${original.name_en} (Copy)`,
-      slug: `${original.slug}-copy-${suffix}`,
-      service_status: 'draft',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    await setDoc(doc(db, 'services', duplicated.id), duplicated);
-    setServices((prev) => [duplicated, ...prev]);
-    return duplicated;
-  };
+  createService: (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => Promise<Service>;
+  updateService: (id: string, serviceData: Partial<Service>) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
+  duplicateService: (id: string) => Promise<Service>;
 
   // Template CRUD
-  const createTemplate = async (
-    templateData: Omit<ServiceTemplate, 'id'>
-  ): Promise<ServiceTemplate> => {
-    const id = `tmpl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const newTmpl: ServiceTemplate = { ...templateData, id };
-    await setDoc(doc(db, 'templates', id), newTmpl);
-    setTemplates((prev) => [...prev, newTmpl]);
-    return newTmpl;
-  };
-
-  const updateTemplate = async (
-    id: string,
-    templateData: Partial<ServiceTemplate>
-  ): Promise<void> => {
-    const existing = templates.find((t) => t.id === id);
-    if (!existing) throw new Error('القالب غير موجود.');
-    const updated = { ...existing, ...templateData };
-    await setDoc(doc(db, 'templates', id), updated, { merge: true });
-    setTemplates((prev) => prev.map((t) => (t.id === id ? updated : t)));
-  };
-
-  const deleteTemplate = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'templates', id));
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
-  };
+  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => Promise<ServiceTemplate>;
+  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
 
   // Media Library
   uploadMedia: (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }) => Promise<MediaItem>;
@@ -1339,111 +1253,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Service CRUD
-  const createService = async (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>): Promise<Service> => {
-    const id = `srv-${Date.now()}`;
+  const createService = async (
+    serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<Service> => {
+    const id = `srv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const now = new Date().toISOString();
     const newService: Service = {
       ...serviceData,
       id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     };
+
+    await setDoc(doc(db, 'services', id), newService);
     setServices((prev) => {
       const updated = [newService, ...prev];
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
       return updated;
     });
-    try {
-      await setDoc(doc(db, 'services', id), newService);
-      console.log(`[Supabase] Service ${id} created on cloud`);
-    } catch (e) {
-      console.error(`[Supabase Error] Service creation failed:`, e);
-      throw e;
-    }
     return newService;
   };
 
   const updateService = async (id: string, serviceData: Partial<Service>): Promise<void> => {
-    let targetService: Service | undefined;
+    const existing = services.find((s) => s.id === id);
+    if (!existing) throw new Error('الخدمة غير موجودة.');
+
+    const updatedService: Service = {
+      ...existing,
+      ...serviceData,
+      updated_at: new Date().toISOString(),
+    };
+
+    await setDoc(doc(db, 'services', id), updatedService, { merge: true });
     setServices((prev) => {
-      const updated = prev.map((s) => {
-        if (s.id !== id) return s;
-        return { ...s, ...serviceData, updated_at: new Date().toISOString() };
-      });
+      const updated = prev.map((s) => (s.id === id ? updatedService : s));
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
-      targetService = updated.find((s) => s.id === id);
       return updated;
     });
-    if (targetService) {
-      try {
-        await setDoc(doc(db, 'services', id), targetService, { merge: true });
-        console.log(`[Supabase] Service ${id} updated on cloud`);
-      } catch (e) {
-        console.error(`[Supabase Error] Service update failed:`, e);
-        throw e;
-      }
-    }
   };
 
   const deleteService = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'services', id));
     setServices((prev) => {
       const updated = prev.filter((s) => s.id !== id);
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
       return updated;
     });
-    try {
-      await deleteDoc(doc(db, 'services', id));
-      console.log(`[Supabase] Service ${id} deleted from cloud`);
-    } catch (e) {
-      console.error(`[Supabase Error] Service deletion failed:`, e);
-      throw e;
-    }
   };
 
-  const duplicateService = (id: string): Service => {
+  const duplicateService = async (id: string): Promise<Service> => {
     const original = services.find((s) => s.id === id);
     if (!original) throw new Error('Service not found');
-    const newId = `srv-${Date.now()}`;
+
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const duplicated: Service = {
       ...original,
-      id: newId,
+      id: `srv-${suffix}`,
       name_ar: `${original.name_ar} (نسخة جديدة)`,
       name_en: `${original.name_en} (Copy)`,
-      slug: `${original.slug}-copy-${Date.now().toString().slice(-4)}`,
+      slug: `${original.slug}-copy-${suffix}`,
       service_status: 'draft',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    await setDoc(doc(db, 'services', duplicated.id), duplicated);
     setServices((prev) => [duplicated, ...prev]);
-    setDoc(doc(db, 'services', newId), duplicated).catch((e) => console.warn(e));
     return duplicated;
   };
 
   // Template CRUD
-  const createTemplate = (templateData: Omit<ServiceTemplate, 'id'>): ServiceTemplate => {
-    const id = `tmpl-${Date.now()}`;
-    const newTmpl: ServiceTemplate = {
-      ...templateData,
-      id,
-    };
+  const createTemplate = async (
+    templateData: Omit<ServiceTemplate, 'id'>
+  ): Promise<ServiceTemplate> => {
+    const id = `tmpl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newTmpl: ServiceTemplate = { ...templateData, id };
+    await setDoc(doc(db, 'templates', id), newTmpl);
     setTemplates((prev) => [...prev, newTmpl]);
-    setDoc(doc(db, 'templates', id), newTmpl).catch((e) => console.warn(e));
     return newTmpl;
   };
 
-  const updateTemplate = (id: string, templateData: Partial<ServiceTemplate>) => {
-    setTemplates((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        const updated = { ...t, ...templateData };
-        setDoc(doc(db, 'templates', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+  const updateTemplate = async (
+    id: string,
+    templateData: Partial<ServiceTemplate>
+  ): Promise<void> => {
+    const existing = templates.find((t) => t.id === id);
+    if (!existing) throw new Error('القالب غير موجود.');
+    const updated = { ...existing, ...templateData };
+    await setDoc(doc(db, 'templates', id), updated, { merge: true });
+    setTemplates((prev) => prev.map((t) => (t.id === id ? updated : t)));
   };
 
-  const deleteTemplate = (id: string) => {
+  const deleteTemplate = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'templates', id));
     setTemplates((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'templates', id)).catch((e) => console.warn(e));
   };
 
   // Media Library
