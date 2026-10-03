@@ -244,12 +244,12 @@ interface AppContextType {
   createService: (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => Promise<Service>;
   updateService: (id: string, serviceData: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
-  duplicateService: (id: string) => Service;
+  duplicateService: (id: string) => Promise<Service>;
 
   // Template CRUD (Admin)
-  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => ServiceTemplate;
-  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => void;
-  deleteTemplate: (id: string) => void;
+  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => Promise<ServiceTemplate>;
+  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
 
   // Media Library
   uploadMedia: (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }) => Promise<MediaItem>;
@@ -1471,7 +1471,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Quote status management
-  const updateQuoteStatus = async (quoteId: string, newStatus: QuoteStatus, internalNotes?: string) => {
+  const updateQuoteStatus = async (
+    quoteId: string,
+    newStatus: QuoteStatus,
+    internalNotes?: string
+  ): Promise<void> => {
     const statusNames: Record<QuoteStatus, string> = {
       new: 'جديد',
       reviewing: 'قيد المراجعة الفنية',
@@ -1483,42 +1487,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       lost: 'لم يتم الاتفاق',
       archived: 'مؤرشف',
     };
-
-    const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) return;
-
-    const newTimeline = [
-      ...targetQuote.timeline,
-      {
-        id: `tl-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        user_name: currentUser.name,
-        action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
-        notes: internalNotes,
-      },
-    ];
+    const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
+    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
       status: newStatus,
       internal_notes: internalNotes || targetQuote.internal_notes,
       updated_at: new Date().toISOString(),
-      timeline: newTimeline,
+      timeline: [
+        ...targetQuote.timeline,
+        {
+          id: `tl-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          user_name: currentUser.name,
+          action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
+          notes: internalNotes,
+        },
+      ],
     };
 
-    setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
-
-    try {
-      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    } catch (e) {
-      console.warn('Supabase quote status update error:', e);
-    }
+    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
   };
 
-  const assignQuoteSalesperson = async (quoteId: string, salespersonId: string) => {
-    const sp = users.find((u) => u.id === salespersonId);
-    const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) return;
+  const assignQuoteSalesperson = async (quoteId: string, salespersonId: string): Promise<void> => {
+    const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
+    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
+    const salesperson = users.find((user) => user.id === salespersonId);
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
@@ -1530,23 +1526,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: `tl-${Date.now()}`,
           timestamp: new Date().toISOString(),
           user_name: currentUser.name,
-          action: `تم إسناد الطلب للمسؤول: ${sp ? sp.name : 'غير محدد'}`,
+          action: `تم إسناد الطلب للمسؤول: ${salesperson ? salesperson.name : 'غير محدد'}`,
         },
       ],
     };
 
-    setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
-
-    try {
-      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    } catch (e) {
-      console.warn('Supabase quote assignment error:', e);
-    }
+    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
   };
 
-  const updateQuoteNotes = async (quoteId: string, internalNotes?: string, supplierNotes?: string) => {
-    const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) return;
+  const updateQuoteNotes = async (
+    quoteId: string,
+    internalNotes?: string,
+    supplierNotes?: string
+  ): Promise<void> => {
+    const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
+    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
@@ -1555,121 +1550,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updated_at: new Date().toISOString(),
     };
 
-    setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
-
-    try {
-      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    } catch (e) {
-      console.warn('Supabase quote notes update error:', e);
-    }
+    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
   };
 
   // Service CRUD
-  const createService = async (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>): Promise<Service> => {
-    const id = `srv-${Date.now()}`;
+  const createService = async (
+    serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<Service> => {
+    const now = new Date().toISOString();
     const newService: Service = {
       ...serviceData,
-      id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      id: `srv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      created_at: now,
+      updated_at: now,
     };
+    await setDoc(doc(db, 'services', newService.id), newService);
     setServices((prev) => {
       const updated = [newService, ...prev];
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
       return updated;
     });
-    try {
-      await setDoc(doc(db, 'services', id), newService);
-      console.log(`[Supabase] Service ${id} created on cloud`);
-    } catch (e) {
-      console.error(`[Supabase Error] Service creation failed:`, e);
-      throw e;
-    }
     return newService;
   };
 
   const updateService = async (id: string, serviceData: Partial<Service>): Promise<void> => {
-    let targetService: Service | undefined;
+    const existing = services.find((service) => service.id === id);
+    if (!existing) throw new Error('الخدمة غير موجودة.');
+    const updatedService: Service = {
+      ...existing,
+      ...serviceData,
+      updated_at: new Date().toISOString(),
+    };
+    await setDoc(doc(db, 'services', id), updatedService, { merge: true });
     setServices((prev) => {
-      const updated = prev.map((s) => {
-        if (s.id !== id) return s;
-        return { ...s, ...serviceData, updated_at: new Date().toISOString() };
-      });
+      const updated = prev.map((service) => service.id === id ? updatedService : service);
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
-      targetService = updated.find((s) => s.id === id);
       return updated;
     });
-    if (targetService) {
-      try {
-        await setDoc(doc(db, 'services', id), targetService, { merge: true });
-        console.log(`[Supabase] Service ${id} updated on cloud`);
-      } catch (e) {
-        console.error(`[Supabase Error] Service update failed:`, e);
-        throw e;
-      }
-    }
   };
 
   const deleteService = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'services', id));
     setServices((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
+      const updated = prev.filter((service) => service.id !== id);
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
       return updated;
     });
-    try {
-      await deleteDoc(doc(db, 'services', id));
-      console.log(`[Supabase] Service ${id} deleted from cloud`);
-    } catch (e) {
-      console.error(`[Supabase Error] Service deletion failed:`, e);
-      throw e;
-    }
   };
 
-  const duplicateService = (id: string): Service => {
-    const original = services.find((s) => s.id === id);
-    if (!original) throw new Error('Service not found');
-    const newId = `srv-${Date.now()}`;
+  const duplicateService = async (id: string): Promise<Service> => {
+    const original = services.find((service) => service.id === id);
+    if (!original) throw new Error('الخدمة غير موجودة.');
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const duplicated: Service = {
       ...original,
-      id: newId,
+      id: `srv-${suffix}`,
       name_ar: `${original.name_ar} (نسخة جديدة)`,
       name_en: `${original.name_en} (Copy)`,
-      slug: `${original.slug}-copy-${Date.now().toString().slice(-4)}`,
+      slug: `${original.slug}-copy-${suffix}`,
       service_status: 'draft',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    await setDoc(doc(db, 'services', duplicated.id), duplicated);
     setServices((prev) => [duplicated, ...prev]);
-    setDoc(doc(db, 'services', newId), duplicated).catch((e) => console.warn(e));
     return duplicated;
   };
 
   // Template CRUD
-  const createTemplate = (templateData: Omit<ServiceTemplate, 'id'>): ServiceTemplate => {
-    const id = `tmpl-${Date.now()}`;
-    const newTmpl: ServiceTemplate = {
+  const createTemplate = async (
+    templateData: Omit<ServiceTemplate, 'id'>
+  ): Promise<ServiceTemplate> => {
+    const newTemplate: ServiceTemplate = {
       ...templateData,
-      id,
+      id: `tmpl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     };
-    setTemplates((prev) => [...prev, newTmpl]);
-    setDoc(doc(db, 'templates', id), newTmpl).catch((e) => console.warn(e));
-    return newTmpl;
+    await setDoc(doc(db, 'templates', newTemplate.id), newTemplate);
+    setTemplates((prev) => [...prev, newTemplate]);
+    return newTemplate;
   };
 
-  const updateTemplate = (id: string, templateData: Partial<ServiceTemplate>) => {
-    setTemplates((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        const updated = { ...t, ...templateData };
-        setDoc(doc(db, 'templates', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+  const updateTemplate = async (
+    id: string,
+    templateData: Partial<ServiceTemplate>
+  ): Promise<void> => {
+    const existing = templates.find((template) => template.id === id);
+    if (!existing) throw new Error('القالب غير موجود.');
+    const updatedTemplate = { ...existing, ...templateData };
+    await setDoc(doc(db, 'templates', id), updatedTemplate, { merge: true });
+    setTemplates((prev) => prev.map((template) => template.id === id ? updatedTemplate : template));
   };
 
-  const deleteTemplate = (id: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'templates', id)).catch((e) => console.warn(e));
+  const deleteTemplate = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'templates', id));
+    setTemplates((prev) => prev.filter((template) => template.id !== id));
   };
 
   // Media Library
