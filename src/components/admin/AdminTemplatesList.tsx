@@ -23,8 +23,9 @@ export const AdminTemplatesList: React.FC = () => {
         </div>
 
         <button
-          onClick={() => {
-            const newTmpl = createTemplate({
+          onClick={async () => {
+            try {
+              const newTmpl = await createTemplate({
               name_ar: 'قالب مواصفات مخصص جديد',
               name_en: 'New Custom Template',
               code: `TMPL_${Date.now().toString().slice(-4)}`,
@@ -51,8 +52,12 @@ export const AdminTemplatesList: React.FC = () => {
                   ],
                 },
               ],
-            });
-            setEditingTemplate(newTmpl);
+              });
+              setEditingTemplate(newTmpl);
+            } catch (error: any) {
+              console.error('Supabase template creation failed:', error);
+              alert(error?.message || 'تعذر إنشاء القالب.');
+            }
           }}
           className="bg-[#B9142D] hover:bg-[#930F23] text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition-colors"
         >
