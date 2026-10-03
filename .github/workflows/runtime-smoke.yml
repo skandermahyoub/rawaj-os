@@ -1,0 +1,75 @@
+name: Runtime Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: https://jidrhknvrctqzquyurxl.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_LaoMEVpm3JWm3qf2VKZuMQ_Bahe1udI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install app dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build production app
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run browser runtime smoke test
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/rawaj-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+            const errors = [];
+            page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
+            page.on('console', m => {
+              if (m.type() === 'error') errors.push('CONSOLE: ' + m.text());
+            });
+            const response = await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 45000 });
+            const rootText = (await page.locator('#root').innerText()).trim();
+            const bodyText = (await page.locator('body').innerText()).trim();
+            console.log('HTTP_STATUS=' + (response ? response.status() : 'NO_RESPONSE'));
+            console.log('ROOT_TEXT_LENGTH=' + rootText.length);
+            console.log('BODY_TEXT_SAMPLE=' + bodyText.slice(0, 300).replace(/\n/g, ' | '));
+            console.log('RUNTIME_ERRORS=' + JSON.stringify(errors));
+            await page.screenshot({ path: '/tmp/rawaj-runtime.png', fullPage: true });
+            await browser.close();
+            if (!response || response.status() >= 400 || rootText.length < 20 || errors.length) {
+              process.exit(1);
+            }
+          })().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
+          NODE
