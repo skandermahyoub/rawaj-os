@@ -239,6 +239,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
   const subOptionsScrollRef = useRef<HTMLDivElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const logoMigrationAttemptedRef = useRef(false);
 
   // Real, live operational metrics (zero fake data)
   const pendingQuotes = quoteRequests.filter((q) => q.status === 'new' || q.status === 'reviewing').length;
@@ -357,6 +358,32 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       }
     }
   }, [currentSubView]);
+
+  useEffect(() => {
+    const currentLogo = siteSettings.logo_url || '';
+    if (
+      !isAdminAuthenticated ||
+      logoMigrationAttemptedRef.current ||
+      !currentLogo.startsWith('data:image/')
+    ) {
+      return;
+    }
+
+    logoMigrationAttemptedRef.current = true;
+
+    void (async () => {
+      try {
+        const stored = await uploadDataUrlToRawajStorage(currentLogo, {
+          folder: 'branding',
+          fileName: 'rawaj-logo-migrated',
+        });
+        await updateSiteSettings({ logo_url: stored.publicUrl });
+      } catch (error) {
+        console.error('Legacy logo migration failed:', error);
+        logoMigrationAttemptedRef.current = false;
+      }
+    })();
+  }, [isAdminAuthenticated, siteSettings.logo_url, updateSiteSettings]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
