@@ -952,401 +952,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.warn('Supabase faq listener:', err.message));
 
-      // Contact Messages Listener
-      unsubContactMessages = onSnapshot(collection(db, 'contact_messages'), (snapshot) => {
-        {
-          const list: ContactFormMessage[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as ContactFormMessage);
-          });
-          list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          setContactMessages(list);
-          safeStorageSave(STORAGE_KEYS.CONTACT_MESSAGES, list);
-        }
-      }, (err) => console.warn('Supabase contact_messages listener:', err.message));
-
-      // Users Listener
-      unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-        {
-          const list: User[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as User);
-          });
-          setUsers(list);
-          safeStorageSave(STORAGE_KEYS.USERS, list);
-        }
-      }, (err) => console.warn('Supabase users listener:', err.message));
-
-      // Settings Listener
-      unsubSettings = onSnapshot(collection(db, 'settings'), (snapshot) => {
-        {
-          snapshot.forEach((docSnap) => {
-            if (docSnap.id === 'general') {
-              const cloud = docSnap.data() as SiteSettings;
-              setSiteSettings((prev) => {
-                const merged: SiteSettings = {
-                  ...prev,
-                  ...cloud,
-                  logo_url: cloud.logo_url || prev.logo_url || '',
-                  company_name_ar: cloud.company_name_ar || prev.company_name_ar || '',
-                  slogan_ar: cloud.slogan_ar || prev.slogan_ar || '',
-                  mobile_whatsapp: cloud.mobile_whatsapp || prev.mobile_whatsapp || '',
-                };
-                safeStorageSave(STORAGE_KEYS.SETTINGS, merged);
-                return merged;
-              });
-            }
-            if (docSnap.id === 'home_modules_order') {
-              const cloud = docSnap.data();
-              if (cloud && Array.isArray(cloud.configs)) {
-                setHomeModulesConfig(cloud.configs);
-                safeStorageSave(STORAGE_KEYS.HOME_MODULES, cloud.configs);
-              }
-            }
-            if (docSnap.id === 'theme_customizer') {
-              const cloud = docSnap.data() as ThemeCustomizerSettings;
-              if (cloud) {
-                setThemeSettings(cloud);
-                applyThemeToDocument(cloud);
-                safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, cloud);
-              }
-            }
-            if (docSnap.id === 'footer') {
-              const cloud = docSnap.data() as FooterSettings;
-              if (cloud) {
-                setFooterSettings(cloud);
-                safeStorageSave(STORAGE_KEYS.FOOTER, cloud);
-              }
-            }
-            if (docSnap.id === 'about_us' || docSnap.id === 'about_us_module') {
-              const cloud = docSnap.data() as AboutUsModuleData;
-              if (cloud) {
-                setAboutUsData(cloud);
-                safeStorageSave(STORAGE_KEYS.ABOUT_US, cloud);
-              }
-            }
-            if (docSnap.id === 'promo_module' || docSnap.id === 'promos') {
-              const cloud = docSnap.data() as PromoModuleSettings;
-              if (cloud && cloud.banners) {
-                setPromoSettings(cloud);
-                safeStorageSave(STORAGE_KEYS.PROMOS, cloud);
-              }
-            }
-            if (docSnap.id === 'hero_header') {
-              const cloud = docSnap.data() as HeroHeaderSettings;
-              if (cloud) {
-                setHeroHeaderSettings(cloud);
-                safeStorageSave(STORAGE_KEYS.HERO_HEADER, cloud);
-              }
-            }
-            if (docSnap.id === 'brands_display') {
-              const cloud = docSnap.data() as { mode?: BrandDisplayMode };
-              if (cloud?.mode) {
-                setBrandsDisplayMode(cloud.mode);
-                safeStorageSave(STORAGE_KEYS.BRANDS_MODE, cloud.mode);
-              }
-            }
-          });
-        }
-      }, (err) => console.warn('Supabase settings listener:', err.message));
-
-      // Design Tasks Listener
-      unsubDesignTasks = onSnapshot(collection(db, 'design_tasks'), (snapshot) => {
-        {
-          const list: DesignTask[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as DesignTask);
-          });
-          list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          setDesignTasks(list);
-        }
-      }, (err) => console.warn('Supabase design_tasks listener:', err.message));
-
-    } catch (e) {
-      console.warn('Supabase setup note:', e);
-    }
-
-    return () => {
-      if (unsubQuotes) unsubQuotes();
-      if (unsubServices) unsubServices();
-      if (unsubTemplates) unsubTemplates();
-      if (unsubPackages) unsubPackages();
-      if (unsubPortfolio) unsubPortfolio();
-      if (unsubBlog) unsubBlog();
-      if (unsubMedia) unsubMedia();
-      if (unsubSettings) unsubSettings();
-      if (unsubDesignTasks) unsubDesignTasks();
-      if (unsubHomeSlides) unsubHomeSlides();
-      if (unsubMarquee) unsubMarquee();
-      if (unsubFeatures) unsubFeatures();
-      if (unsubClientLogos) unsubClientLogos();
-      if (unsubTestimonials) unsubTestimonials();
-      if (unsubFaq) unsubFaq();
-      if (unsubContactMessages) unsubContactMessages();
-      if (unsubUsers) unsubUsers();
-      if (unsubDepartments) unsubDepartments();
-      if (unsubCategories) unsubCategories();
-      if (unsubSubcategories) unsubSubcategories();
-      if (unsubIndustrySectors) unsubIndustrySectors();
-    };
-  }, []);
-
-  // Initial catalog data is migrated once to Supabase; runtime code never self-seeds production data.
-  // Save changes to localStorage safely
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.SERVICES, services);
-  }, [services]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.TEMPLATES, templates);
-  }, [templates]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.CART, quoteItems);
-  }, [quoteItems]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.QUOTES, quoteRequests);
-  }, [quoteRequests]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.MEDIA, mediaItems);
-  }, [mediaItems]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.PACKAGES, packages);
-  }, [packages]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.PORTFOLIO, portfolioProjects);
-  }, [portfolioProjects]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.BLOG, blogPosts);
-  }, [blogPosts]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.SETTINGS, siteSettings);
-  }, [siteSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.USERS, users);
-  }, [users]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.HOME_SLIDES, homeSlides);
-  }, [homeSlides]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.MARQUEE, marqueeItems);
-  }, [marqueeItems]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.ABOUT_US, aboutUsData);
-  }, [aboutUsData]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.FEATURES, rawajFeatures);
-  }, [rawajFeatures]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.CLIENT_LOGOS, clientLogos);
-  }, [clientLogos]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.HERO_HEADER, heroHeaderSettings);
-  }, [heroHeaderSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.PROMOS, promoSettings);
-  }, [promoSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.FAQ, faqItems);
-  }, [faqItems]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.FOOTER, footerSettings);
-  }, [footerSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.HOME_MODULES, homeModulesConfig);
-  }, [homeModulesConfig]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, themeSettings);
-  }, [themeSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.CONTACT_MESSAGES, contactMessages);
-  }, [contactMessages]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.BRANDS_MODE, brandsDisplayMode);
-  }, [brandsDisplayMode]);
-
-  // Module 1: Hero Header settings
-  const updateHeroHeaderSettings = async (settings: Partial<HeroHeaderSettings>): Promise<void> => {
-    const updated = { ...heroHeaderSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'hero_header'), updated, { merge: true });
-    setHeroHeaderSettings(updated);
-    safeStorageSave(STORAGE_KEYS.HERO_HEADER, updated);
-  };
-
-  // Theme Customizer
-  const updateThemeSettings = async (settings: Partial<ThemeCustomizerSettings>): Promise<void> => {
-    const updated = { ...themeSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true });
-    setThemeSettings(updated);
-    applyThemeToDocument(updated);
-    safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, updated);
-  };
-
-  // Home Modules Config & Reordering
-  const persistHomeModules = async (configs: HomeModuleConfig[]): Promise<void> => {
-    await setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true });
-    setHomeModulesConfig(configs);
-    safeStorageSave(STORAGE_KEYS.HOME_MODULES, configs);
-  };
-
-  const updateHomeModulesConfig = async (configs: HomeModuleConfig[]): Promise<void> => {
-    await persistHomeModules(configs);
-  };
-
-  const toggleModuleVisibility = async (id: HomeModuleId): Promise<void> => {
-    const updated = homeModulesConfig.map((mod) => (
-      mod.id === id ? { ...mod, is_visible: !mod.is_visible } : mod
-    ));
-    await persistHomeModules(updated);
-  };
-
-  const reorderHomeModules = async (startIndex: number, endIndex: number): Promise<void> => {
-    const result = Array.from(homeModulesConfig);
-    const [removed] = result.splice(startIndex, 1);
-    if (!removed) return;
-    result.splice(endIndex, 0, removed);
-    const updated = result.map((item, index) => ({ ...item, sort_order: index + 1 }));
-    await persistHomeModules(updated);
-  };
-
-  const updateModuleLayout = async (id: HomeModuleId, layout_style: string): Promise<void> => {
-    const updated = homeModulesConfig.map((mod) => (
-      mod.id === id ? { ...mod, layout_style } : mod
-    ));
-    await persistHomeModules(updated);
-  };
-
-  // Promo Banners & Module
-  const updatePromoSettings = async (settings: Partial<PromoModuleSettings>): Promise<void> => {
-    const updated = { ...promoSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true });
-    setPromoSettings(updated);
-    safeStorageSave(STORAGE_KEYS.PROMOS, updated);
-  };
-
-  const addPromoBanner = async (banner: Omit<PromoBanner, 'id'>): Promise<void> => {
-    const id = `prm-${Date.now()}`;
-    const newBanner: PromoBanner = { ...banner, id };
-    await updatePromoSettings({ banners: [...promoSettings.banners, newBanner] });
-  };
-
-  const updatePromoBanner = async (id: string, banner: Partial<PromoBanner>): Promise<void> => {
-    const updatedBanners = promoSettings.banners.map((b) => (b.id === id ? { ...b, ...banner } : b));
-    await updatePromoSettings({ banners: updatedBanners });
-  };
-
-  const deletePromoBanner = async (id: string): Promise<void> => {
-    const updatedBanners = promoSettings.banners.filter((b) => b.id !== id);
-    await updatePromoSettings({ banners: updatedBanners });
-  };
-
-  // FAQ CRUD
-  const addFaqItem = async (item: Omit<GlobalFAQItem, 'id'>): Promise<void> => {
-    const id = `faq-${Date.now()}`;
-    const newItem: GlobalFAQItem = { ...item, id };
-    await setDoc(doc(db, 'faq', id), newItem);
-    setFaqItems((prev) => [...prev, newItem]);
-  };
-
-  const updateFaqItem = async (id: string, item: Partial<GlobalFAQItem>): Promise<void> => {
-    await setDoc(doc(db, 'faq', id), item, { merge: true });
-    setFaqItems((prev) => prev.map((f) => (f.id === id ? { ...f, ...item } : f)));
-  };
-
-  const deleteFaqItem = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'faq', id));
-    setFaqItems((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  // Contact Messages
+      // Contact Messages
   const submitContactMessage = async (data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>): Promise<void> => {
-    const id = `msg-${Date.now()}`;
+    const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newMsg: ContactFormMessage = {
       ...data,
       id,
       created_at: new Date().toISOString(),
       status: 'unread',
     };
+
+    await setDoc(doc(db, 'contact_messages', id), newMsg);
     setContactMessages((prev) => [newMsg, ...prev]);
-    try {
-      await setDoc(doc(db, 'contact_messages', id), newMsg);
-    } catch (e) {
-      console.error('Supabase contact message submit error:', e);
-      throw e;
-    }
   };
 
   const markContactMessageStatus = async (id: string, status: 'unread' | 'read' | 'replied'): Promise<void> => {
-    setContactMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status } : m))
-    );
-    await setDoc(doc(db, 'contact_messages', id), { status }, { merge: true }).catch((e) => console.warn(e));
+    await setDoc(doc(db, 'contact_messages', id), { status }, { merge: true });
+    setContactMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)));
   };
 
   const deleteContactMessage = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'contact_messages', id));
     setContactMessages((prev) => prev.filter((m) => m.id !== id));
-    await deleteDoc(doc(db, 'contact_messages', id)).catch((e) => console.warn(e));
   };
 
   // Footer Settings
   const updateFooterSettings = async (settings: Partial<FooterSettings>): Promise<void> => {
     const updated = { ...footerSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true });
     setFooterSettings(updated);
-    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.FOOTER, updated);
   };
 
   // Brands Mode
   const updateBrandsDisplayMode = async (mode: BrandDisplayMode): Promise<void> => {
+    await setDoc(doc(db, 'settings', 'brands_display'), { mode }, { merge: true });
     setBrandsDisplayMode(mode);
-    await setDoc(doc(db, 'settings', 'brands_display'), { mode }, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.BRANDS_MODE, mode);
   };
 
   // Testimonials Public Submit & Moderation
   const submitPublicTestimonial = async (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }): Promise<void> => {
-    const id = `test-${Date.now()}`;
+    const id = `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newTest: Testimonial = {
       ...data,
       id,
-      client_avatar_url: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80`,
-      status: 'pending', // Pending admin approval!
+      client_avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      status: 'pending',
       sort_order: testimonials.length + 1,
       is_active: false,
       created_at: new Date().toISOString(),
     };
+
+    await setDoc(doc(db, 'testimonials', id), newTest);
     setTestimonials((prev) => [newTest, ...prev]);
-    try {
-      await setDoc(doc(db, 'testimonials', id), newTest);
-    } catch (e) {
-      console.error('Supabase testimonial submit error:', e);
-      throw e;
-    }
   };
 
-  const updateTestimonialStatus = (id: string, status: 'approved' | 'pending' | 'rejected') => {
-    setTestimonials((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status, is_active: status === 'approved' } : t))
-    );
-    setDoc(doc(db, 'testimonials', id), { status, is_active: status === 'approved' }, { merge: true }).catch((e) => console.warn(e));
+  const updateTestimonialStatus = async (
+    id: string,
+    status: 'approved' | 'pending' | 'rejected'
+  ): Promise<void> => {
+    const patch = { status, is_active: status === 'approved' };
+    await setDoc(doc(db, 'testimonials', id), patch, { merge: true });
+    setTestimonials((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   };
 
   // Cart operations
