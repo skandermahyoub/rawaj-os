@@ -251,7 +251,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       icon: Briefcase,
       options: [
         { id: 'portfolio', label: 'معرض الأعمال والمشاريع', shortLabel: 'معرض المشاريع', desc: 'استعراض ونشر صور إنجازات وتجهيزات رواج', icon: Briefcase },
-        { id: 'media', label: 'مكتبة الصور واستوديو AI', shortLabel: 'مكتبة الصور', desc: 'تخزين الصور وتوليد صور إعلانية بالذكاء الاصطناعي', icon: Image },
+        { id: 'media', label: 'مكتبة الصور', shortLabel: 'مكتبة الصور', desc: 'رفع الصور وتنظيمها وحفظها في مكتبة الوسائط', icon: Image },
         { id: 'blog', label: 'دليل الخامات والمدونة', shortLabel: 'دليل الخامات', desc: 'مقالات إرشادية للعملاء حول الورق والتغليف والطباعة', icon: BookOpen },
         { id: 'faq', label: 'الأسئلة الشائعة والأجوبة', shortLabel: 'الأسئلة الشائعة', desc: 'إجابات الاستفسارات المتكررة لعملاء الوكالة', icon: HelpCircle },
       ]
