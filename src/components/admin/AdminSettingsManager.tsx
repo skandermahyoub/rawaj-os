@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Settings, Save, MapPin, Phone, MessageSquare, Mail, Clock, CheckCircle2, Image as ImageIcon, Upload, Trash2, Sparkles } from 'lucide-react';
-import { RawajLogo } from '../common/RawajLogo';
+import { BrandLogo } from '../common/BrandLogo';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminSettingsManager: React.FC = () => {
   const { siteSettings, updateSiteSettings } = useApp();
@@ -41,29 +42,41 @@ export const AdminSettingsManager: React.FC = () => {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const optimized = await optimizeImageFile(file, 800, 800, 0.9);
-        setLogoUrl(optimized.dataUrl);
-        updateSiteSettings({ logo_url: optimized.dataUrl });
-        setSavedToast(true);
-        setTimeout(() => setSavedToast(false), 2500);
-      } catch (err) {
-        console.error('Failed to optimize logo file:', err);
-      }
+    if (!file) return;
+
+    try {
+      const optimized = await optimizeImageFile(file, 800, 800, 0.9);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: 'branding',
+        fileName: 'rawaj-logo',
+      });
+      setLogoUrl(stored.publicUrl);
+      await updateSiteSettings({ logo_url: stored.publicUrl });
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+    } catch (err: any) {
+      console.error('Failed to upload logo:', err);
+      alert(err?.message || 'تعذر رفع الشعار.');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleRemoveLogo = () => {
-    setLogoUrl('');
-    updateSiteSettings({ logo_url: '' });
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 2500);
+  const handleRemoveLogo = async () => {
+    try {
+      await updateSiteSettings({ logo_url: '' });
+      setLogoUrl('');
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+    } catch (err: any) {
+      alert(err?.message || 'تعذر إزالة الشعار.');
+    }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSiteSettings({
+    try {
+      await updateSiteSettings({
       company_name_ar: companyNameAr,
       company_name_en: companyNameEn,
       slogan_ar: sloganAr,
@@ -75,13 +88,16 @@ export const AdminSettingsManager: React.FC = () => {
       email: email,
       address_ar: addressAr,
       working_hours_ar: workingHoursAr,
-      announcement_banner: {
-        enabled: announcementEnabled,
-        text_ar: announcementText,
-      },
-    });
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 2500);
+        announcement_banner: {
+          enabled: announcementEnabled,
+          text_ar: announcementText,
+        },
+      });
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+    } catch (err: any) {
+      alert(err?.message || 'تعذر حفظ الإعدادات.');
+    }
   };
 
   return (
@@ -166,15 +182,12 @@ export const AdminSettingsManager: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
                 {/* Visual Preview */}
                 <div className="w-16 h-16 rounded-xl bg-[#FAF8F5] dark:bg-[#12100F] border-2 border-brand-primary/40 flex items-center justify-center p-1.5 shrink-0 overflow-hidden shadow-2xs">
-                  {logoUrl ? (
-                    <img 
-                      src={logoUrl} 
-                      alt="شعار رواج" 
-                      className="w-full h-full object-contain" 
-                    />
-                  ) : (
-                    <RawajLogo className="w-full h-full object-contain" />
-                  )}
+                  <BrandLogo
+                    src={logoUrl}
+                    alt="شعار رواج"
+                    className="w-full h-full object-contain"
+                    fallbackClassName="w-full h-full object-contain"
+                  />
                 </div>
 
                 {/* Upload Actions & URL input */}
@@ -205,10 +218,7 @@ export const AdminSettingsManager: React.FC = () => {
                   <input
                     type="text"
                     value={logoUrl}
-                    onChange={(e) => {
-                      setLogoUrl(e.target.value);
-                      updateSiteSettings({ logo_url: e.target.value });
-                    }}
+                    onChange={(e) => setLogoUrl(e.target.value)}
                     placeholder="أو الصق رابط صورة الشعار مباشرة (URL)"
                     className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#383330] rounded-lg px-3 py-1.5 text-xs font-mono"
                   />
