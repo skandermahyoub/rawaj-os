@@ -11,6 +11,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { ImageUploadPicker } from '../common/ImageUploadPicker';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminHeaderHeroManager: React.FC = () => {
   const { heroHeaderSettings, updateHeroHeaderSettings, siteSettings, updateSiteSettings } = useApp();
@@ -33,30 +35,38 @@ export const AdminHeaderHeroManager: React.FC = () => {
     setLogoUrl(siteSettings.logo_url || '');
   }, [heroHeaderSettings, siteSettings]);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setLogoUrl(reader.result);
-          updateSiteSettings({ logo_url: reader.result });
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      const optimized = await optimizeImageFile(file, 900, 900, 0.9);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: 'branding',
+        fileName: 'rawaj-logo',
+      });
+      setLogoUrl(stored.publicUrl);
+      await updateSiteSettings({ logo_url: stored.publicUrl });
+    } catch (error: any) {
+      console.error('Supabase logo upload failed:', error);
+      alert(error?.message || 'تعذر رفع الشعار.');
     }
   };
 
-  const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setFormData((prev) => ({ ...prev, bg_image_url: reader.result as string }));
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      const optimized = await optimizeImageFile(file, 1920, 1200, 0.88);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: 'hero',
+        fileName: 'hero-background',
+      });
+      setFormData((prev) => ({ ...prev, bg_image_url: stored.publicUrl }));
+    } catch (error: any) {
+      console.error('Supabase hero background upload failed:', error);
+      alert(error?.message || 'تعذر رفع خلفية الهيدر.');
     }
   };
 
@@ -76,20 +86,27 @@ export const AdminHeaderHeroManager: React.FC = () => {
     }, 1000);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateHeroHeaderSettings({
-      ...formData,
-      company_name_ar: companyName,
-      slogan_ar: companySlogan,
-    });
-    updateSiteSettings({
-      company_name_ar: companyName,
-      slogan_ar: companySlogan,
-      logo_url: logoUrl,
-    });
-    setSavedNotice(true);
-    setTimeout(() => setSavedNotice(false), 3000);
+    try {
+      await Promise.all([
+        updateHeroHeaderSettings({
+          ...formData,
+          company_name_ar: companyName,
+          slogan_ar: companySlogan,
+        }),
+        updateSiteSettings({
+          company_name_ar: companyName,
+          slogan_ar: companySlogan,
+          logo_url: logoUrl,
+        }),
+      ]);
+      setSavedNotice(true);
+      setTimeout(() => setSavedNotice(false), 3000);
+    } catch (error: any) {
+      console.error('Supabase header settings save failed:', error);
+      alert(error?.message || 'تعذر حفظ إعدادات الهيدر.');
+    }
   };
 
   return (
