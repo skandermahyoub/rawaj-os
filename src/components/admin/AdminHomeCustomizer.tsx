@@ -37,34 +37,59 @@ export const AdminHomeCustomizer: React.FC<AdminHomeCustomizerProps> = ({ onNavi
   } = useApp();
 
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'visible' | 'hidden'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
-    reorderHomeModules(index, index - 1);
-    showNotice('تم تقديم ترتيب الموديول بنجاح');
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index === homeModulesConfig.length - 1) return;
-    reorderHomeModules(index, index + 1);
-    showNotice('تم تأخير ترتيب الموديول بنجاح');
-  };
-
-  const handleToggle = (id: HomeModuleId) => {
-    toggleModuleVisibility(id);
-    showNotice('تم تحديث حالة ظهور الموديول');
-  };
-
-  const handleSelectLayout = (id: HomeModuleId, layoutId: string) => {
-    updateModuleLayout(id, layoutId);
-    showNotice('تم تغيير طريقة عرض الموديول وتطبيقها على المتجر');
-  };
-
   const showNotice = (msg: string) => {
+    setSaveError(null);
     setSavedNotice(msg);
     setTimeout(() => setSavedNotice(null), 2500);
+  };
+
+  const showSaveError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : 'تعذر حفظ التغيير في قاعدة البيانات.';
+    setSavedNotice(null);
+    setSaveError(message);
+    setTimeout(() => setSaveError(null), 5000);
+  };
+
+  const handleMoveUp = async (index: number) => {
+    if (index === 0) return;
+    try {
+      await reorderHomeModules(index, index - 1);
+      showNotice('تم تقديم ترتيب الموديول وحفظه في Supabase');
+    } catch (error) {
+      showSaveError(error);
+    }
+  };
+
+  const handleMoveDown = async (index: number) => {
+    if (index === homeModulesConfig.length - 1) return;
+    try {
+      await reorderHomeModules(index, index + 1);
+      showNotice('تم تأخير ترتيب الموديول وحفظه في Supabase');
+    } catch (error) {
+      showSaveError(error);
+    }
+  };
+
+  const handleToggle = async (id: HomeModuleId) => {
+    try {
+      await toggleModuleVisibility(id);
+      showNotice('تم تحديث حالة ظهور الموديول وحفظها في Supabase');
+    } catch (error) {
+      showSaveError(error);
+    }
+  };
+
+  const handleSelectLayout = async (id: HomeModuleId, layoutId: string) => {
+    try {
+      await updateModuleLayout(id, layoutId);
+      showNotice('تم حفظ طريقة عرض الموديول في Supabase');
+    } catch (error) {
+      showSaveError(error);
+    }
   };
 
   const getModuleEditorSubView = (id: HomeModuleId) => {
@@ -152,6 +177,12 @@ export const AdminHomeCustomizer: React.FC<AdminHomeCustomizerProps> = ({ onNavi
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm flex items-center gap-2 animate-fade-in shadow-xs">
           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
           <span>{savedNotice}</span>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs sm:text-sm animate-fade-in shadow-xs">
+          لم يتم حفظ التغيير: {saveError}
         </div>
       )}
 
