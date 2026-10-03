@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="rawajBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1E1B1A" />
+      <stop offset="100%" stop-color="#0E0D0C" />
+    </radialGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="50%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#9A7B1C" />
+    </linearGradient>
+    <linearGradient id="crimsonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E01E37" />
+      <stop offset="50%" stop-color="#B9142D" />
+      <stop offset="100%" stop-color="#7A0A1B" />
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="110" fill="url(#rawajBg)" />
+  <!-- Outer Gold Border -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="url(#goldGrad)" stroke-width="4" opacity="0.6" />
+  <!-- Inner Shield -->
+  <circle cx="256" cy="256" r="190" fill="url(#crimsonGrad)" stroke="url(#goldGrad)" stroke-width="6" />
+  <!-- Arabesque Calligraphic Emblem for Rawaj -->
+  <path d="M 215,160 C 180,105 210,75 228,80 C 250,85 200,140 280,185 C 335,215 365,265 350,305 C 335,345 290,375 245,375 C 270,370 315,345 320,305 C 328,265 295,230 250,205 C 200,175 235,130 215,160 Z" fill="#FFFFFF" />
+  <path d="M 240,75 L 255,72 C 253,105 250,165 250,230 C 250,270 248,330 248,370 C 248,390 232,400 205,405 C 220,400 232,392 232,372 L 234,230 C 234,165 237,105 240,75 Z" fill="url(#goldGrad)" />
+  <circle cx="256" cy="305" r="14" fill="url(#goldGrad)" />
+  <!-- Brand text under emblem -->
+  <text x="256" y="440" font-family="'Noto Sans Arabic', sans-serif" font-size="34" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">رواج</text>
+</svg>

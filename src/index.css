@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: 'Tajawal', sans-serif;
+  --font-heading: 'Tajawal', sans-serif;
+}
+
+@layer base {
+  :root {
+    --bg-page: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --bg-surface-secondary: #F1F5F9;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --rawaj-primary: #B9142D;
+    --rawaj-primary-rgb: 185, 20, 45;
+    --rawaj-primary-hover: #930F23;
+    --rawaj-secondary: #0F172A;
+    --rawaj-accent: #D4AF37;
+    --rawaj-accent-rgb: 212, 175, 55;
+    --color-success: #16834A;
+    --color-warning: #B46A15;
+  }
+
+  .dark {
+    --bg-page: #0B0A09;
+    --bg-surface: #141211;
+    --bg-surface-secondary: #1F1C1A;
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --rawaj-primary: #DC2626;
+    --rawaj-primary-rgb: 220, 38, 38;
+    --rawaj-primary-hover: #B9142D;
+    --rawaj-secondary: #0B0A09;
+    --rawaj-accent: #E2E8F0;
+    --rawaj-accent-rgb: 226, 232, 240;
+    --color-success: #22C55E;
+    --color-warning: #EAB308;
+  }
+
+  body {
+    font-family: 'Tajawal', sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Tajawal', sans-serif;
+    letter-spacing: -0.015em;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D8D2C6;
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #3A3432;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B9142D;
+}
+
+/* Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Touch hit-area minimum 44px */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Soft transition */
+.transition-smooth {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Kinetic & Pulse Effects */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes shimmerSlow {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 5s ease-in-out infinite;
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #FFFFFF 0%, var(--rawaj-accent) 50%, #FFFFFF 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmerSlow 6s linear infinite;
+}
+
+/* Dynamic Brand Utility Classes */
+.bg-brand-primary { background-color: var(--rawaj-primary); }
+.bg-brand-hover { background-color: var(--rawaj-primary-hover); }
+.bg-brand-secondary { background-color: var(--rawaj-secondary); }
+.bg-brand-accent { background-color: var(--rawaj-accent); }
+
+.text-brand-primary { color: var(--rawaj-primary); }
+.text-brand-hover { color: var(--rawaj-primary-hover); }
+.text-brand-accent { color: var(--rawaj-accent); }
+
+.border-brand-primary { border-color: var(--rawaj-primary); }
+.border-brand-accent { border-color: var(--rawaj-accent); }
+
+.fill-brand-primary { fill: var(--rawaj-primary); }
+.fill-brand-accent { fill: var(--rawaj-accent); }
+
+.bg-brand-primary-10 { background-color: rgba(var(--rawaj-primary-rgb), 0.1); }
+.bg-brand-primary-15 { background-color: rgba(var(--rawaj-primary-rgb), 0.15); }
+.bg-brand-primary-20 { background-color: rgba(var(--rawaj-primary-rgb), 0.2); }
+
+.bg-brand-accent-10 { background-color: rgba(var(--rawaj-accent-rgb), 0.1); }
+.bg-brand-accent-15 { background-color: rgba(var(--rawaj-accent-rgb), 0.15); }
+.bg-brand-accent-20 { background-color: rgba(var(--rawaj-accent-rgb), 0.2); }
+
+.border-brand-primary-30 { border-color: rgba(var(--rawaj-primary-rgb), 0.3); }
+.border-brand-accent-30 { border-color: rgba(var(--rawaj-accent-rgb), 0.3); }
+
