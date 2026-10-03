@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { BrandLogo } from './BrandLogo';
+import { RawajLogo } from './RawajLogo';
 import { 
   MapPin, 
   Phone, 
