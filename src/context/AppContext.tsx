@@ -1650,132 +1650,145 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Rawaj Features CRUD
-  const addRawajFeature = (feat: Omit<RawajFeature, 'id'>) => {
-    const id = `feat-${Date.now()}`;
+  const addRawajFeature = async (feat: Omit<RawajFeature, 'id'>): Promise<void> => {
+    const id = `feat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newFeat: RawajFeature = { ...feat, id };
+    await setDoc(doc(db, 'features', id), newFeat);
     setRawajFeatures((prev) => [...prev, newFeat]);
-    setDoc(doc(db, 'features', id), newFeat).catch((e) => console.warn(e));
   };
-  const updateRawajFeature = (id: string, feat: Partial<RawajFeature>) => {
-    setRawajFeatures((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...feat } : f))
-    );
-    setDoc(doc(db, 'features', id), feat, { merge: true }).catch((e) => console.warn(e));
+
+  const updateRawajFeature = async (
+    id: string,
+    feat: Partial<RawajFeature>
+  ): Promise<void> => {
+    await setDoc(doc(db, 'features', id), feat, { merge: true });
+    setRawajFeatures((prev) => prev.map((f) => (f.id === id ? { ...f, ...feat } : f)));
   };
-  const deleteRawajFeature = (id: string) => {
+
+  const deleteRawajFeature = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'features', id));
     setRawajFeatures((prev) => prev.filter((f) => f.id !== id));
-    deleteDoc(doc(db, 'features', id)).catch((e) => console.warn(e));
   };
 
   // Client Logos CRUD
-  const addClientLogo = (cli: Omit<ClientLogo, 'id'>) => {
-    const id = `cli-${Date.now()}`;
+  const addClientLogo = async (cli: Omit<ClientLogo, 'id'>): Promise<void> => {
+    const id = `cli-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newCli: ClientLogo = { ...cli, id };
+    await setDoc(doc(db, 'client_logos', id), newCli);
     setClientLogos((prev) => [...prev, newCli]);
-    setDoc(doc(db, 'client_logos', id), newCli).catch((e) => console.warn(e));
   };
-  const updateClientLogo = (id: string, cli: Partial<ClientLogo>) => {
-    setClientLogos((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...cli } : c))
-    );
-    setDoc(doc(db, 'client_logos', id), cli, { merge: true }).catch((e) => console.warn(e));
+
+  const updateClientLogo = async (id: string, cli: Partial<ClientLogo>): Promise<void> => {
+    await setDoc(doc(db, 'client_logos', id), cli, { merge: true });
+    setClientLogos((prev) => prev.map((item) => (item.id === id ? { ...item, ...cli } : item)));
   };
-  const deleteClientLogo = (id: string) => {
-    setClientLogos((prev) => prev.filter((c) => c.id !== id));
-    deleteDoc(doc(db, 'client_logos', id)).catch((e) => console.warn(e));
+
+  const deleteClientLogo = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'client_logos', id));
+    setClientLogos((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Testimonials CRUD
-  const addTestimonial = (test: Omit<Testimonial, 'id'>) => {
-    const id = `test-${Date.now()}`;
+  const addTestimonial = async (test: Omit<Testimonial, 'id'>): Promise<void> => {
+    const id = `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newTest: Testimonial = { ...test, id };
+    await setDoc(doc(db, 'testimonials', id), newTest);
     setTestimonials((prev) => [...prev, newTest]);
-    setDoc(doc(db, 'testimonials', id), newTest).catch((e) => console.warn(e));
   };
-  const updateTestimonial = (id: string, test: Partial<Testimonial>) => {
-    setTestimonials((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...test } : t))
-    );
-    setDoc(doc(db, 'testimonials', id), test, { merge: true }).catch((e) => console.warn(e));
+
+  const updateTestimonial = async (id: string, test: Partial<Testimonial>): Promise<void> => {
+    await setDoc(doc(db, 'testimonials', id), test, { merge: true });
+    setTestimonials((prev) => prev.map((item) => (item.id === id ? { ...item, ...test } : item)));
   };
-  const deleteTestimonial = (id: string) => {
-    setTestimonials((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'testimonials', id)).catch((e) => console.warn(e));
+
+  const deleteTestimonial = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'testimonials', id));
+    setTestimonials((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Design Tasks & Proof Workflows CRUD
-  const createDesignTask = (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>): DesignTask => {
-    const id = `task-${Date.now()}`;
+  const createDesignTask = async (
+    taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>
+  ): Promise<DesignTask> => {
+    const id = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const now = new Date().toISOString();
     const newTask: DesignTask = {
       ...taskData,
       id,
       proof_versions: [],
       comments: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     };
+
+    await setDoc(doc(db, 'design_tasks', id), newTask);
     setDesignTasks((prev) => [newTask, ...prev]);
-    setDoc(doc(db, 'design_tasks', id), newTask).catch((e) => console.warn(e));
     return newTask;
   };
 
-  const updateDesignTask = (id: string, updates: Partial<DesignTask>) => {
-    setDesignTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t))
-    );
-    setDoc(doc(db, 'design_tasks', id), { ...updates, updated_at: new Date().toISOString() }, { merge: true }).catch((e) => console.warn(e));
+  const updateDesignTask = async (id: string, updates: Partial<DesignTask>): Promise<void> => {
+    const existing = designTasks.find((t) => t.id === id);
+    if (!existing) throw new Error('مهمة التصميم غير موجودة.');
+
+    const updatedTask: DesignTask = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    await setDoc(doc(db, 'design_tasks', id), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
   };
 
-  const addDesignProof = (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => {
-    const proofId = `proof-${Date.now()}`;
+  const addDesignProof = async (
+    taskId: string,
+    proof: Omit<DesignProofVersion, 'id' | 'created_at'>
+  ): Promise<void> => {
+    const task = designTasks.find((t) => t.id === taskId);
+    if (!task) throw new Error('مهمة التصميم غير موجودة.');
+
     const newProof: DesignProofVersion = {
       ...proof,
-      id: proofId,
+      id: `proof-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       created_at: new Date().toISOString(),
     };
-    setDesignTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const updatedProofs = [...t.proof_versions, newProof];
-        const updatedTask = {
-          ...t,
-          proof_versions: updatedProofs,
-          status: 'proof_submitted' as DesignTaskStatus,
-          updated_at: new Date().toISOString(),
-        };
-        setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true }).catch((e) => console.warn(e));
-        return updatedTask;
-      })
-    );
+    const updatedTask: DesignTask = {
+      ...task,
+      proof_versions: [...task.proof_versions, newProof],
+      status: 'proof_submitted' as DesignTaskStatus,
+      updated_at: new Date().toISOString(),
+    };
+
+    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
   };
 
-  const addDesignComment = (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => {
-    const commId = `comm-${Date.now()}`;
-    const newComm: DesignComment = {
+  const addDesignComment = async (
+    taskId: string,
+    comment: Omit<DesignComment, 'id' | 'created_at'>
+  ): Promise<void> => {
+    const task = designTasks.find((t) => t.id === taskId);
+    if (!task) throw new Error('مهمة التصميم غير موجودة.');
+
+    const newComment: DesignComment = {
       ...comment,
-      id: commId,
+      id: `comm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       created_at: new Date().toISOString(),
     };
-    setDesignTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const updatedComments = [...t.comments, newComm];
-        const newStatus = comment.status_change || t.status;
-        const updatedTask = {
-          ...t,
-          comments: updatedComments,
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        };
-        setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true }).catch((e) => console.warn(e));
-        return updatedTask;
-      })
-    );
+    const updatedTask: DesignTask = {
+      ...task,
+      comments: [...task.comments, newComment],
+      status: comment.status_change || task.status,
+      updated_at: new Date().toISOString(),
+    };
+
+    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
   };
 
-  const deleteDesignTask = (id: string) => {
+  const deleteDesignTask = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'design_tasks', id));
     setDesignTasks((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'design_tasks', id)).catch((e) => console.warn(e));
   };
 
   // Search Engine with synonym normalization
