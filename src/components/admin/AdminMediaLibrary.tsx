@@ -4,6 +4,7 @@ import { Image, Upload, Trash2, Copy, Check, Search, Tag, ExternalLink, Plus, Fo
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { VERIFIED_RAWAJ_ASSETS } from '../../data/rawajMediaAssets';
 import { AdminPromptsStudio } from './AdminPromptsStudio';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminMediaLibrary: React.FC = () => {
   const { mediaItems, uploadMedia, deleteMedia } = useApp();
@@ -40,10 +41,17 @@ export const AdminMediaLibrary: React.FC = () => {
       setIsUploading(true);
       try {
         const optimized = await optimizeImageFile(file, 1200, 1200, 0.85);
-        uploadMedia({
-          name: file.name.replace(/\.[^/.]+$/, ''),
-          url: optimized.dataUrl,
-          size_kb: optimized.sizeKb,
+        const cleanName = file.name.replace(/\.[^/.]+$/, '');
+        const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+          folder: newCategory || 'uploads',
+          fileName: cleanName || 'image',
+        });
+        await uploadMedia({
+          name: cleanName,
+          url: stored.publicUrl,
+          storage_path: stored.path,
+          mime_type: stored.mimeType,
+          size_kb: stored.sizeKb,
           category: newCategory,
           alt_ar: file.name,
         });
@@ -55,10 +63,10 @@ export const AdminMediaLibrary: React.FC = () => {
     }
   };
 
-  const handleAddDirectUrl = (e: React.FormEvent) => {
+  const handleAddDirectUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl.trim() || !newName.trim()) return;
-    uploadMedia({
+    await uploadMedia({
       name: newName,
       url: newUrl,
       size_kb: 250,
@@ -69,8 +77,8 @@ export const AdminMediaLibrary: React.FC = () => {
     setNewName('');
   };
 
-  const handleImportVerifiedAsset = (asset: typeof VERIFIED_RAWAJ_ASSETS[0]) => {
-    uploadMedia({
+  const handleImportVerifiedAsset = async (asset: typeof VERIFIED_RAWAJ_ASSETS[0]) => {
+    await uploadMedia({
       name: asset.title,
       url: asset.url,
       size_kb: 350,
