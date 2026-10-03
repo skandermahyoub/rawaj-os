@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { RawajLogo } from './RawajLogo';
+import { BrandLogo } from './BrandLogo';
 import { PWAInstallModal } from './PWAInstallModal';
 import { 
   Sun, 
@@ -40,7 +40,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCustomQuote }) => {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
-  const [imgError, setImgError] = useState(false);
   const cartCount = quoteItems.length;
   const isActive = (view: string) => currentRoute.view === view;
 
@@ -68,18 +67,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCustomQuote }) => {
               className="relative shrink-0 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl bg-white dark:bg-[#1A1816] border-2 border-[#E8E2D5] dark:border-[#2D2A26] shadow-xs hover:border-brand-primary transition-all overflow-hidden cursor-pointer"
               title="الصفحة الرئيسية - مطبعة رواج"
             >
-              {siteSettings.logo_url && !imgError ? (
-                <img
-                  src={siteSettings.logo_url}
-                  alt={siteSettings.company_name_ar || 'رواج'}
-                  className="w-full h-full object-cover p-0"
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="w-full h-full p-0 text-[#171616] dark:text-[#F7F5F0] flex items-center justify-center">
-                  <RawajLogo className="w-full h-full object-cover" />
-                </div>
-              )}
+              <BrandLogo
+                src={siteSettings.logo_url}
+                alt={siteSettings.company_name_ar || 'رواج'}
+                className="w-full h-full object-contain p-1"
+                fallbackClassName="w-full h-full object-contain"
+              />
             </button>
 
             {/* Agency Name & Subtitle */}
@@ -183,8 +176,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCustomQuote }) => {
               {/* Drawer Top Header */}
               <div className="p-6 border-b border-[#E8E2D5] dark:border-[#262320] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1A1816] border border-[#E8E2D5] dark:border-[#2D2A26] p-1 flex items-center justify-center">
-                    <RawajLogo className="h-7 w-auto" />
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1A1816] border border-[#E8E2D5] dark:border-[#2D2A26] p-1 flex items-center justify-center overflow-hidden">
+                    <BrandLogo
+                      src={siteSettings.logo_url}
+                      alt={siteSettings.company_name_ar || 'رواج'}
+                      className="w-full h-full object-contain"
+                      fallbackClassName="w-full h-full object-contain"
+                    />
                   </div>
                   <div>
                     <h3 className="font-heading font-black text-sm text-[#171616] dark:text-[#F7F5F0]">
