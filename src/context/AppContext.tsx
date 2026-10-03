@@ -130,7 +130,7 @@ interface AppContextType {
   isDarkMode: boolean;
   toggleTheme: () => void;
   themeSettings: ThemeCustomizerSettings;
-  updateThemeSettings: (settings: Partial<ThemeCustomizerSettings>) => void;
+  updateThemeSettings: (settings: Partial<ThemeCustomizerSettings>) => Promise<void>;
 
   // Cloud Sync State
   isCloudSynced: boolean;
@@ -157,10 +157,10 @@ interface AppContextType {
 
   // Home Page Section Customizer & Order
   homeModulesConfig: HomeModuleConfig[];
-  updateHomeModulesConfig: (configs: HomeModuleConfig[]) => void;
-  toggleModuleVisibility: (id: HomeModuleId) => void;
-  reorderHomeModules: (startIndex: number, endIndex: number) => void;
-  updateModuleLayout: (id: HomeModuleId, layout_style: string) => void;
+  updateHomeModulesConfig: (configs: HomeModuleConfig[]) => Promise<void>;
+  toggleModuleVisibility: (id: HomeModuleId) => Promise<void>;
+  reorderHomeModules: (startIndex: number, endIndex: number) => Promise<void>;
+  updateModuleLayout: (id: HomeModuleId, layout_style: string) => Promise<void>;
 
   // Module 1: Collapsible Hero Header
   heroHeaderSettings: HeroHeaderSettings;
@@ -205,16 +205,16 @@ interface AppContextType {
 
   // Module 10: Featured Offers & Promo Banners
   promoSettings: PromoModuleSettings;
-  updatePromoSettings: (settings: Partial<PromoModuleSettings>) => void;
-  addPromoBanner: (banner: Omit<PromoBanner, 'id'>) => void;
-  updatePromoBanner: (id: string, banner: Partial<PromoBanner>) => void;
-  deletePromoBanner: (id: string) => void;
+  updatePromoSettings: (settings: Partial<PromoModuleSettings>) => Promise<void>;
+  addPromoBanner: (banner: Omit<PromoBanner, 'id'>) => Promise<void>;
+  updatePromoBanner: (id: string, banner: Partial<PromoBanner>) => Promise<void>;
+  deletePromoBanner: (id: string) => Promise<void>;
 
   // Module 12: FAQ Accordion
   faqItems: GlobalFAQItem[];
-  addFaqItem: (item: Omit<GlobalFAQItem, 'id'>) => void;
-  updateFaqItem: (id: string, item: Partial<GlobalFAQItem>) => void;
-  deleteFaqItem: (id: string) => void;
+  addFaqItem: (item: Omit<GlobalFAQItem, 'id'>) => Promise<void>;
+  updateFaqItem: (id: string, item: Partial<GlobalFAQItem>) => Promise<void>;
+  deleteFaqItem: (id: string) => Promise<void>;
 
   // Module 13: Contact Messages & Inbox
   contactMessages: ContactFormMessage[];
@@ -1171,92 +1171,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Theme Customizer
-  const updateThemeSettings = (settings: Partial<ThemeCustomizerSettings>) => {
+  const updateThemeSettings = async (settings: Partial<ThemeCustomizerSettings>): Promise<void> => {
     const updated = { ...themeSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true });
     setThemeSettings(updated);
     applyThemeToDocument(updated);
-    setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, updated);
   };
 
   // Home Modules Config & Reordering
-  const updateHomeModulesConfig = (configs: HomeModuleConfig[]) => {
+  const persistHomeModules = async (configs: HomeModuleConfig[]): Promise<void> => {
+    await setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true });
     setHomeModulesConfig(configs);
     safeStorageSave(STORAGE_KEYS.HOME_MODULES, configs);
-    setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const toggleModuleVisibility = (id: HomeModuleId) => {
-    setHomeModulesConfig((prev) => {
-      const updated = prev.map((mod) => (mod.id === id ? { ...mod, is_visible: !mod.is_visible } : mod));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const updateHomeModulesConfig = async (configs: HomeModuleConfig[]): Promise<void> => {
+    await persistHomeModules(configs);
   };
 
-  const reorderHomeModules = (startIndex: number, endIndex: number) => {
-    setHomeModulesConfig((prev) => {
-      const result = Array.from(prev);
-      const [removed] = result.splice(startIndex, 1);
-      result.splice(endIndex, 0, removed);
-      const updated = result.map((item, index) => ({ ...item, sort_order: index + 1 }));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const toggleModuleVisibility = async (id: HomeModuleId): Promise<void> => {
+    const updated = homeModulesConfig.map((mod) =>
+      mod.id === id ? { ...mod, is_visible: !mod.is_visible } : mod
+    );
+    await persistHomeModules(updated);
   };
 
-  const updateModuleLayout = (id: HomeModuleId, layout_style: string) => {
-    setHomeModulesConfig((prev) => {
-      const updated = prev.map((mod) => (mod.id === id ? { ...mod, layout_style } : mod));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const reorderHomeModules = async (startIndex: number, endIndex: number): Promise<void> => {
+    const result = Array.from(homeModulesConfig);
+    const [removed] = result.splice(startIndex, 1);
+    if (!removed) return;
+    result.splice(endIndex, 0, removed);
+    await persistHomeModules(result.map((item, index) => ({ ...item, sort_order: index + 1 })));
+  };
+
+  const updateModuleLayout = async (id: HomeModuleId, layout_style: string): Promise<void> => {
+    const updated = homeModulesConfig.map((mod) =>
+      mod.id === id ? { ...mod, layout_style } : mod
+    );
+    await persistHomeModules(updated);
   };
 
   // Promo Banners & Module
-  const updatePromoSettings = (settings: Partial<PromoModuleSettings>) => {
+  const updatePromoSettings = async (settings: Partial<PromoModuleSettings>): Promise<void> => {
     const updated = { ...promoSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true });
     setPromoSettings(updated);
-    setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.PROMOS, updated);
   };
 
-  const addPromoBanner = (banner: Omit<PromoBanner, 'id'>) => {
-    const id = `prm-${Date.now()}`;
-    const newBanner: PromoBanner = { ...banner, id };
-    const updatedBanners = [...promoSettings.banners, newBanner];
-    updatePromoSettings({ banners: updatedBanners });
+  const addPromoBanner = async (banner: Omit<PromoBanner, 'id'>): Promise<void> => {
+    const newBanner: PromoBanner = { ...banner, id: `prm-${Date.now()}` };
+    await updatePromoSettings({ banners: [...promoSettings.banners, newBanner] });
   };
 
-  const updatePromoBanner = (id: string, banner: Partial<PromoBanner>) => {
-    const updatedBanners = promoSettings.banners.map((b) => (b.id === id ? { ...b, ...banner } : b));
-    updatePromoSettings({ banners: updatedBanners });
+  const updatePromoBanner = async (id: string, banner: Partial<PromoBanner>): Promise<void> => {
+    await updatePromoSettings({
+      banners: promoSettings.banners.map((item) => item.id === id ? { ...item, ...banner } : item),
+    });
   };
 
-  const deletePromoBanner = (id: string) => {
-    const updatedBanners = promoSettings.banners.filter((b) => b.id !== id);
-    updatePromoSettings({ banners: updatedBanners });
+  const deletePromoBanner = async (id: string): Promise<void> => {
+    await updatePromoSettings({ banners: promoSettings.banners.filter((item) => item.id !== id) });
   };
 
   // FAQ CRUD
-  const addFaqItem = (item: Omit<GlobalFAQItem, 'id'>) => {
-    const id = `faq-${Date.now()}`;
-    const newItem: GlobalFAQItem = { ...item, id };
+  const addFaqItem = async (item: Omit<GlobalFAQItem, 'id'>): Promise<void> => {
+    const newItem: GlobalFAQItem = { ...item, id: `faq-${Date.now()}` };
+    await setDoc(doc(db, 'faq', newItem.id), newItem);
     setFaqItems((prev) => [...prev, newItem]);
-    setDoc(doc(db, 'faq', id), newItem).catch((e) => console.warn(e));
   };
 
-  const updateFaqItem = (id: string, item: Partial<GlobalFAQItem>) => {
-    setFaqItems((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...item } : f))
-    );
-    setDoc(doc(db, 'faq', id), item, { merge: true }).catch((e) => console.warn(e));
+  const updateFaqItem = async (id: string, item: Partial<GlobalFAQItem>): Promise<void> => {
+    await setDoc(doc(db, 'faq', id), item, { merge: true });
+    setFaqItems((prev) => prev.map((entry) => entry.id === id ? { ...entry, ...item } : entry));
   };
 
-  const deleteFaqItem = (id: string) => {
-    setFaqItems((prev) => prev.filter((f) => f.id !== id));
-    deleteDoc(doc(db, 'faq', id)).catch((e) => console.warn(e));
+  const deleteFaqItem = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'faq', id));
+    setFaqItems((prev) => prev.filter((entry) => entry.id !== id));
   };
 
   // Contact Messages
