@@ -1476,69 +1476,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Packages CRUD
-  const createPackage = (pkg: Omit<Package, 'id'>) => {
-    const id = `pkg-${Date.now()}`;
+  const createPackage = async (pkg: Omit<Package, 'id'>): Promise<void> => {
+    const id = `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newPkg: Package = { ...pkg, id };
+    await setDoc(doc(db, 'packages', id), newPkg);
     setPackages((prev) => [...prev, newPkg]);
-    setDoc(doc(db, 'packages', id), newPkg).catch((e) => console.warn(e));
   };
-  const updatePackage = (id: string, pkg: Partial<Package>) => {
-    setPackages((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...pkg };
-        setDoc(doc(db, 'packages', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updatePackage = async (id: string, pkg: Partial<Package>): Promise<void> => {
+    const existing = packages.find((p) => p.id === id);
+    if (!existing) throw new Error('الباقة غير موجودة.');
+    const updated = { ...existing, ...pkg };
+    await setDoc(doc(db, 'packages', id), updated, { merge: true });
+    setPackages((prev) => prev.map((p) => (p.id === id ? updated : p)));
   };
-  const deletePackage = (id: string) => {
+
+  const deletePackage = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'packages', id));
     setPackages((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'packages', id)).catch((e) => console.warn(e));
   };
 
   // Blog CRUD
-  const createBlogPost = (post: Omit<BlogPost, 'id'>) => {
-    const id = `post-${Date.now()}`;
+  const createBlogPost = async (post: Omit<BlogPost, 'id'>): Promise<void> => {
+    const id = `post-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newPost: BlogPost = { ...post, id };
+    await setDoc(doc(db, 'blog', id), newPost);
     setBlogPosts((prev) => [newPost, ...prev]);
-    setDoc(doc(db, 'blog', id), newPost).catch((e) => console.warn(e));
   };
-  const updateBlogPost = (id: string, post: Partial<BlogPost>) => {
-    setBlogPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...post };
-        setDoc(doc(db, 'blog', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updateBlogPost = async (id: string, post: Partial<BlogPost>): Promise<void> => {
+    const existing = blogPosts.find((p) => p.id === id);
+    if (!existing) throw new Error('المقال غير موجود.');
+    const updated = { ...existing, ...post };
+    await setDoc(doc(db, 'blog', id), updated, { merge: true });
+    setBlogPosts((prev) => prev.map((p) => (p.id === id ? updated : p)));
   };
-  const deleteBlogPost = (id: string) => {
+
+  const deleteBlogPost = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'blog', id));
     setBlogPosts((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'blog', id)).catch((e) => console.warn(e));
   };
 
   // Portfolio CRUD
-  const createPortfolioProject = (proj: Omit<PortfolioProject, 'id'>) => {
-    const id = `proj-${Date.now()}`;
+  const createPortfolioProject = async (
+    proj: Omit<PortfolioProject, 'id'>
+  ): Promise<void> => {
+    const id = `proj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newProj: PortfolioProject = { ...proj, id };
+    await setDoc(doc(db, 'portfolio', id), newProj);
     setPortfolioProjects((prev) => [newProj, ...prev]);
-    setDoc(doc(db, 'portfolio', id), newProj).catch((e) => console.warn(e));
   };
-  const updatePortfolioProject = (id: string, proj: Partial<PortfolioProject>) => {
-    setPortfolioProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...proj };
-        setDoc(doc(db, 'portfolio', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updatePortfolioProject = async (
+    id: string,
+    proj: Partial<PortfolioProject>
+  ): Promise<void> => {
+    const existing = portfolioProjects.find((p) => p.id === id);
+    if (!existing) throw new Error('المشروع غير موجود.');
+    const updated = { ...existing, ...proj };
+    await setDoc(doc(db, 'portfolio', id), updated, { merge: true });
+    setPortfolioProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
   };
-  const deletePortfolioProject = (id: string) => {
+
+  const deletePortfolioProject = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'portfolio', id));
     setPortfolioProjects((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'portfolio', id)).catch((e) => console.warn(e));
   };
 
   // Taxonomy & Settings & Users
@@ -1589,51 +1591,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Home Slides CRUD
-  const addHomeSlide = (slide: Omit<HomeSlide, 'id'>) => {
-    const id = `slide-${Date.now()}`;
+  const addHomeSlide = async (slide: Omit<HomeSlide, 'id'>): Promise<void> => {
+    const id = `slide-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newSlide: HomeSlide = { ...slide, id };
+    await setDoc(doc(db, 'home_slides', id), newSlide);
     setHomeSlides((prev) => {
       const updated = [...prev, newSlide];
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
-    setDoc(doc(db, 'home_slides', id), newSlide).catch((e) => console.warn(e));
   };
 
-  const updateHomeSlide = (id: string, slide: Partial<HomeSlide>) => {
+  const updateHomeSlide = async (id: string, slide: Partial<HomeSlide>): Promise<void> => {
+    await setDoc(doc(db, 'home_slides', id), slide, { merge: true });
     setHomeSlides((prev) => {
       const updated = prev.map((s) => (s.id === id ? { ...s, ...slide } : s));
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
-    setDoc(doc(db, 'home_slides', id), slide, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const deleteHomeSlide = (id: string) => {
+  const deleteHomeSlide = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'home_slides', id));
     setHomeSlides((prev) => {
       const updated = prev.filter((s) => s.id !== id);
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
-    deleteDoc(doc(db, 'home_slides', id)).catch((e) => console.warn(e));
   };
 
   // Marquee CRUD
-  const addMarqueeItem = (item: Omit<MarqueeTickerItem, 'id'>) => {
-    const id = `mrq-${Date.now()}`;
+  const addMarqueeItem = async (item: Omit<MarqueeTickerItem, 'id'>): Promise<void> => {
+    const id = `mrq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newItem: MarqueeTickerItem = { ...item, id };
+    await setDoc(doc(db, 'marquee', id), newItem);
     setMarqueeItems((prev) => [...prev, newItem]);
-    setDoc(doc(db, 'marquee', id), newItem).catch((e) => console.warn(e));
   };
-  const updateMarqueeItem = (id: string, item: Partial<MarqueeTickerItem>) => {
-    setMarqueeItems((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...item } : m))
-    );
-    setDoc(doc(db, 'marquee', id), item, { merge: true }).catch((e) => console.warn(e));
+
+  const updateMarqueeItem = async (
+    id: string,
+    item: Partial<MarqueeTickerItem>
+  ): Promise<void> => {
+    await setDoc(doc(db, 'marquee', id), item, { merge: true });
+    setMarqueeItems((prev) => prev.map((m) => (m.id === id ? { ...m, ...item } : m)));
   };
-  const deleteMarqueeItem = (id: string) => {
+
+  const deleteMarqueeItem = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'marquee', id));
     setMarqueeItems((prev) => prev.filter((m) => m.id !== id));
-    deleteDoc(doc(db, 'marquee', id)).catch((e) => console.warn(e));
   };
 
   // About Us Update
