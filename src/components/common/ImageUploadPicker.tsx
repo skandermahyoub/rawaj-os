@@ -15,6 +15,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { VERIFIED_RAWAJ_ASSETS, VerifiedMediaAsset } from '../../data/rawajMediaAssets';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export interface ImageUploadPickerProps {
   value: string;
@@ -84,19 +85,27 @@ export const ImageUploadPicker: React.FC<ImageUploadPickerProps> = ({
       // 1. Optimize client-side to fast WebP/JPEG under 200KB
       const optimized = await optimizeImageFile(file, 1200, 1200, 0.85);
 
-      // 2. Automatically save into Rawaj Media Library so it persists
+      // 2. Store the optimized binary in Supabase Storage.
       const cleanName = file.name.replace(/\.[^/.]+$/, '');
-      uploadMedia({
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: defaultCategory || 'uploads',
+        fileName: cleanName || 'image',
+      });
+
+      // 3. Save only URL/path metadata in Postgres.
+      await uploadMedia({
         name: cleanName || 'صورة مرفوعة',
-        url: optimized.dataUrl,
-        size_kb: optimized.sizeKb,
+        url: stored.publicUrl,
+        storage_path: stored.path,
+        mime_type: stored.mimeType,
+        size_kb: stored.sizeKb,
         category: defaultCategory,
         alt_ar: cleanName,
       });
 
-      // 3. Apply as the current value
-      onChange(optimized.dataUrl);
-      setUploadSuccess(`تم رفع الصورة وتحسينها بنجاح (${optimized.sizeKb} ك.ب)`);
+      // 4. Apply the durable public URL as the current value.
+      onChange(stored.publicUrl);
+      setUploadSuccess(`تم رفع الصورة إلى Supabase Storage بنجاح (${stored.sizeKb} ك.ب)`);
       setTimeout(() => setUploadSuccess(null), 4000);
     } catch (err: any) {
       console.error('Upload optimization failed:', err);
