@@ -47,8 +47,6 @@ import {
   INITIAL_PORTFOLIO,
   INITIAL_BLOG_POSTS,
   INITIAL_SITE_SETTINGS,
-  INITIAL_USERS,
-  INITIAL_DESIGN_TASKS,
   INITIAL_MEDIA,
   INITIAL_HOME_SLIDES,
   INITIAL_MARQUEE_ITEMS,
@@ -62,19 +60,18 @@ import {
   INITIAL_FOOTER_SETTINGS,
   INITIAL_HOME_MODULES_CONFIG,
   INITIAL_THEME_SETTINGS,
-  INITIAL_CONTACT_MESSAGES,
   INITIAL_INDUSTRY_SECTORS
 } from '../data/initialData';
-import { db } from '../lib/firebase';
 import {
+  db,
   collection,
   doc,
   setDoc,
   deleteDoc,
   onSnapshot,
-  getDocs,
-  writeBatch,
-} from 'firebase/firestore';
+} from '../lib/cloudDb';
+import { supabase } from '../lib/supabase';
+import { removeRawajStorageObject } from '../lib/storage';
 
 export type NavigationTarget =
   | { view: 'home' }
@@ -124,20 +121,19 @@ export type NavigationTarget =
 interface AppContextType {
   // Designer Tasks & Workflows
   designTasks: DesignTask[];
-  createDesignTask: (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>) => DesignTask;
-  updateDesignTask: (id: string, updates: Partial<DesignTask>) => void;
-  addDesignProof: (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => void;
-  addDesignComment: (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => void;
-  deleteDesignTask: (id: string) => void;
+  createDesignTask: (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>) => Promise<DesignTask>;
+  updateDesignTask: (id: string, updates: Partial<DesignTask>) => Promise<void>;
+  addDesignProof: (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => Promise<void>;
+  addDesignComment: (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => Promise<void>;
+  deleteDesignTask: (id: string) => Promise<void>;
   // Theme & Visual Styles
   isDarkMode: boolean;
   toggleTheme: () => void;
   themeSettings: ThemeCustomizerSettings;
-  updateThemeSettings: (settings: Partial<ThemeCustomizerSettings>) => void;
+  updateThemeSettings: (settings: Partial<ThemeCustomizerSettings>) => Promise<void>;
 
   // Cloud Sync State
   isCloudSynced: boolean;
-  seedInitialDataToCloud: () => Promise<void>;
 
   // Navigation
   currentRoute: NavigationTarget;
@@ -158,78 +154,77 @@ interface AppContextType {
   siteSettings: SiteSettings;
   users: User[];
   currentUser: User;
-  setCurrentUser: (user: User) => void;
 
   // Home Page Section Customizer & Order
   homeModulesConfig: HomeModuleConfig[];
-  updateHomeModulesConfig: (configs: HomeModuleConfig[]) => void;
-  toggleModuleVisibility: (id: HomeModuleId) => void;
-  reorderHomeModules: (startIndex: number, endIndex: number) => void;
-  updateModuleLayout: (id: HomeModuleId, layout_style: string) => void;
+  updateHomeModulesConfig: (configs: HomeModuleConfig[]) => Promise<void>;
+  toggleModuleVisibility: (id: HomeModuleId) => Promise<void>;
+  reorderHomeModules: (startIndex: number, endIndex: number) => Promise<void>;
+  updateModuleLayout: (id: HomeModuleId, layout_style: string) => Promise<void>;
 
   // Module 1: Collapsible Hero Header
   heroHeaderSettings: HeroHeaderSettings;
-  updateHeroHeaderSettings: (settings: Partial<HeroHeaderSettings>) => void;
+  updateHeroHeaderSettings: (settings: Partial<HeroHeaderSettings>) => Promise<void>;
 
   // Module 2: Cinematic Slider
   homeSlides: HomeSlide[];
-  addHomeSlide: (slide: Omit<HomeSlide, 'id'>) => void;
-  updateHomeSlide: (id: string, slide: Partial<HomeSlide>) => void;
-  deleteHomeSlide: (id: string) => void;
+  addHomeSlide: (slide: Omit<HomeSlide, 'id'>) => Promise<void>;
+  updateHomeSlide: (id: string, slide: Partial<HomeSlide>) => Promise<void>;
+  deleteHomeSlide: (id: string) => Promise<void>;
 
   // Module 3: Marquee News Ticker
   marqueeItems: MarqueeTickerItem[];
-  addMarqueeItem: (item: Omit<MarqueeTickerItem, 'id'>) => void;
-  updateMarqueeItem: (id: string, item: Partial<MarqueeTickerItem>) => void;
-  deleteMarqueeItem: (id: string) => void;
+  addMarqueeItem: (item: Omit<MarqueeTickerItem, 'id'>) => Promise<void>;
+  updateMarqueeItem: (id: string, item: Partial<MarqueeTickerItem>) => Promise<void>;
+  deleteMarqueeItem: (id: string) => Promise<void>;
 
   // Module 4: About Us Mini-Module
   aboutUsData: AboutUsModuleData;
-  updateAboutUsData: (data: Partial<AboutUsModuleData>) => void;
+  updateAboutUsData: (data: Partial<AboutUsModuleData>) => Promise<void>;
 
   // Module 5: Features / Why Choose Us
   rawajFeatures: RawajFeature[];
-  addRawajFeature: (feat: Omit<RawajFeature, 'id'>) => void;
-  updateRawajFeature: (id: string, feat: Partial<RawajFeature>) => void;
-  deleteRawajFeature: (id: string) => void;
+  addRawajFeature: (feat: Omit<RawajFeature, 'id'>) => Promise<void>;
+  updateRawajFeature: (id: string, feat: Partial<RawajFeature>) => Promise<void>;
+  deleteRawajFeature: (id: string) => Promise<void>;
 
   // Module 8 & 9: Brands & Testimonials
   clientLogos: ClientLogo[];
   brandsDisplayMode: BrandDisplayMode;
-  updateBrandsDisplayMode: (mode: BrandDisplayMode) => void;
-  addClientLogo: (cli: Omit<ClientLogo, 'id'>) => void;
-  updateClientLogo: (id: string, cli: Partial<ClientLogo>) => void;
-  deleteClientLogo: (id: string) => void;
+  updateBrandsDisplayMode: (mode: BrandDisplayMode) => Promise<void>;
+  addClientLogo: (cli: Omit<ClientLogo, 'id'>) => Promise<void>;
+  updateClientLogo: (id: string, cli: Partial<ClientLogo>) => Promise<void>;
+  deleteClientLogo: (id: string) => Promise<void>;
 
   testimonials: Testimonial[];
-  addTestimonial: (test: Omit<Testimonial, 'id'>) => void;
-  updateTestimonial: (id: string, test: Partial<Testimonial>) => void;
-  deleteTestimonial: (id: string) => void;
-  submitPublicTestimonial: (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }) => void;
-  updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => void;
+  addTestimonial: (test: Omit<Testimonial, 'id'>) => Promise<void>;
+  updateTestimonial: (id: string, test: Partial<Testimonial>) => Promise<void>;
+  deleteTestimonial: (id: string) => Promise<void>;
+  submitPublicTestimonial: (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }) => Promise<void>;
+  updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => Promise<void>;
 
   // Module 10: Featured Offers & Promo Banners
   promoSettings: PromoModuleSettings;
-  updatePromoSettings: (settings: Partial<PromoModuleSettings>) => void;
-  addPromoBanner: (banner: Omit<PromoBanner, 'id'>) => void;
-  updatePromoBanner: (id: string, banner: Partial<PromoBanner>) => void;
-  deletePromoBanner: (id: string) => void;
+  updatePromoSettings: (settings: Partial<PromoModuleSettings>) => Promise<void>;
+  addPromoBanner: (banner: Omit<PromoBanner, 'id'>) => Promise<void>;
+  updatePromoBanner: (id: string, banner: Partial<PromoBanner>) => Promise<void>;
+  deletePromoBanner: (id: string) => Promise<void>;
 
   // Module 12: FAQ Accordion
   faqItems: GlobalFAQItem[];
-  addFaqItem: (item: Omit<GlobalFAQItem, 'id'>) => void;
-  updateFaqItem: (id: string, item: Partial<GlobalFAQItem>) => void;
-  deleteFaqItem: (id: string) => void;
+  addFaqItem: (item: Omit<GlobalFAQItem, 'id'>) => Promise<void>;
+  updateFaqItem: (id: string, item: Partial<GlobalFAQItem>) => Promise<void>;
+  deleteFaqItem: (id: string) => Promise<void>;
 
   // Module 13: Contact Messages & Inbox
   contactMessages: ContactFormMessage[];
-  submitContactMessage: (data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>) => void;
-  markContactMessageStatus: (id: string, status: 'unread' | 'read' | 'replied') => void;
-  deleteContactMessage: (id: string) => void;
+  submitContactMessage: (data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>) => Promise<void>;
+  markContactMessageStatus: (id: string, status: 'unread' | 'read' | 'replied') => Promise<void>;
+  deleteContactMessage: (id: string) => Promise<void>;
 
   // Module 14: Global Footer Settings
   footerSettings: FooterSettings;
-  updateFooterSettings: (settings: Partial<FooterSettings>) => void;
+  updateFooterSettings: (settings: Partial<FooterSettings>) => Promise<void>;
 
   // Quote Cart
   quoteItems: QuoteItem[];
@@ -241,42 +236,42 @@ interface AppContextType {
 
   // Quote Requests (Admin)
   quoteRequests: QuoteRequest[];
-  updateQuoteStatus: (quoteId: string, newStatus: QuoteStatus, internalNotes?: string) => void;
-  assignQuoteSalesperson: (quoteId: string, salespersonId: string) => void;
-  updateQuoteNotes: (quoteId: string, internalNotes?: string, supplierNotes?: string) => void;
+  updateQuoteStatus: (quoteId: string, newStatus: QuoteStatus, internalNotes?: string) => Promise<void>;
+  assignQuoteSalesperson: (quoteId: string, salespersonId: string) => Promise<void>;
+  updateQuoteNotes: (quoteId: string, internalNotes?: string, supplierNotes?: string) => Promise<void>;
 
   // Service CRUD (Admin)
-  createService: (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => Service;
-  updateService: (id: string, serviceData: Partial<Service>) => void;
-  deleteService: (id: string) => void;
-  duplicateService: (id: string) => Service;
+  createService: (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => Promise<Service>;
+  updateService: (id: string, serviceData: Partial<Service>) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
+  duplicateService: (id: string) => Promise<Service>;
 
   // Template CRUD (Admin)
-  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => ServiceTemplate;
-  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => void;
-  deleteTemplate: (id: string) => void;
+  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => Promise<ServiceTemplate>;
+  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
 
   // Media Library
-  uploadMedia: (fileData: { name: string; url: string; size_kb: number; category?: string; alt_ar?: string }) => MediaItem;
-  deleteMedia: (id: string) => void;
+  uploadMedia: (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }) => Promise<MediaItem>;
+  deleteMedia: (id: string) => Promise<void>;
 
   // Packages & Portfolio & Blog CRUD
-  createPackage: (pkg: Omit<Package, 'id'>) => void;
-  updatePackage: (id: string, pkg: Partial<Package>) => void;
-  deletePackage: (id: string) => void;
+  createPackage: (pkg: Omit<Package, 'id'>) => Promise<void>;
+  updatePackage: (id: string, pkg: Partial<Package>) => Promise<void>;
+  deletePackage: (id: string) => Promise<void>;
 
-  createBlogPost: (post: Omit<BlogPost, 'id'>) => void;
-  updateBlogPost: (id: string, post: Partial<BlogPost>) => void;
-  deleteBlogPost: (id: string) => void;
+  createBlogPost: (post: Omit<BlogPost, 'id'>) => Promise<void>;
+  updateBlogPost: (id: string, post: Partial<BlogPost>) => Promise<void>;
+  deleteBlogPost: (id: string) => Promise<void>;
 
-  createPortfolioProject: (proj: Omit<PortfolioProject, 'id'>) => void;
-  updatePortfolioProject: (id: string, proj: Partial<PortfolioProject>) => void;
-  deletePortfolioProject: (id: string) => void;
+  createPortfolioProject: (proj: Omit<PortfolioProject, 'id'>) => Promise<void>;
+  updatePortfolioProject: (id: string, proj: Partial<PortfolioProject>) => Promise<void>;
+  deletePortfolioProject: (id: string) => Promise<void>;
 
   // Taxonomy & Settings & Users
-  updateSiteSettings: (settings: Partial<SiteSettings>) => void;
-  addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
-  deleteUser: (userId: string) => boolean;
+  updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
+  addUser: (user: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
+  deleteUser: (userId: string) => Promise<boolean>;
 
   // Search Engine
   searchServices: (query: string) => Service[];
@@ -348,6 +343,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
+  const [authRevision, setAuthRevision] = useState(0);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -361,56 +357,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const toggleTheme = () => setIsDarkMode((prev) => !prev);
 
-  // Safe localStorage helpers
+  // Local storage is reserved for small device-local preferences and the quote cart.
   function safeStorageLoad<T>(key: string, fallback: T): T {
     try {
       const saved = localStorage.getItem(key);
       if (!saved || saved === 'undefined' || saved === 'null') return fallback;
       const parsed = JSON.parse(saved);
-      if (parsed === null || parsed === undefined) return fallback;
-      return parsed;
+      return parsed === null || parsed === undefined ? fallback : parsed;
     } catch {
       return fallback;
     }
   }
 
-  function safeStorageSave(key: string, value: any): boolean {
+  function safeStorageSave(key: string, value: unknown): void {
     try {
-      const serialized = typeof value === 'string' ? value : JSON.stringify(value);
-      localStorage.setItem(key, serialized);
-      return true;
-    } catch (err: any) {
-      console.warn(`[Storage] Quota exceeded or error saving "${key}":`, err?.message || err);
-      try {
-        // Clear non-critical bulky cached collections from localStorage
-        const nonCriticalKeys = [
-          STORAGE_KEYS.MEDIA,
-          STORAGE_KEYS.PORTFOLIO,
-          STORAGE_KEYS.BLOG,
-          STORAGE_KEYS.FAQ,
-          STORAGE_KEYS.TESTIMONIALS,
-          STORAGE_KEYS.FEATURES,
-          STORAGE_KEYS.CLIENT_LOGOS,
-        ];
-        nonCriticalKeys.forEach((k) => {
-          if (k !== key) localStorage.removeItem(k);
-        });
-
-        // Clear any leftover firestore target keys
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-          const lKey = localStorage.key(i);
-          if (lKey && (lKey.startsWith('firestore_') || lKey.startsWith('rawaj_temp_'))) {
-            localStorage.removeItem(lKey);
-          }
-        }
-
-        const serialized = typeof value === 'string' ? value : JSON.stringify(value);
-        localStorage.setItem(key, serialized);
-        return true;
-      } catch {
-        // Ignore gracefully without throwing or breaking React execution
-        return false;
-      }
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.warn('[Storage] Unable to save local preference:', error);
     }
   }
 
@@ -422,183 +385,158 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // State initialization with localStorage fallback
-  const [departments] = useState<Department[]>(INITIAL_DEPARTMENTS);
-  const [categories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [subcategories] = useState<Subcategory[]>([]);
-  const [industrySectors] = useState<IndustrySector[]>(INITIAL_INDUSTRY_SECTORS);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [industrySectors, setIndustrySectors] = useState<IndustrySector[]>([]);
 
   const getIndustrySectorById = (id: string) => {
     return industrySectors.find((s) => s.id === id || s.slug === id);
   };
 
-  const [templates, setTemplates] = useState<ServiceTemplate[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.TEMPLATES, INITIAL_TEMPLATES);
-  });
+  const [templates, setTemplates] = useState<ServiceTemplate[]>([]);
 
-  const [services, setServices] = useState<Service[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SERVICES);
-    if (saved) {
-      try {
-        const parsed: Service[] = JSON.parse(saved);
-        if (!Array.isArray(parsed)) return INITIAL_SERVICES;
-        // Merge in any newly added services from INITIAL_SERVICES that aren't yet in local cache
-        const existingIds = new Set(parsed.map((s) => s.id));
-        const missingNewServices = INITIAL_SERVICES.filter((s) => !existingIds.has(s.id));
-        const merged = [...parsed, ...missingNewServices];
+  const [services, setServices] = useState<Service[]>([]);
 
-        // Self-heal any broken image URLs from old caches
-        return merged.map((s: Service) => {
-          const init = INITIAL_SERVICES.find((is) => is.id === s.id);
-          if (init && (s.hero_image.includes('1554415707') || !s.hero_image)) {
-            return { ...s, hero_image: init.hero_image, gallery: init.gallery };
-          }
-          return s;
-        });
-      } catch (e) {
-        return INITIAL_SERVICES;
+  const [packages, setPackages] = useState<Package[]>([]);
+
+  const [portfolioProjects, setPortfolioProjects] = useState<PortfolioProject[]>([]);
+
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(INITIAL_SITE_SETTINGS);
+
+  const [users, setUsers] = useState<User[]>([]);
+
+  const [currentUser, setCurrentUser] = useState<User>(() => ({
+    id: 'anonymous',
+    name: 'غير مسجل',
+    email: '',
+    role: 'editor',
+    createdAt: new Date(0).toISOString(),
+  }));
+
+  useEffect(() => {
+    let active = true;
+
+    const syncAuthenticatedUser = async (authUserId?: string) => {
+      if (!authUserId) {
+        if (active) {
+          setCurrentUser({
+            id: 'anonymous',
+            name: 'غير مسجل',
+            email: '',
+            role: 'editor',
+            createdAt: new Date(0).toISOString(),
+          });
+          setUsers([]);
+          setQuoteRequests([]);
+          setContactMessages([]);
+          setDesignTasks([]);
+        }
+        return;
       }
-    }
-    return INITIAL_SERVICES;
-  });
 
-  const [packages, setPackages] = useState<Package[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PACKAGES);
-    if (saved) {
-      try {
-        const parsed: Package[] = JSON.parse(saved);
-        if (!Array.isArray(parsed)) return INITIAL_PACKAGES;
-        const initMap = new Map(INITIAL_PACKAGES.map((p) => [p.id, p]));
-        const merged = parsed.map((p) => {
-          const init = initMap.get(p.id);
-          return init ? { ...init, ...p, items_breakdown: p.items_breakdown || init.items_breakdown, target_sector_ar: p.target_sector_ar || init.target_sector_ar } : p;
-        });
-        const existingIds = new Set(merged.map((p) => p.id));
-        const missingNewPackages = INITIAL_PACKAGES.filter((p) => !existingIds.has(p.id));
-        return [...merged, ...missingNewPackages];
-      } catch (e) {
-        return INITIAL_PACKAGES;
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, role, avatar_url, phone, created_at')
+        .eq('id', authUserId)
+        .single();
+
+      if (error) {
+        console.error('Supabase profile sync failed:', error);
+        return;
       }
-    }
-    return INITIAL_PACKAGES;
-  });
 
-  const [portfolioProjects, setPortfolioProjects] = useState<PortfolioProject[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.PORTFOLIO, INITIAL_PORTFOLIO);
-  });
+      const mappedUser: User = {
+        id: profile.id,
+        name: profile.name || profile.email || 'مستخدم',
+        email: profile.email || '',
+        role: profile.role as User['role'],
+        avatar: profile.avatar_url || undefined,
+        phone: profile.phone || undefined,
+        createdAt: profile.created_at,
+        isOwnerProtected: profile.role === 'owner',
+      };
 
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.BLOG, INITIAL_BLOG_POSTS);
-  });
+      if (!active) return;
+      setCurrentUser(mappedUser);
 
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.MEDIA, INITIAL_MEDIA);
-  });
+      const { data: visibleProfiles, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, name, email, role, avatar_url, phone, created_at');
 
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
-    return safeStorageLoad(STORAGE_KEYS.SETTINGS, INITIAL_SITE_SETTINGS);
-  });
+      if (!usersError && visibleProfiles) {
+        const mappedUsers: User[] = visibleProfiles.map((row) => ({
+          id: row.id,
+          name: row.name || row.email || 'مستخدم',
+          email: row.email || '',
+          role: row.role as User['role'],
+          avatar: row.avatar_url || undefined,
+          phone: row.phone || undefined,
+          createdAt: row.created_at,
+          isOwnerProtected: row.role === 'owner',
+        }));
+        setUsers(mappedUsers);
+      } else {
+        setUsers([mappedUser]);
+      }
+    };
 
-  const [users, setUsers] = useState<User[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.USERS, INITIAL_USERS);
-  });
+    void supabase.auth.getSession().then(async ({ data }) => {
+      await syncAuthenticatedUser(data.session?.user.id);
+      if (active) setAuthRevision((value) => value + 1);
+    });
 
-  const [currentUser, setCurrentUser] = useState<User>(() => (users && users.length > 0 ? users[0] : INITIAL_USERS[0]));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTimeout(async () => {
+        await syncAuthenticatedUser(session?.user.id);
+        if (active) setAuthRevision((value) => value + 1);
+      }, 0);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>(() => {
     return safeStorageLoad(STORAGE_KEYS.CART, []);
   });
 
-  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.QUOTES, []);
-  });
+  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
 
   // Home Modules State
-  const [homeSlides, setHomeSlides] = useState<HomeSlide[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.HOME_SLIDES, INITIAL_HOME_SLIDES);
-  });
+  const [homeSlides, setHomeSlides] = useState<HomeSlide[]>([]);
 
-  const [marqueeItems, setMarqueeItems] = useState<MarqueeTickerItem[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.MARQUEE, INITIAL_MARQUEE_ITEMS);
-  });
+  const [marqueeItems, setMarqueeItems] = useState<MarqueeTickerItem[]>([]);
 
-  const [aboutUsData, setAboutUsData] = useState<AboutUsModuleData>(() => {
-    return safeStorageLoad(STORAGE_KEYS.ABOUT_US, INITIAL_ABOUT_US_DATA);
-  });
+  const [aboutUsData, setAboutUsData] = useState<AboutUsModuleData>(INITIAL_ABOUT_US_DATA);
 
-  const [rawajFeatures, setRawajFeatures] = useState<RawajFeature[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.FEATURES, INITIAL_RAWAJ_FEATURES);
-  });
+  const [rawajFeatures, setRawajFeatures] = useState<RawajFeature[]>([]);
 
-  const [clientLogos, setClientLogos] = useState<ClientLogo[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.CLIENT_LOGOS, INITIAL_CLIENT_LOGOS);
-  });
+  const [clientLogos, setClientLogos] = useState<ClientLogo[]>([]);
 
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.TESTIMONIALS, INITIAL_TESTIMONIALS);
-  });
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
-  const [heroHeaderSettings, setHeroHeaderSettings] = useState<HeroHeaderSettings>(() => {
-    return safeStorageLoad(STORAGE_KEYS.HERO_HEADER, INITIAL_HERO_HEADER_SETTINGS);
-  });
+  const [heroHeaderSettings, setHeroHeaderSettings] = useState<HeroHeaderSettings>(INITIAL_HERO_HEADER_SETTINGS);
 
-  const [promoSettings, setPromoSettings] = useState<PromoModuleSettings>(() => {
-    return safeStorageLoad(STORAGE_KEYS.PROMOS, INITIAL_PROMO_SETTINGS);
-  });
+  const [promoSettings, setPromoSettings] = useState<PromoModuleSettings>(INITIAL_PROMO_SETTINGS);
 
-  const [faqItems, setFaqItems] = useState<GlobalFAQItem[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.FAQ, INITIAL_FAQ_ITEMS);
-  });
+  const [faqItems, setFaqItems] = useState<GlobalFAQItem[]>([]);
 
-  const [footerSettings, setFooterSettings] = useState<FooterSettings>(() => {
-    return safeStorageLoad(STORAGE_KEYS.FOOTER, INITIAL_FOOTER_SETTINGS);
-  });
+  const [footerSettings, setFooterSettings] = useState<FooterSettings>(INITIAL_FOOTER_SETTINGS);
 
-  const [homeModulesConfig, setHomeModulesConfig] = useState<HomeModuleConfig[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.HOME_MODULES);
-    if (!saved) return INITIAL_HOME_MODULES_CONFIG;
-    try {
-      const parsed: HomeModuleConfig[] = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return INITIAL_HOME_MODULES_CONFIG;
-      return parsed.map((mod) => {
-        const init = INITIAL_HOME_MODULES_CONFIG.find((i) => i.id === mod.id);
-        return {
-          ...mod,
-          badge_ar: mod.badge_ar || init?.badge_ar || '',
-          layout_style: mod.layout_style || init?.layout_style || init?.available_layouts?.[0]?.id,
-          available_layouts: init?.available_layouts || [],
-        };
-      });
-    } catch {
-      return INITIAL_HOME_MODULES_CONFIG;
-    }
-  });
+  const [homeModulesConfig, setHomeModulesConfig] = useState<HomeModuleConfig[]>(INITIAL_HOME_MODULES_CONFIG);
 
-  const [themeSettings, setThemeSettings] = useState<ThemeCustomizerSettings>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.THEME_CUSTOM);
-    if (!saved) return INITIAL_THEME_SETTINGS;
-    try {
-      const parsed = JSON.parse(saved);
-      return {
-        ...INITIAL_THEME_SETTINGS,
-        ...parsed,
-        primary_color: parsed.primary_color || INITIAL_THEME_SETTINGS.primary_color,
-        primary_hover: parsed.primary_hover || INITIAL_THEME_SETTINGS.primary_hover,
-        secondary_bg: parsed.secondary_bg || INITIAL_THEME_SETTINGS.secondary_bg,
-        accent_color: parsed.accent_color || parsed.accent_gold || INITIAL_THEME_SETTINGS.accent_color,
-        card_surface_style: parsed.card_surface_style || parsed.card_surface || INITIAL_THEME_SETTINGS.card_surface_style,
-        background_pattern: parsed.background_pattern || INITIAL_THEME_SETTINGS.background_pattern,
-        arabic_font: parsed.arabic_font || INITIAL_THEME_SETTINGS.arabic_font || 'tajawal',
-        border_radius: parsed.border_radius || INITIAL_THEME_SETTINGS.border_radius,
-        theme_mode: parsed.theme_mode || INITIAL_THEME_SETTINGS.theme_mode,
-        glow_intensity: typeof parsed.glow_intensity === 'number' ? parsed.glow_intensity : INITIAL_THEME_SETTINGS.glow_intensity,
-      };
-    } catch {
-      return INITIAL_THEME_SETTINGS;
-    }
-  });
+  const [themeSettings, setThemeSettings] = useState<ThemeCustomizerSettings>(INITIAL_THEME_SETTINGS);
 
   useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, themeSettings);
     applyThemeToDocument(themeSettings);
     if (themeSettings.theme_mode === 'dark' && !isDarkMode) {
       setIsDarkMode(true);
@@ -607,22 +545,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [themeSettings]);
 
-  const [contactMessages, setContactMessages] = useState<ContactFormMessage[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.CONTACT_MESSAGES, INITIAL_CONTACT_MESSAGES);
-  });
+  const [contactMessages, setContactMessages] = useState<ContactFormMessage[]>([]);
 
-  const [designTasks, setDesignTasks] = useState<DesignTask[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.DESIGN_TASKS, INITIAL_DESIGN_TASKS);
-  });
+  const [designTasks, setDesignTasks] = useState<DesignTask[]>([]);
 
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.DESIGN_TASKS, designTasks);
-  }, [designTasks]);
-
-  const [brandsDisplayMode, setBrandsDisplayMode] = useState<BrandDisplayMode>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.BRANDS_MODE);
-    return (saved as BrandDisplayMode) || 'colored';
-  });
+  const [brandsDisplayMode, setBrandsDisplayMode] = useState<BrandDisplayMode>('colored');
 
   const [wishlistedServiceIds, setWishlistedServiceIds] = useState<string[]>(() => {
     return safeStorageLoad('rawaj_wishlist_ids', []);
@@ -652,7 +579,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // Real-time Firestore Listeners
+  // Real-time Supabase listeners
   useEffect(() => {
     let unsubQuotes: (() => void) | undefined;
     let unsubServices: (() => void) | undefined;
@@ -671,197 +598,227 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubFaq: (() => void) | undefined;
     let unsubContactMessages: (() => void) | undefined;
     let unsubUsers: (() => void) | undefined;
+    let unsubDepartments: (() => void) | undefined;
+    let unsubCategories: (() => void) | undefined;
+    let unsubSubcategories: (() => void) | undefined;
+    let unsubIndustrySectors: (() => void) | undefined;
 
     try {
-      // Quotes Listener
-      unsubQuotes = onSnapshot(collection(db, 'quotes'), (snapshot) => {
-        if (!snapshot.empty) {
-          const list: QuoteRequest[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as QuoteRequest);
-          });
-          list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          setQuoteRequests(list);
-        }
-        setIsCloudSynced(true);
-      }, (err) => console.warn('Firestore quotes listener:', err.message));
+      // Taxonomy listeners
+      unsubDepartments = onSnapshot(collection(db, 'departments'), (snapshot) => {
+        const list: Department[] = [];
+        snapshot.forEach((docSnap) => list.push(docSnap.data() as Department));
+        list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setDepartments(list);
+      }, (err) => console.warn('Supabase departments listener:', err.message));
+
+      unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+        const list: Category[] = [];
+        snapshot.forEach((docSnap) => list.push(docSnap.data() as Category));
+        list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setCategories(list);
+      }, (err) => console.warn('Supabase categories listener:', err.message));
+
+      unsubSubcategories = onSnapshot(collection(db, 'subcategories'), (snapshot) => {
+        const list: Subcategory[] = [];
+        snapshot.forEach((docSnap) => list.push(docSnap.data() as Subcategory));
+        list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setSubcategories(list);
+      }, (err) => console.warn('Supabase subcategories listener:', err.message));
+
+      unsubIndustrySectors = onSnapshot(collection(db, 'industry_sectors'), (snapshot) => {
+        const list: IndustrySector[] = [];
+        snapshot.forEach((docSnap) => list.push(docSnap.data() as IndustrySector));
+        list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setIndustrySectors(list);
+      }, (err) => console.warn('Supabase industry sectors listener:', err.message));
+
+      if (currentUser.id !== 'anonymous') {
+        // Quotes Listener
+        unsubQuotes = onSnapshot(collection(db, 'quotes'), (snapshot) => {
+          {
+            const list: QuoteRequest[] = [];
+            snapshot.forEach((docSnap) => {
+              list.push(docSnap.data() as QuoteRequest);
+            });
+            list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setQuoteRequests(list);
+          }
+          }, (err) => console.warn('Supabase quotes listener:', err.message));
+  
+  
+      }
 
       // Services Listener
       unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: Service[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as Service);
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setServices(list);
-          safeStorageSave(STORAGE_KEYS.SERVICES, list);
+          setIsCloudSynced(true);
         }
-      }, (err) => console.warn('Firestore services listener:', err.message));
+      }, (err) => console.warn('Supabase services listener:', err.message));
 
       // Templates Listener
       unsubTemplates = onSnapshot(collection(db, 'templates'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: ServiceTemplate[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as ServiceTemplate);
           });
           setTemplates(list);
-          safeStorageSave(STORAGE_KEYS.TEMPLATES, list);
         }
-      }, (err) => console.warn('Firestore templates listener:', err.message));
+      }, (err) => console.warn('Supabase templates listener:', err.message));
 
       // Packages Listener
       unsubPackages = onSnapshot(collection(db, 'packages'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: Package[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as Package);
           });
           setPackages(list);
-          safeStorageSave(STORAGE_KEYS.PACKAGES, list);
         }
-      }, (err) => console.warn('Firestore packages listener:', err.message));
+      }, (err) => console.warn('Supabase packages listener:', err.message));
 
       // Portfolio Listener
       unsubPortfolio = onSnapshot(collection(db, 'portfolio'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: PortfolioProject[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as PortfolioProject);
           });
           setPortfolioProjects(list);
         }
-      }, (err) => console.warn('Firestore portfolio listener:', err.message));
+      }, (err) => console.warn('Supabase portfolio listener:', err.message));
 
       // Blog Listener
       unsubBlog = onSnapshot(collection(db, 'blog'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: BlogPost[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as BlogPost);
           });
           setBlogPosts(list);
         }
-      }, (err) => console.warn('Firestore blog listener:', err.message));
+      }, (err) => console.warn('Supabase blog listener:', err.message));
 
       // Media Listener
       unsubMedia = onSnapshot(collection(db, 'media'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: MediaItem[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as MediaItem);
           });
           setMediaItems(list);
         }
-      }, (err) => console.warn('Firestore media listener:', err.message));
+      }, (err) => console.warn('Supabase media listener:', err.message));
 
       // Home Slides Listener
       unsubHomeSlides = onSnapshot(collection(db, 'home_slides'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: HomeSlide[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as HomeSlide);
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setHomeSlides(list);
-          safeStorageSave(STORAGE_KEYS.HOME_SLIDES, list);
         }
-      }, (err) => console.warn('Firestore home_slides listener:', err.message));
+      }, (err) => console.warn('Supabase home_slides listener:', err.message));
 
       // Marquee Listener
       unsubMarquee = onSnapshot(collection(db, 'marquee'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: MarqueeTickerItem[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as MarqueeTickerItem);
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setMarqueeItems(list);
-          safeStorageSave(STORAGE_KEYS.MARQUEE, list);
         }
-      }, (err) => console.warn('Firestore marquee listener:', err.message));
+      }, (err) => console.warn('Supabase marquee listener:', err.message));
 
       // Features Listener
       unsubFeatures = onSnapshot(collection(db, 'features'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: RawajFeature[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as RawajFeature);
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setRawajFeatures(list);
-          safeStorageSave(STORAGE_KEYS.FEATURES, list);
         }
-      }, (err) => console.warn('Firestore features listener:', err.message));
+      }, (err) => console.warn('Supabase features listener:', err.message));
 
       // Client Logos Listener
       unsubClientLogos = onSnapshot(collection(db, 'client_logos'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: ClientLogo[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as ClientLogo);
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setClientLogos(list);
-          safeStorageSave(STORAGE_KEYS.CLIENT_LOGOS, list);
         }
-      }, (err) => console.warn('Firestore client_logos listener:', err.message));
+      }, (err) => console.warn('Supabase client_logos listener:', err.message));
 
       // Testimonials Listener
       unsubTestimonials = onSnapshot(collection(db, 'testimonials'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: Testimonial[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as Testimonial);
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setTestimonials(list);
-          safeStorageSave(STORAGE_KEYS.TESTIMONIALS, list);
         }
-      }, (err) => console.warn('Firestore testimonials listener:', err.message));
+      }, (err) => console.warn('Supabase testimonials listener:', err.message));
 
       // FAQ Listener
       unsubFaq = onSnapshot(collection(db, 'faq'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: GlobalFAQItem[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as GlobalFAQItem);
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setFaqItems(list);
-          safeStorageSave(STORAGE_KEYS.FAQ, list);
         }
-      }, (err) => console.warn('Firestore faq listener:', err.message));
+      }, (err) => console.warn('Supabase faq listener:', err.message));
 
-      // Contact Messages Listener
-      unsubContactMessages = onSnapshot(collection(db, 'contact_messages'), (snapshot) => {
-        if (!snapshot.empty) {
-          const list: ContactFormMessage[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as ContactFormMessage);
-          });
-          list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          setContactMessages(list);
-          safeStorageSave(STORAGE_KEYS.CONTACT_MESSAGES, list);
-        }
-      }, (err) => console.warn('Firestore contact_messages listener:', err.message));
-
-      // Users Listener
-      unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-        if (!snapshot.empty) {
-          const list: User[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as User);
-          });
-          setUsers(list);
-          safeStorageSave(STORAGE_KEYS.USERS, list);
-        }
-      }, (err) => console.warn('Firestore users listener:', err.message));
+      if (currentUser.id !== 'anonymous') {
+        // Contact Messages Listener
+        unsubContactMessages = onSnapshot(collection(db, 'contact_messages'), (snapshot) => {
+          {
+            const list: ContactFormMessage[] = [];
+            snapshot.forEach((docSnap) => {
+              list.push(docSnap.data() as ContactFormMessage);
+            });
+            list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setContactMessages(list);
+          }
+        }, (err) => console.warn('Supabase contact_messages listener:', err.message));
+  
+        // Users Listener
+        unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+          {
+            const list: User[] = [];
+            snapshot.forEach((docSnap) => {
+              list.push(docSnap.data() as User);
+            });
+            setUsers(list);
+          }
+        }, (err) => console.warn('Supabase users listener:', err.message));
+  
+  
+      }
 
       // Settings Listener
       unsubSettings = onSnapshot(collection(db, 'settings'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           snapshot.forEach((docSnap) => {
             if (docSnap.id === 'general') {
               const cloud = docSnap.data() as SiteSettings;
@@ -874,7 +831,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   slogan_ar: cloud.slogan_ar || prev.slogan_ar || '',
                   mobile_whatsapp: cloud.mobile_whatsapp || prev.mobile_whatsapp || '',
                 };
-                safeStorageSave(STORAGE_KEYS.SETTINGS, merged);
                 return merged;
               });
             }
@@ -882,7 +838,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               const cloud = docSnap.data();
               if (cloud && Array.isArray(cloud.configs)) {
                 setHomeModulesConfig(cloud.configs);
-                safeStorageSave(STORAGE_KEYS.HOME_MODULES, cloud.configs);
               }
             }
             if (docSnap.id === 'theme_customizer') {
@@ -890,55 +845,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (cloud) {
                 setThemeSettings(cloud);
                 applyThemeToDocument(cloud);
-                safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, cloud);
               }
             }
             if (docSnap.id === 'footer') {
               const cloud = docSnap.data() as FooterSettings;
               if (cloud) {
                 setFooterSettings(cloud);
-                safeStorageSave(STORAGE_KEYS.FOOTER, cloud);
               }
             }
             if (docSnap.id === 'about_us' || docSnap.id === 'about_us_module') {
               const cloud = docSnap.data() as AboutUsModuleData;
               if (cloud) {
                 setAboutUsData(cloud);
-                safeStorageSave(STORAGE_KEYS.ABOUT_US, cloud);
               }
             }
             if (docSnap.id === 'promo_module' || docSnap.id === 'promos') {
               const cloud = docSnap.data() as PromoModuleSettings;
               if (cloud && cloud.banners) {
                 setPromoSettings(cloud);
-                safeStorageSave(STORAGE_KEYS.PROMOS, cloud);
               }
             }
             if (docSnap.id === 'hero_header') {
               const cloud = docSnap.data() as HeroHeaderSettings;
               if (cloud) {
                 setHeroHeaderSettings(cloud);
-                safeStorageSave(STORAGE_KEYS.HERO_HEADER, cloud);
+              }
+            }
+            if (docSnap.id === 'brands_display') {
+              const cloud = docSnap.data() as { mode?: BrandDisplayMode };
+              if (cloud?.mode) {
+                setBrandsDisplayMode(cloud.mode);
               }
             }
           });
         }
-      }, (err) => console.warn('Firestore settings listener:', err.message));
+      }, (err) => console.warn('Supabase settings listener:', err.message));
 
-      // Design Tasks Listener
-      unsubDesignTasks = onSnapshot(collection(db, 'design_tasks'), (snapshot) => {
-        if (!snapshot.empty) {
-          const list: DesignTask[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as DesignTask);
-          });
-          list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          setDesignTasks(list);
-        }
-      }, (err) => console.warn('Firestore design_tasks listener:', err.message));
+      if (currentUser.id !== 'anonymous') {
+        // Design Tasks Listener
+        unsubDesignTasks = onSnapshot(collection(db, 'design_tasks'), (snapshot) => {
+          {
+            const list: DesignTask[] = [];
+            snapshot.forEach((docSnap) => {
+              list.push(docSnap.data() as DesignTask);
+            });
+            list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setDesignTasks(list);
+          }
+        }, (err) => console.warn('Supabase design_tasks listener:', err.message));
+  
+      }
 
     } catch (e) {
-      console.warn('Firebase setup note:', e);
+      console.warn('Supabase setup note:', e);
     }
 
     return () => {
@@ -959,300 +918,177 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (unsubFaq) unsubFaq();
       if (unsubContactMessages) unsubContactMessages();
       if (unsubUsers) unsubUsers();
+      if (unsubDepartments) unsubDepartments();
+      if (unsubCategories) unsubCategories();
+      if (unsubSubcategories) unsubSubcategories();
+      if (unsubIndustrySectors) unsubIndustrySectors();
     };
-  }, []);
+  }, [authRevision, currentUser.id]);
 
-  // Function to seed Firestore if empty
-  const seedInitialDataToCloud = async () => {
-    try {
-      const snap = await getDocs(collection(db, 'services'));
-      if (snap.size === 0) {
-        const batch = writeBatch(db);
-        INITIAL_SERVICES.slice(0, 30).forEach((s) => {
-          batch.set(doc(db, 'services', s.id), s);
-        });
-        INITIAL_TEMPLATES.forEach((t) => {
-          batch.set(doc(db, 'templates', t.id), t);
-        });
-        INITIAL_PACKAGES.forEach((p) => {
-          batch.set(doc(db, 'packages', p.id), p);
-        });
-        INITIAL_PORTFOLIO.forEach((p) => {
-          batch.set(doc(db, 'portfolio', p.id), p);
-        });
-        INITIAL_BLOG_POSTS.forEach((b) => {
-          batch.set(doc(db, 'blog', b.id), b);
-        });
-        INITIAL_DESIGN_TASKS.forEach((dt) => {
-          batch.set(doc(db, 'design_tasks', dt.id), dt);
-        });
-        batch.set(doc(db, 'settings', 'general'), siteSettings, { merge: true });
-        await batch.commit();
-        setIsCloudSynced(true);
-      }
-    } catch (err) {
-      console.warn('Seeding note:', err);
-    }
-  };
-
-  // Save changes to localStorage safely
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.SERVICES, services);
-  }, [services]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.TEMPLATES, templates);
-  }, [templates]);
-
+  // Supabase is authoritative for CMS/business data. Only the quote cart is persisted locally.
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.CART, quoteItems);
   }, [quoteItems]);
 
   useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.QUOTES, quoteRequests);
-  }, [quoteRequests]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.MEDIA, mediaItems);
-  }, [mediaItems]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.PACKAGES, packages);
-  }, [packages]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.PORTFOLIO, portfolioProjects);
-  }, [portfolioProjects]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.BLOG, blogPosts);
-  }, [blogPosts]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.SETTINGS, siteSettings);
-  }, [siteSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.USERS, users);
-  }, [users]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.HOME_SLIDES, homeSlides);
-  }, [homeSlides]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.MARQUEE, marqueeItems);
-  }, [marqueeItems]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.ABOUT_US, aboutUsData);
-  }, [aboutUsData]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.FEATURES, rawajFeatures);
-  }, [rawajFeatures]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.CLIENT_LOGOS, clientLogos);
-  }, [clientLogos]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.HERO_HEADER, heroHeaderSettings);
-  }, [heroHeaderSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.PROMOS, promoSettings);
-  }, [promoSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.FAQ, faqItems);
-  }, [faqItems]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.FOOTER, footerSettings);
-  }, [footerSettings]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.HOME_MODULES, homeModulesConfig);
-  }, [homeModulesConfig]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, themeSettings);
+    applyThemeToDocument(themeSettings);
+    if (themeSettings.theme_mode === 'dark' && !isDarkMode) {
+      setIsDarkMode(true);
+    } else if (themeSettings.theme_mode === 'light' && isDarkMode) {
+      setIsDarkMode(false);
+    }
   }, [themeSettings]);
 
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.CONTACT_MESSAGES, contactMessages);
-  }, [contactMessages]);
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.BRANDS_MODE, brandsDisplayMode);
-  }, [brandsDisplayMode]);
-
   // Module 1: Hero Header settings
-  const updateHeroHeaderSettings = (settings: Partial<HeroHeaderSettings>) => {
+  const updateHeroHeaderSettings = async (settings: Partial<HeroHeaderSettings>): Promise<void> => {
     const updated = { ...heroHeaderSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'hero_header'), updated, { merge: true });
     setHeroHeaderSettings(updated);
-    setDoc(doc(db, 'settings', 'hero_header'), updated, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Theme Customizer
-  const updateThemeSettings = (settings: Partial<ThemeCustomizerSettings>) => {
+  const updateThemeSettings = async (settings: Partial<ThemeCustomizerSettings>): Promise<void> => {
     const updated = { ...themeSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true });
     setThemeSettings(updated);
     applyThemeToDocument(updated);
-    setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Home Modules Config & Reordering
-  const updateHomeModulesConfig = (configs: HomeModuleConfig[]) => {
+  const persistHomeModules = async (configs: HomeModuleConfig[]): Promise<void> => {
+    await setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true });
     setHomeModulesConfig(configs);
-    safeStorageSave(STORAGE_KEYS.HOME_MODULES, configs);
-    setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const toggleModuleVisibility = (id: HomeModuleId) => {
-    setHomeModulesConfig((prev) => {
-      const updated = prev.map((mod) => (mod.id === id ? { ...mod, is_visible: !mod.is_visible } : mod));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const updateHomeModulesConfig = async (configs: HomeModuleConfig[]): Promise<void> => {
+    await persistHomeModules(configs);
   };
 
-  const reorderHomeModules = (startIndex: number, endIndex: number) => {
-    setHomeModulesConfig((prev) => {
-      const result = Array.from(prev);
-      const [removed] = result.splice(startIndex, 1);
-      result.splice(endIndex, 0, removed);
-      const updated = result.map((item, index) => ({ ...item, sort_order: index + 1 }));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const toggleModuleVisibility = async (id: HomeModuleId): Promise<void> => {
+    const updated = homeModulesConfig.map((mod) =>
+      mod.id === id ? { ...mod, is_visible: !mod.is_visible } : mod
+    );
+    await persistHomeModules(updated);
   };
 
-  const updateModuleLayout = (id: HomeModuleId, layout_style: string) => {
-    setHomeModulesConfig((prev) => {
-      const updated = prev.map((mod) => (mod.id === id ? { ...mod, layout_style } : mod));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const reorderHomeModules = async (startIndex: number, endIndex: number): Promise<void> => {
+    const result = Array.from(homeModulesConfig);
+    const [removed] = result.splice(startIndex, 1);
+    if (!removed) return;
+    result.splice(endIndex, 0, removed);
+    await persistHomeModules(result.map((item, index) => ({ ...item, sort_order: index + 1 })));
+  };
+
+  const updateModuleLayout = async (id: HomeModuleId, layout_style: string): Promise<void> => {
+    const updated = homeModulesConfig.map((mod) =>
+      mod.id === id ? { ...mod, layout_style } : mod
+    );
+    await persistHomeModules(updated);
   };
 
   // Promo Banners & Module
-  const updatePromoSettings = (settings: Partial<PromoModuleSettings>) => {
+  const updatePromoSettings = async (settings: Partial<PromoModuleSettings>): Promise<void> => {
     const updated = { ...promoSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true });
     setPromoSettings(updated);
-    setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const addPromoBanner = (banner: Omit<PromoBanner, 'id'>) => {
-    const id = `prm-${Date.now()}`;
-    const newBanner: PromoBanner = { ...banner, id };
-    const updatedBanners = [...promoSettings.banners, newBanner];
-    updatePromoSettings({ banners: updatedBanners });
+  const addPromoBanner = async (banner: Omit<PromoBanner, 'id'>): Promise<void> => {
+    const newBanner: PromoBanner = { ...banner, id: `prm-${Date.now()}` };
+    await updatePromoSettings({ banners: [...promoSettings.banners, newBanner] });
   };
 
-  const updatePromoBanner = (id: string, banner: Partial<PromoBanner>) => {
-    const updatedBanners = promoSettings.banners.map((b) => (b.id === id ? { ...b, ...banner } : b));
-    updatePromoSettings({ banners: updatedBanners });
+  const updatePromoBanner = async (id: string, banner: Partial<PromoBanner>): Promise<void> => {
+    await updatePromoSettings({
+      banners: promoSettings.banners.map((item) => item.id === id ? { ...item, ...banner } : item),
+    });
   };
 
-  const deletePromoBanner = (id: string) => {
-    const updatedBanners = promoSettings.banners.filter((b) => b.id !== id);
-    updatePromoSettings({ banners: updatedBanners });
+  const deletePromoBanner = async (id: string): Promise<void> => {
+    await updatePromoSettings({ banners: promoSettings.banners.filter((item) => item.id !== id) });
   };
 
   // FAQ CRUD
-  const addFaqItem = (item: Omit<GlobalFAQItem, 'id'>) => {
-    const id = `faq-${Date.now()}`;
-    const newItem: GlobalFAQItem = { ...item, id };
+  const addFaqItem = async (item: Omit<GlobalFAQItem, 'id'>): Promise<void> => {
+    const newItem: GlobalFAQItem = { ...item, id: `faq-${Date.now()}` };
+    await setDoc(doc(db, 'faq', newItem.id), newItem);
     setFaqItems((prev) => [...prev, newItem]);
-    setDoc(doc(db, 'faq', id), newItem).catch((e) => console.warn(e));
   };
 
-  const updateFaqItem = (id: string, item: Partial<GlobalFAQItem>) => {
-    setFaqItems((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...item } : f))
-    );
-    setDoc(doc(db, 'faq', id), item, { merge: true }).catch((e) => console.warn(e));
+  const updateFaqItem = async (id: string, item: Partial<GlobalFAQItem>): Promise<void> => {
+    await setDoc(doc(db, 'faq', id), item, { merge: true });
+    setFaqItems((prev) => prev.map((entry) => entry.id === id ? { ...entry, ...item } : entry));
   };
 
-  const deleteFaqItem = (id: string) => {
-    setFaqItems((prev) => prev.filter((f) => f.id !== id));
-    deleteDoc(doc(db, 'faq', id)).catch((e) => console.warn(e));
+  const deleteFaqItem = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'faq', id));
+    setFaqItems((prev) => prev.filter((entry) => entry.id !== id));
   };
 
   // Contact Messages
-  const submitContactMessage = async (data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>): Promise<void> => {
-    const id = `msg-${Date.now()}`;
+  const submitContactMessage = async (
+    data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>
+  ): Promise<void> => {
     const newMsg: ContactFormMessage = {
       ...data,
-      id,
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       created_at: new Date().toISOString(),
       status: 'unread',
     };
+    await setDoc(doc(db, 'contact_messages', newMsg.id), newMsg);
     setContactMessages((prev) => [newMsg, ...prev]);
-    try {
-      await setDoc(doc(db, 'contact_messages', id), newMsg);
-    } catch (e) {
-      console.error('Firestore contact message submit error:', e);
-      throw e;
-    }
   };
 
-  const markContactMessageStatus = async (id: string, status: 'unread' | 'read' | 'replied'): Promise<void> => {
-    setContactMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status } : m))
-    );
-    await setDoc(doc(db, 'contact_messages', id), { status }, { merge: true }).catch((e) => console.warn(e));
+  const markContactMessageStatus = async (
+    id: string,
+    status: 'unread' | 'read' | 'replied'
+  ): Promise<void> => {
+    await setDoc(doc(db, 'contact_messages', id), { status }, { merge: true });
+    setContactMessages((prev) => prev.map((item) => item.id === id ? { ...item, status } : item));
   };
 
   const deleteContactMessage = async (id: string): Promise<void> => {
-    setContactMessages((prev) => prev.filter((m) => m.id !== id));
-    await deleteDoc(doc(db, 'contact_messages', id)).catch((e) => console.warn(e));
+    await deleteDoc(doc(db, 'contact_messages', id));
+    setContactMessages((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Footer Settings
   const updateFooterSettings = async (settings: Partial<FooterSettings>): Promise<void> => {
     const updated = { ...footerSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true });
     setFooterSettings(updated);
-    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Brands Mode
   const updateBrandsDisplayMode = async (mode: BrandDisplayMode): Promise<void> => {
+    await setDoc(doc(db, 'settings', 'brands_display'), { mode }, { merge: true });
     setBrandsDisplayMode(mode);
-    await setDoc(doc(db, 'settings', 'brands_display'), { mode }, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Testimonials Public Submit & Moderation
-  const submitPublicTestimonial = async (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }): Promise<void> => {
-    const id = `test-${Date.now()}`;
+  const submitPublicTestimonial = async (
+    data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }
+  ): Promise<void> => {
     const newTest: Testimonial = {
       ...data,
-      id,
-      client_avatar_url: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80`,
-      status: 'pending', // Pending admin approval!
+      id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      client_avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      status: 'pending',
       sort_order: testimonials.length + 1,
       is_active: false,
       created_at: new Date().toISOString(),
     };
+    await setDoc(doc(db, 'testimonials', newTest.id), newTest);
     setTestimonials((prev) => [newTest, ...prev]);
-    try {
-      await setDoc(doc(db, 'testimonials', id), newTest);
-    } catch (e) {
-      console.error('Firestore testimonial submit error:', e);
-      throw e;
-    }
   };
 
-  const updateTestimonialStatus = (id: string, status: 'approved' | 'pending' | 'rejected') => {
-    setTestimonials((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status, is_active: status === 'approved' } : t))
-    );
-    setDoc(doc(db, 'testimonials', id), { status, is_active: status === 'approved' }, { merge: true }).catch((e) => console.warn(e));
+  const updateTestimonialStatus = async (
+    id: string,
+    status: 'approved' | 'pending' | 'rejected'
+  ): Promise<void> => {
+    const patch = { status, is_active: status === 'approved' };
+    await setDoc(doc(db, 'testimonials', id), patch, { merge: true });
+    setTestimonials((prev) => prev.map((item) => item.id === id ? { ...item, ...patch } : item));
   };
 
   // Cart operations
@@ -1301,7 +1137,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setQuoteItems([]);
   };
 
-  // Submit quote request & persist to Firestore + build WhatsApp message
+  // Submit quote request & persist to Supabase + build WhatsApp message
   const submitQuoteRequest = async (
     customer: any,
     generalNotes?: string,
@@ -1343,11 +1179,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Optimistic local state update
     setQuoteRequests((prev) => [newQuote, ...prev]);
 
-    // Persist directly to Firebase Firestore
+    // Persist to Supabase before reporting success or clearing the cart.
     try {
       await setDoc(doc(db, 'quotes', quoteId), newQuote);
     } catch (e) {
-      console.warn('Firestore quote save note:', e);
+      setQuoteRequests((prev) => prev.filter((q) => q.id !== quoteId));
+      console.error('Supabase quote save failed:', e);
+      throw e;
     }
 
     // Build structured WhatsApp message
@@ -1404,7 +1242,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Quote status management
-  const updateQuoteStatus = async (quoteId: string, newStatus: QuoteStatus, internalNotes?: string) => {
+  const updateQuoteStatus = async (
+    quoteId: string,
+    newStatus: QuoteStatus,
+    internalNotes?: string
+  ): Promise<void> => {
     const statusNames: Record<QuoteStatus, string> = {
       new: 'جديد',
       reviewing: 'قيد المراجعة الفنية',
@@ -1416,42 +1258,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       lost: 'لم يتم الاتفاق',
       archived: 'مؤرشف',
     };
-
-    const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) return;
-
-    const newTimeline = [
-      ...targetQuote.timeline,
-      {
-        id: `tl-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        user_name: currentUser.name,
-        action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
-        notes: internalNotes,
-      },
-    ];
+    const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
+    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
       status: newStatus,
       internal_notes: internalNotes || targetQuote.internal_notes,
       updated_at: new Date().toISOString(),
-      timeline: newTimeline,
+      timeline: [
+        ...targetQuote.timeline,
+        {
+          id: `tl-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          user_name: currentUser.name,
+          action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
+          notes: internalNotes,
+        },
+      ],
     };
 
-    setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
-
-    try {
-      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    } catch (e) {
-      console.warn('Firestore quote status update error:', e);
-    }
+    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
   };
 
-  const assignQuoteSalesperson = async (quoteId: string, salespersonId: string) => {
-    const sp = users.find((u) => u.id === salespersonId);
-    const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) return;
+  const assignQuoteSalesperson = async (quoteId: string, salespersonId: string): Promise<void> => {
+    const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
+    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
+    const salesperson = users.find((user) => user.id === salespersonId);
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
@@ -1463,23 +1297,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: `tl-${Date.now()}`,
           timestamp: new Date().toISOString(),
           user_name: currentUser.name,
-          action: `تم إسناد الطلب للمسؤول: ${sp ? sp.name : 'غير محدد'}`,
+          action: `تم إسناد الطلب للمسؤول: ${salesperson ? salesperson.name : 'غير محدد'}`,
         },
       ],
     };
 
-    setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
-
-    try {
-      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    } catch (e) {
-      console.warn('Firestore quote assignment error:', e);
-    }
+    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
   };
 
-  const updateQuoteNotes = async (quoteId: string, internalNotes?: string, supplierNotes?: string) => {
-    const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) return;
+  const updateQuoteNotes = async (
+    quoteId: string,
+    internalNotes?: string,
+    supplierNotes?: string
+  ): Promise<void> => {
+    const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
+    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
@@ -1488,431 +1321,446 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updated_at: new Date().toISOString(),
     };
 
-    setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
-
-    try {
-      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    } catch (e) {
-      console.warn('Firestore quote notes update error:', e);
-    }
+    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
   };
 
   // Service CRUD
-  const createService = async (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>): Promise<Service> => {
-    const id = `srv-${Date.now()}`;
+  const createService = async (
+    serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<Service> => {
+    const now = new Date().toISOString();
     const newService: Service = {
       ...serviceData,
-      id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      id: `srv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      created_at: now,
+      updated_at: now,
     };
+    await setDoc(doc(db, 'services', newService.id), newService);
     setServices((prev) => {
       const updated = [newService, ...prev];
-      safeStorageSave(STORAGE_KEYS.SERVICES, updated);
       return updated;
     });
-    try {
-      await setDoc(doc(db, 'services', id), newService);
-      console.log(`[Firestore] Service ${id} created on cloud`);
-    } catch (e) {
-      console.error(`[Firestore Error] Service creation failed:`, e);
-      throw e;
-    }
     return newService;
   };
 
   const updateService = async (id: string, serviceData: Partial<Service>): Promise<void> => {
-    let targetService: Service | undefined;
+    const existing = services.find((service) => service.id === id);
+    if (!existing) throw new Error('الخدمة غير موجودة.');
+    const updatedService: Service = {
+      ...existing,
+      ...serviceData,
+      updated_at: new Date().toISOString(),
+    };
+    await setDoc(doc(db, 'services', id), updatedService, { merge: true });
     setServices((prev) => {
-      const updated = prev.map((s) => {
-        if (s.id !== id) return s;
-        return { ...s, ...serviceData, updated_at: new Date().toISOString() };
-      });
-      safeStorageSave(STORAGE_KEYS.SERVICES, updated);
-      targetService = updated.find((s) => s.id === id);
+      const updated = prev.map((service) => service.id === id ? updatedService : service);
       return updated;
     });
-    if (targetService) {
-      try {
-        await setDoc(doc(db, 'services', id), targetService, { merge: true });
-        console.log(`[Firestore] Service ${id} updated on cloud`);
-      } catch (e) {
-        console.error(`[Firestore Error] Service update failed:`, e);
-        throw e;
-      }
-    }
   };
 
   const deleteService = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'services', id));
     setServices((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
-      safeStorageSave(STORAGE_KEYS.SERVICES, updated);
+      const updated = prev.filter((service) => service.id !== id);
       return updated;
     });
-    try {
-      await deleteDoc(doc(db, 'services', id));
-      console.log(`[Firestore] Service ${id} deleted from cloud`);
-    } catch (e) {
-      console.error(`[Firestore Error] Service deletion failed:`, e);
-      throw e;
-    }
   };
 
-  const duplicateService = (id: string): Service => {
-    const original = services.find((s) => s.id === id);
-    if (!original) throw new Error('Service not found');
-    const newId = `srv-${Date.now()}`;
+  const duplicateService = async (id: string): Promise<Service> => {
+    const original = services.find((service) => service.id === id);
+    if (!original) throw new Error('الخدمة غير موجودة.');
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const duplicated: Service = {
       ...original,
-      id: newId,
+      id: `srv-${suffix}`,
       name_ar: `${original.name_ar} (نسخة جديدة)`,
       name_en: `${original.name_en} (Copy)`,
-      slug: `${original.slug}-copy-${Date.now().toString().slice(-4)}`,
+      slug: `${original.slug}-copy-${suffix}`,
       service_status: 'draft',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    await setDoc(doc(db, 'services', duplicated.id), duplicated);
     setServices((prev) => [duplicated, ...prev]);
-    setDoc(doc(db, 'services', newId), duplicated).catch((e) => console.warn(e));
     return duplicated;
   };
 
   // Template CRUD
-  const createTemplate = (templateData: Omit<ServiceTemplate, 'id'>): ServiceTemplate => {
-    const id = `tmpl-${Date.now()}`;
-    const newTmpl: ServiceTemplate = {
+  const createTemplate = async (
+    templateData: Omit<ServiceTemplate, 'id'>
+  ): Promise<ServiceTemplate> => {
+    const newTemplate: ServiceTemplate = {
       ...templateData,
-      id,
+      id: `tmpl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     };
-    setTemplates((prev) => [...prev, newTmpl]);
-    setDoc(doc(db, 'templates', id), newTmpl).catch((e) => console.warn(e));
-    return newTmpl;
+    await setDoc(doc(db, 'templates', newTemplate.id), newTemplate);
+    setTemplates((prev) => [...prev, newTemplate]);
+    return newTemplate;
   };
 
-  const updateTemplate = (id: string, templateData: Partial<ServiceTemplate>) => {
-    setTemplates((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        const updated = { ...t, ...templateData };
-        setDoc(doc(db, 'templates', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+  const updateTemplate = async (
+    id: string,
+    templateData: Partial<ServiceTemplate>
+  ): Promise<void> => {
+    const existing = templates.find((template) => template.id === id);
+    if (!existing) throw new Error('القالب غير موجود.');
+    const updatedTemplate = { ...existing, ...templateData };
+    await setDoc(doc(db, 'templates', id), updatedTemplate, { merge: true });
+    setTemplates((prev) => prev.map((template) => template.id === id ? updatedTemplate : template));
   };
 
-  const deleteTemplate = (id: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'templates', id)).catch((e) => console.warn(e));
+  const deleteTemplate = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'templates', id));
+    setTemplates((prev) => prev.filter((template) => template.id !== id));
   };
 
   // Media Library
-  const uploadMedia = (fileData: { name: string; url: string; size_kb: number; category?: string; alt_ar?: string }): MediaItem => {
-    const id = `med-${Date.now()}`;
+  const uploadMedia = async (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }): Promise<MediaItem> => {
+    const id = `med-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const newMedia: MediaItem = {
       id,
       name: fileData.name,
       url: fileData.url,
+      storage_path: fileData.storage_path,
+      mime_type: fileData.mime_type,
       size_kb: fileData.size_kb,
       category: fileData.category || 'عام',
-      uploaded_at: new Date().toISOString().slice(0, 10),
+      uploaded_at: new Date().toISOString(),
       alt_ar: fileData.alt_ar || fileData.name,
     };
+
+    await setDoc(doc(db, 'media', id), newMedia);
     setMediaItems((prev) => [newMedia, ...prev]);
-    setDoc(doc(db, 'media', id), newMedia).catch((e) => console.warn(e));
     return newMedia;
   };
 
-  const deleteMedia = (id: string) => {
+  const deleteMedia = async (id: string): Promise<void> => {
+    const target = mediaItems.find((m) => m.id === id);
+    if (target?.storage_path) {
+      await removeRawajStorageObject(target.storage_path);
+    }
+    await deleteDoc(doc(db, 'media', id));
     setMediaItems((prev) => prev.filter((m) => m.id !== id));
-    deleteDoc(doc(db, 'media', id)).catch((e) => console.warn(e));
   };
 
   // Packages CRUD
-  const createPackage = (pkg: Omit<Package, 'id'>) => {
-    const id = `pkg-${Date.now()}`;
-    const newPkg: Package = { ...pkg, id };
-    setPackages((prev) => [...prev, newPkg]);
-    setDoc(doc(db, 'packages', id), newPkg).catch((e) => console.warn(e));
+  const createPackage = async (pkg: Omit<Package, 'id'>): Promise<void> => {
+    const newPackage: Package = {
+      ...pkg,
+      id: `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'packages', newPackage.id), newPackage);
+    setPackages((prev) => [...prev, newPackage]);
   };
-  const updatePackage = (id: string, pkg: Partial<Package>) => {
-    setPackages((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...pkg };
-        setDoc(doc(db, 'packages', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updatePackage = async (id: string, pkg: Partial<Package>): Promise<void> => {
+    const existing = packages.find((item) => item.id === id);
+    if (!existing) throw new Error('الباقة غير موجودة.');
+    const updated = { ...existing, ...pkg };
+    await setDoc(doc(db, 'packages', id), updated, { merge: true });
+    setPackages((prev) => prev.map((item) => item.id === id ? updated : item));
   };
-  const deletePackage = (id: string) => {
-    setPackages((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'packages', id)).catch((e) => console.warn(e));
+
+  const deletePackage = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'packages', id));
+    setPackages((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Blog CRUD
-  const createBlogPost = (post: Omit<BlogPost, 'id'>) => {
-    const id = `post-${Date.now()}`;
-    const newPost: BlogPost = { ...post, id };
+  const createBlogPost = async (post: Omit<BlogPost, 'id'>): Promise<void> => {
+    const newPost: BlogPost = {
+      ...post,
+      id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'blog', newPost.id), newPost);
     setBlogPosts((prev) => [newPost, ...prev]);
-    setDoc(doc(db, 'blog', id), newPost).catch((e) => console.warn(e));
   };
-  const updateBlogPost = (id: string, post: Partial<BlogPost>) => {
-    setBlogPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...post };
-        setDoc(doc(db, 'blog', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updateBlogPost = async (id: string, post: Partial<BlogPost>): Promise<void> => {
+    const existing = blogPosts.find((item) => item.id === id);
+    if (!existing) throw new Error('المقال غير موجود.');
+    const updated = { ...existing, ...post };
+    await setDoc(doc(db, 'blog', id), updated, { merge: true });
+    setBlogPosts((prev) => prev.map((item) => item.id === id ? updated : item));
   };
-  const deleteBlogPost = (id: string) => {
-    setBlogPosts((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'blog', id)).catch((e) => console.warn(e));
+
+  const deleteBlogPost = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'blog', id));
+    setBlogPosts((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Portfolio CRUD
-  const createPortfolioProject = (proj: Omit<PortfolioProject, 'id'>) => {
-    const id = `proj-${Date.now()}`;
-    const newProj: PortfolioProject = { ...proj, id };
-    setPortfolioProjects((prev) => [newProj, ...prev]);
-    setDoc(doc(db, 'portfolio', id), newProj).catch((e) => console.warn(e));
+  const createPortfolioProject = async (
+    project: Omit<PortfolioProject, 'id'>
+  ): Promise<void> => {
+    const newProject: PortfolioProject = {
+      ...project,
+      id: `proj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'portfolio', newProject.id), newProject);
+    setPortfolioProjects((prev) => [newProject, ...prev]);
   };
-  const updatePortfolioProject = (id: string, proj: Partial<PortfolioProject>) => {
-    setPortfolioProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...proj };
-        setDoc(doc(db, 'portfolio', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updatePortfolioProject = async (
+    id: string,
+    project: Partial<PortfolioProject>
+  ): Promise<void> => {
+    const existing = portfolioProjects.find((item) => item.id === id);
+    if (!existing) throw new Error('المشروع غير موجود.');
+    const updated = { ...existing, ...project };
+    await setDoc(doc(db, 'portfolio', id), updated, { merge: true });
+    setPortfolioProjects((prev) => prev.map((item) => item.id === id ? updated : item));
   };
-  const deletePortfolioProject = (id: string) => {
-    setPortfolioProjects((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'portfolio', id)).catch((e) => console.warn(e));
+
+  const deletePortfolioProject = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'portfolio', id));
+    setPortfolioProjects((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Taxonomy & Settings & Users
-  const updateSiteSettings = (settings: Partial<SiteSettings>) => {
-    setSiteSettings((prev) => {
-      const updated = { ...prev, ...settings };
-      try {
-        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
-      } catch (err) {
-        console.warn('localStorage error on updateSiteSettings:', err);
-      }
-      setDoc(doc(db, 'settings', 'general'), updated, { merge: true }).catch((e) => console.warn(e));
-      return updated;
+  const updateSiteSettings = async (settings: Partial<SiteSettings>): Promise<void> => {
+    const updated = { ...siteSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'general'), updated, { merge: true });
+    setSiteSettings(updated);
+  };
+
+  const addUser = async (userData: Omit<User, 'id' | 'createdAt'>): Promise<User> => {
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: {
+        action: 'invite',
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone || '',
+        role: userData.role,
+      },
     });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    if (!data?.user) throw new Error('لم يتم إنشاء المستخدم في Supabase Auth.');
+
+    const newUser = data.user as User;
+    setUsers((prev) => {
+      const withoutExisting = prev.filter((u) => u.id !== newUser.id);
+      return [...withoutExisting, newUser];
+    });
+    return newUser;
   };
 
-  const addUser = (userData: Omit<User, 'id' | 'createdAt'>) => {
-    const id = `usr-${Date.now()}`;
-    const newUser: User = {
-      ...userData,
-      id,
-      createdAt: new Date().toISOString(),
-    };
-    setUsers((prev) => [...prev, newUser]);
-    setDoc(doc(db, 'users', id), newUser).catch((e) => console.warn(e));
-  };
-
-  const deleteUser = (userId: string): boolean => {
+  const deleteUser = async (userId: string): Promise<boolean> => {
     const target = users.find((u) => u.id === userId);
     if (!target) return false;
-    if (target.isOwnerProtected) return false;
-    const owners = users.filter((u) => u.role === 'owner');
-    if (target.role === 'owner' && owners.length <= 1) return false;
+    if (target.id === currentUser.id) return false;
+
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: { action: 'delete', userId },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
     setUsers((prev) => prev.filter((u) => u.id !== userId));
-    deleteDoc(doc(db, 'users', userId)).catch((e) => console.warn(e));
     return true;
   };
 
   // Home Slides CRUD
-  const addHomeSlide = (slide: Omit<HomeSlide, 'id'>) => {
-    const id = `slide-${Date.now()}`;
-    const newSlide: HomeSlide = { ...slide, id };
+  const addHomeSlide = async (slide: Omit<HomeSlide, 'id'>): Promise<void> => {
+    const newSlide: HomeSlide = {
+      ...slide,
+      id: `slide-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'home_slides', newSlide.id), newSlide);
     setHomeSlides((prev) => {
       const updated = [...prev, newSlide];
-      safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
-    setDoc(doc(db, 'home_slides', id), newSlide).catch((e) => console.warn(e));
   };
 
-  const updateHomeSlide = (id: string, slide: Partial<HomeSlide>) => {
+  const updateHomeSlide = async (id: string, slide: Partial<HomeSlide>): Promise<void> => {
+    await setDoc(doc(db, 'home_slides', id), slide, { merge: true });
     setHomeSlides((prev) => {
-      const updated = prev.map((s) => (s.id === id ? { ...s, ...slide } : s));
-      safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
+      const updated = prev.map((item) => item.id === id ? { ...item, ...slide } : item);
       return updated;
     });
-    setDoc(doc(db, 'home_slides', id), slide, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const deleteHomeSlide = (id: string) => {
+  const deleteHomeSlide = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'home_slides', id));
     setHomeSlides((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
-      safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
+      const updated = prev.filter((item) => item.id !== id);
       return updated;
     });
-    deleteDoc(doc(db, 'home_slides', id)).catch((e) => console.warn(e));
   };
 
   // Marquee CRUD
-  const addMarqueeItem = (item: Omit<MarqueeTickerItem, 'id'>) => {
-    const id = `mrq-${Date.now()}`;
-    const newItem: MarqueeTickerItem = { ...item, id };
+  const addMarqueeItem = async (item: Omit<MarqueeTickerItem, 'id'>): Promise<void> => {
+    const newItem: MarqueeTickerItem = {
+      ...item,
+      id: `mrq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'marquee', newItem.id), newItem);
     setMarqueeItems((prev) => [...prev, newItem]);
-    setDoc(doc(db, 'marquee', id), newItem).catch((e) => console.warn(e));
   };
-  const updateMarqueeItem = (id: string, item: Partial<MarqueeTickerItem>) => {
-    setMarqueeItems((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...item } : m))
-    );
-    setDoc(doc(db, 'marquee', id), item, { merge: true }).catch((e) => console.warn(e));
+
+  const updateMarqueeItem = async (
+    id: string,
+    item: Partial<MarqueeTickerItem>
+  ): Promise<void> => {
+    await setDoc(doc(db, 'marquee', id), item, { merge: true });
+    setMarqueeItems((prev) => prev.map((entry) => entry.id === id ? { ...entry, ...item } : entry));
   };
-  const deleteMarqueeItem = (id: string) => {
-    setMarqueeItems((prev) => prev.filter((m) => m.id !== id));
-    deleteDoc(doc(db, 'marquee', id)).catch((e) => console.warn(e));
+
+  const deleteMarqueeItem = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'marquee', id));
+    setMarqueeItems((prev) => prev.filter((entry) => entry.id !== id));
   };
 
   // About Us Update
-  const updateAboutUsData = (data: Partial<AboutUsModuleData>) => {
+  const updateAboutUsData = async (data: Partial<AboutUsModuleData>): Promise<void> => {
     const updated = { ...aboutUsData, ...data };
+    await setDoc(doc(db, 'settings', 'about_us'), updated, { merge: true });
     setAboutUsData(updated);
-    safeStorageSave(STORAGE_KEYS.ABOUT_US, updated);
-    setDoc(doc(db, 'settings', 'about_us'), updated, { merge: true }).catch((e) => console.warn(e));
-    setDoc(doc(db, 'settings', 'about_us_module'), updated, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Rawaj Features CRUD
-  const addRawajFeature = (feat: Omit<RawajFeature, 'id'>) => {
-    const id = `feat-${Date.now()}`;
-    const newFeat: RawajFeature = { ...feat, id };
-    setRawajFeatures((prev) => [...prev, newFeat]);
-    setDoc(doc(db, 'features', id), newFeat).catch((e) => console.warn(e));
+  const addRawajFeature = async (feat: Omit<RawajFeature, 'id'>): Promise<void> => {
+    const newFeature: RawajFeature = {
+      ...feat,
+      id: `feat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'features', newFeature.id), newFeature);
+    setRawajFeatures((prev) => [...prev, newFeature]);
   };
-  const updateRawajFeature = (id: string, feat: Partial<RawajFeature>) => {
-    setRawajFeatures((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...feat } : f))
-    );
-    setDoc(doc(db, 'features', id), feat, { merge: true }).catch((e) => console.warn(e));
+
+  const updateRawajFeature = async (id: string, feat: Partial<RawajFeature>): Promise<void> => {
+    await setDoc(doc(db, 'features', id), feat, { merge: true });
+    setRawajFeatures((prev) => prev.map((item) => item.id === id ? { ...item, ...feat } : item));
   };
-  const deleteRawajFeature = (id: string) => {
-    setRawajFeatures((prev) => prev.filter((f) => f.id !== id));
-    deleteDoc(doc(db, 'features', id)).catch((e) => console.warn(e));
+
+  const deleteRawajFeature = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'features', id));
+    setRawajFeatures((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Client Logos CRUD
-  const addClientLogo = (cli: Omit<ClientLogo, 'id'>) => {
-    const id = `cli-${Date.now()}`;
-    const newCli: ClientLogo = { ...cli, id };
-    setClientLogos((prev) => [...prev, newCli]);
-    setDoc(doc(db, 'client_logos', id), newCli).catch((e) => console.warn(e));
+  const addClientLogo = async (client: Omit<ClientLogo, 'id'>): Promise<void> => {
+    const newClient: ClientLogo = {
+      ...client,
+      id: `cli-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'client_logos', newClient.id), newClient);
+    setClientLogos((prev) => [...prev, newClient]);
   };
-  const updateClientLogo = (id: string, cli: Partial<ClientLogo>) => {
-    setClientLogos((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...cli } : c))
-    );
-    setDoc(doc(db, 'client_logos', id), cli, { merge: true }).catch((e) => console.warn(e));
+
+  const updateClientLogo = async (id: string, client: Partial<ClientLogo>): Promise<void> => {
+    await setDoc(doc(db, 'client_logos', id), client, { merge: true });
+    setClientLogos((prev) => prev.map((item) => item.id === id ? { ...item, ...client } : item));
   };
-  const deleteClientLogo = (id: string) => {
-    setClientLogos((prev) => prev.filter((c) => c.id !== id));
-    deleteDoc(doc(db, 'client_logos', id)).catch((e) => console.warn(e));
+
+  const deleteClientLogo = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'client_logos', id));
+    setClientLogos((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Testimonials CRUD
-  const addTestimonial = (test: Omit<Testimonial, 'id'>) => {
-    const id = `test-${Date.now()}`;
-    const newTest: Testimonial = { ...test, id };
-    setTestimonials((prev) => [...prev, newTest]);
-    setDoc(doc(db, 'testimonials', id), newTest).catch((e) => console.warn(e));
+  const addTestimonial = async (testimonial: Omit<Testimonial, 'id'>): Promise<void> => {
+    const newTestimonial: Testimonial = {
+      ...testimonial,
+      id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'testimonials', newTestimonial.id), newTestimonial);
+    setTestimonials((prev) => [...prev, newTestimonial]);
   };
-  const updateTestimonial = (id: string, test: Partial<Testimonial>) => {
-    setTestimonials((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...test } : t))
-    );
-    setDoc(doc(db, 'testimonials', id), test, { merge: true }).catch((e) => console.warn(e));
+
+  const updateTestimonial = async (
+    id: string,
+    testimonial: Partial<Testimonial>
+  ): Promise<void> => {
+    await setDoc(doc(db, 'testimonials', id), testimonial, { merge: true });
+    setTestimonials((prev) => prev.map((item) => item.id === id ? { ...item, ...testimonial } : item));
   };
-  const deleteTestimonial = (id: string) => {
-    setTestimonials((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'testimonials', id)).catch((e) => console.warn(e));
+
+  const deleteTestimonial = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'testimonials', id));
+    setTestimonials((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Design Tasks & Proof Workflows CRUD
-  const createDesignTask = (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>): DesignTask => {
-    const id = `task-${Date.now()}`;
+  const createDesignTask = async (
+    taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>
+  ): Promise<DesignTask> => {
+    const now = new Date().toISOString();
     const newTask: DesignTask = {
       ...taskData,
-      id,
+      id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       proof_versions: [],
       comments: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     };
+    await setDoc(doc(db, 'design_tasks', newTask.id), newTask);
     setDesignTasks((prev) => [newTask, ...prev]);
-    setDoc(doc(db, 'design_tasks', id), newTask).catch((e) => console.warn(e));
     return newTask;
   };
 
-  const updateDesignTask = (id: string, updates: Partial<DesignTask>) => {
-    setDesignTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t))
-    );
-    setDoc(doc(db, 'design_tasks', id), { ...updates, updated_at: new Date().toISOString() }, { merge: true }).catch((e) => console.warn(e));
+  const updateDesignTask = async (id: string, updates: Partial<DesignTask>): Promise<void> => {
+    const existing = designTasks.find((task) => task.id === id);
+    if (!existing) throw new Error('مهمة التصميم غير موجودة.');
+    const updatedTask: DesignTask = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    await setDoc(doc(db, 'design_tasks', id), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((task) => task.id === id ? updatedTask : task));
   };
 
-  const addDesignProof = (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => {
-    const proofId = `proof-${Date.now()}`;
+  const addDesignProof = async (
+    taskId: string,
+    proof: Omit<DesignProofVersion, 'id' | 'created_at'>
+  ): Promise<void> => {
+    const task = designTasks.find((item) => item.id === taskId);
+    if (!task) throw new Error('مهمة التصميم غير موجودة.');
     const newProof: DesignProofVersion = {
       ...proof,
-      id: proofId,
+      id: `proof-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       created_at: new Date().toISOString(),
     };
-    setDesignTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const updatedProofs = [...t.proof_versions, newProof];
-        const updatedTask = {
-          ...t,
-          proof_versions: updatedProofs,
-          status: 'proof_submitted' as DesignTaskStatus,
-          updated_at: new Date().toISOString(),
-        };
-        setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true }).catch((e) => console.warn(e));
-        return updatedTask;
-      })
-    );
+    const updatedTask: DesignTask = {
+      ...task,
+      proof_versions: [...task.proof_versions, newProof],
+      status: 'proof_submitted',
+      updated_at: new Date().toISOString(),
+    };
+    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((item) => item.id === taskId ? updatedTask : item));
   };
 
-  const addDesignComment = (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => {
-    const commId = `comm-${Date.now()}`;
-    const newComm: DesignComment = {
+  const addDesignComment = async (
+    taskId: string,
+    comment: Omit<DesignComment, 'id' | 'created_at'>
+  ): Promise<void> => {
+    const task = designTasks.find((item) => item.id === taskId);
+    if (!task) throw new Error('مهمة التصميم غير موجودة.');
+    const newComment: DesignComment = {
       ...comment,
-      id: commId,
+      id: `comm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       created_at: new Date().toISOString(),
     };
-    setDesignTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const updatedComments = [...t.comments, newComm];
-        const newStatus = comment.status_change || t.status;
-        const updatedTask = {
-          ...t,
-          comments: updatedComments,
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        };
-        setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true }).catch((e) => console.warn(e));
-        return updatedTask;
-      })
-    );
+    const updatedTask: DesignTask = {
+      ...task,
+      comments: [...task.comments, newComment],
+      status: comment.status_change || task.status,
+      updated_at: new Date().toISOString(),
+    };
+    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((item) => item.id === taskId ? updatedTask : item));
   };
 
-  const deleteDesignTask = (id: string) => {
-    setDesignTasks((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'design_tasks', id)).catch((e) => console.warn(e));
+  const deleteDesignTask = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'design_tasks', id));
+    setDesignTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
   // Search Engine with synonym normalization
@@ -1973,7 +1821,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isDarkMode,
         toggleTheme,
         isCloudSynced,
-        seedInitialDataToCloud,
         currentRoute,
         navigate,
         departments,
@@ -1990,7 +1837,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         siteSettings,
         users,
         currentUser,
-        setCurrentUser,
         homeSlides,
         addHomeSlide,
         updateHomeSlide,

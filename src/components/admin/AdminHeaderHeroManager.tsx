@@ -3,14 +3,13 @@ import { useApp } from '../../context/AppContext';
 import { 
   Sparkles, 
   Upload, 
-  Image as ImageIcon, 
   Save, 
   CheckCircle2, 
-  Info,
-  Wand2,
-  RefreshCw
+  Info
 } from 'lucide-react';
 import { ImageUploadPicker } from '../common/ImageUploadPicker';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminHeaderHeroManager: React.FC = () => {
   const { heroHeaderSettings, updateHeroHeaderSettings, siteSettings, updateSiteSettings } = useApp();
@@ -20,11 +19,8 @@ export const AdminHeaderHeroManager: React.FC = () => {
   const [companySlogan, setCompanySlogan] = useState(heroHeaderSettings.slogan_ar || siteSettings.slogan_ar || '');
   const [logoUrl, setLogoUrl] = useState(siteSettings.logo_url || '');
   const [savedNotice, setSavedNotice] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const bgInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     setFormData({ ...heroHeaderSettings });
@@ -33,63 +29,62 @@ export const AdminHeaderHeroManager: React.FC = () => {
     setLogoUrl(siteSettings.logo_url || '');
   }, [heroHeaderSettings, siteSettings]);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setLogoUrl(reader.result);
-          updateSiteSettings({ logo_url: reader.result });
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      const optimized = await optimizeImageFile(file, 900, 900, 0.9);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: 'branding',
+        fileName: 'rawaj-logo',
+      });
+      setLogoUrl(stored.publicUrl);
+      await updateSiteSettings({ logo_url: stored.publicUrl });
+    } catch (error: any) {
+      console.error('Supabase logo upload failed:', error);
+      alert(error?.message || 'تعذر رفع الشعار.');
     }
   };
 
-  const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setFormData((prev) => ({ ...prev, bg_image_url: reader.result as string }));
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      const optimized = await optimizeImageFile(file, 1920, 1200, 0.88);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: 'hero',
+        fileName: 'hero-background',
+      });
+      setFormData((prev) => ({ ...prev, bg_image_url: stored.publicUrl }));
+    } catch (error: any) {
+      console.error('Supabase hero background upload failed:', error);
+      alert(error?.message || 'تعذر رفع خلفية الهيدر.');
     }
   };
 
-  const handleGenerateAiBg = () => {
-    if (!aiPrompt.trim()) return;
-    setIsGeneratingAi(true);
-    setTimeout(() => {
-      const presets = [
-        'https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=1920&q=80',
-        'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80',
-        'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1920&q=80',
-        'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=1920&q=80',
-      ];
-      const randomBg = presets[Math.floor(Math.random() * presets.length)];
-      setFormData((prev) => ({ ...prev, bg_image_url: randomBg }));
-      setIsGeneratingAi(false);
-    }, 1000);
-  };
-
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateHeroHeaderSettings({
-      ...formData,
-      company_name_ar: companyName,
-      slogan_ar: companySlogan,
-    });
-    updateSiteSettings({
-      company_name_ar: companyName,
-      slogan_ar: companySlogan,
-      logo_url: logoUrl,
-    });
-    setSavedNotice(true);
-    setTimeout(() => setSavedNotice(false), 3000);
+    try {
+      await Promise.all([
+        updateHeroHeaderSettings({
+          ...formData,
+          company_name_ar: companyName,
+          slogan_ar: companySlogan,
+        }),
+        updateSiteSettings({
+          company_name_ar: companyName,
+          slogan_ar: companySlogan,
+          logo_url: logoUrl,
+        }),
+      ]);
+      setSavedNotice(true);
+      setTimeout(() => setSavedNotice(false), 3000);
+    } catch (error: any) {
+      console.error('Supabase header settings save failed:', error);
+      alert(error?.message || 'تعذر حفظ إعدادات الهيدر.');
+    }
   };
 
   return (
@@ -279,7 +274,7 @@ export const AdminHeaderHeroManager: React.FC = () => {
           </div>
         </div>
 
-        {/* Background Image, Upload & AI Prompt */}
+        {/* Background Image */}
         <div className="p-6 rounded-2xl bg-white dark:bg-[#1E1B1A] border border-[#EBE4D5] dark:border-[#2E2A28] shadow-xs space-y-5">
           <div className="flex items-center justify-between border-b border-[#F0EBE0] dark:border-[#2E2A28] pb-3">
             <h4 className="font-heading font-black text-sm text-[#171616] dark:text-[#F5F1EA]">

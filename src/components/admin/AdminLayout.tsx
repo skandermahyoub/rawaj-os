@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
+import { supabase } from '../../lib/supabase';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 import { RawajLogo } from '../common/RawajLogo';
 import { PWAInstallModal } from '../common/PWAInstallModal';
 import { 
@@ -66,8 +69,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 }) => {
   const { 
     currentUser, 
-    setCurrentUser, 
-    users, 
     isDarkMode, 
     toggleTheme, 
     navigate, 
@@ -81,26 +82,93 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     updateSiteSettings
   } = useApp();
 
-  // Admin Session Authentication State
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('rawaj_admin_session') === 'authenticated';
-  });
+  // Supabase Auth is the single source of truth for administration access.
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [adminEmailInput, setAdminEmailInput] = useState('');
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
 
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminPasswordInput.trim() === 'rawaj2026' || adminPasswordInput.trim() === 'admin' || adminPasswordInput.trim().length >= 4) {
-      sessionStorage.setItem('rawaj_admin_session', 'authenticated');
+  const verifyAdministrativeSession = async (userId?: string) => {
+    if (!userId) {
+      setIsAdminAuthenticated(false);
+      setIsCheckingAuth(false);
+      return false;
+    }
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role, is_active')
+      .eq('id', userId)
+      .single();
+
+    const allowed = !error
+      && profile?.is_active === true
+      && ['owner', 'admin', 'editor', 'sales', 'designer'].includes(profile.role);
+
+    if (!allowed) {
+      await supabase.auth.signOut();
+      setIsAdminAuthenticated(false);
+      setAuthError('هذا الحساب لا يملك صلاحية الدخول إلى لوحة إدارة رواج.');
+    } else {
       setIsAdminAuthenticated(true);
       setAuthError('');
-    } else {
-      setAuthError('كلمة المرور غير صحيحة. يرجى التأكد وإعادة المحاولة.');
     }
+
+    setIsCheckingAuth(false);
+    return allowed;
   };
 
-  const handleAdminLogout = () => {
-    sessionStorage.removeItem('rawaj_admin_session');
+  useEffect(() => {
+    let active = true;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      void verifyAdministrativeSession(data.session?.user.id);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTimeout(() => {
+        if (active) void verifyAdministrativeSession(session?.user.id);
+      }, 0);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setIsCheckingAuth(true);
+
+    const email = adminEmailInput.trim().toLowerCase();
+    if (!email || !adminPasswordInput) {
+      setAuthError('أدخل البريد الإلكتروني وكلمة المرور.');
+      setIsCheckingAuth(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: adminPasswordInput,
+    });
+
+    if (error || !data.user) {
+      setAuthError('بيانات الدخول غير صحيحة.');
+      setIsCheckingAuth(false);
+      return;
+    }
+
+    await verifyAdministrativeSession(data.user.id);
+  };
+
+  const handleAdminLogout = async () => {
+    await supabase.auth.signOut();
     setIsAdminAuthenticated(false);
     navigate({ view: 'home' });
   };
@@ -183,7 +251,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       icon: Briefcase,
       options: [
         { id: 'portfolio', label: 'معرض الأعمال والمشاريع', shortLabel: 'معرض المشاريع', desc: 'استعراض ونشر صور إنجازات وتجهيزات رواج', icon: Briefcase },
-        { id: 'media', label: 'مكتبة الصور واستوديو AI', shortLabel: 'مكتبة الصور', desc: 'تخزين الصور وتوليد صور إعلانية بالذكاء الاصطناعي', icon: Image },
+        { id: 'media', label: 'مكتبة الصور', shortLabel: 'مكتبة الصور', desc: 'رفع الصور وتنظيمها وحفظها في مكتبة الوسائط', icon: Image },
         { id: 'blog', label: 'دليل الخامات والمدونة', shortLabel: 'دليل الخامات', desc: 'مقالات إرشادية للعملاء حول الورق والتغليف والطباعة', icon: BookOpen },
         { id: 'faq', label: 'الأسئلة الشائعة والأجوبة', shortLabel: 'الأسئلة الشائعة', desc: 'إجابات الاستفسارات المتكررة لعملاء الوكالة', icon: HelpCircle },
       ]
@@ -230,27 +298,42 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     }
   }, [currentSubView]);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 5 ميجابايت');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImgError(false);
-          updateSiteSettings({ logo_url: reader.result });
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 5 ميجابايت');
+      return;
+    }
+
+    try {
+      const optimized = await optimizeImageFile(file, 900, 900, 0.9);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: 'branding',
+        fileName: 'rawaj-logo',
+      });
+      await updateSiteSettings({ logo_url: stored.publicUrl });
+      setImgError(false);
+    } catch (error: any) {
+      console.error('Supabase logo upload failed:', error);
+      alert(error?.message || 'تعذر رفع الشعار.');
+    } finally {
+      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
     }
   };
 
   const handlePillarClick = (pillar: MainPillar) => {
     onNavigateSubView(pillar.options[0].id);
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#110F0E] text-white flex items-center justify-center p-4 font-sans" dir="rtl">
+        <div className="text-xs text-[#A8A29E]">جارٍ التحقق من جلسة الإدارة الآمنة...</div>
+      </div>
+    );
+  }
 
   if (!isAdminAuthenticated) {
     return (
@@ -261,19 +344,31 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               <RawajLogo className="w-10 h-10 object-cover" />
             </div>
             <h1 className="font-heading font-extrabold text-xl text-white">لوحة تحكم وإدارة رواج</h1>
-            <p className="text-xs text-[#A8A29E]">منطقة محمية - يرجى إدخال رمز المرور الخاص بمشرف النظام للوصول</p>
+            <p className="text-xs text-[#A8A29E]">منطقة محمية عبر Supabase Auth — استخدم حساب الإدارة المعتمد</p>
           </div>
 
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-[#D6D3D1]">رمز مرور الإدارة (Admin Passcode)</label>
+              <label className="block text-xs font-bold text-[#D6D3D1]">البريد الإلكتروني</label>
+              <input
+                type="email"
+                value={adminEmailInput}
+                onChange={(e) => setAdminEmailInput(e.target.value)}
+                placeholder="admin@rawaj.com"
+                autoComplete="username"
+                className="w-full bg-[#272322] border border-[#3A3533] rounded-xl px-4 py-3 text-sm text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-[#D6D3D1]">كلمة المرور</label>
               <input
                 type="password"
                 value={adminPasswordInput}
                 onChange={(e) => setAdminPasswordInput(e.target.value)}
-                placeholder="أدخل رمز المرور..."
+                placeholder="كلمة المرور..."
+                autoComplete="current-password"
                 className="w-full bg-[#272322] border border-[#3A3533] rounded-xl px-4 py-3 text-sm text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
-                autoFocus
               />
             </div>
 
@@ -446,13 +541,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               )}
             </button>
 
-            {/* User Profile Switcher Trigger */}
+            {/* Authenticated administrator profile */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="hidden xl:flex items-center gap-2 p-1.5 px-2.5 rounded-xl bg-white dark:bg-[#1A1816] border border-[#E8E2D5] dark:border-[#2D2A26] hover:border-brand-primary shadow-2xs transition-all cursor-pointer"
-                title="تغيير المستخدم أو الصلاحية"
+                title="الحساب الحالي"
               >
                 <div className="w-7 h-7 rounded-lg bg-brand-primary text-white font-bold text-xs flex items-center justify-center">
                   {currentUser.name.charAt(0)}
@@ -460,7 +555,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                 <div className="text-right">
                   <div className="text-xs font-bold leading-tight text-[#171616] dark:text-[#F7F5F0]">{currentUser.name}</div>
                   <div className="text-[10px] text-brand-primary font-bold">
-                    {currentUser.role === 'owner' ? 'المدير العام' : 'مسؤول النظام'}
+                    {currentUser.role === 'owner' ? 'المالك / المدير العام' : currentUser.role}
                   </div>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-[#867F75]" />
@@ -472,43 +567,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                     <p className="text-xs font-bold">{currentUser.name}</p>
                     <p className="text-[11px] text-[#867F75] dark:text-[#9E978C] font-mono">{currentUser.email}</p>
                   </div>
-
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold text-[#867F75] px-2 py-1">
-                      التبديل بين الحسابات التجريبية:
-                    </div>
-                    {users.map((u) => (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => {
-                          setCurrentUser(u);
-                          setUserMenuOpen(false);
-                        }}
-                        className={`w-full text-right p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-colors ${
-                          currentUser.id === u.id 
-                            ? 'bg-brand-primary/10 text-brand-primary' 
-                            : 'hover:bg-[#FAF8F5] dark:hover:bg-[#201D1C]'
-                        }`}
-                      >
-                        <span>{u.name}</span>
-                        <span className="text-[10px] font-mono opacity-60">
-                          {u.role === 'owner' ? 'مالك' : u.role === 'admin' ? 'مدير' : 'محرر'}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="pt-2 mt-1 border-t border-[#E8E2D5] dark:border-[#262320]">
-                    <button
-                      type="button"
-                      onClick={() => navigate({ view: 'home' })}
-                      className="w-full text-right p-2 rounded-xl text-xs font-bold text-brand-primary hover:bg-brand-primary/10 flex items-center gap-2"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>الخروج لواجهة المتجر</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleAdminLogout()}
+                    className="w-full text-right p-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>تسجيل الخروج</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -712,29 +778,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                   })}
                 </div>
 
-                {/* Switch Demo Accounts */}
-                <div className="pt-4 border-t border-[#E8E2D5] dark:border-[#262320] space-y-2">
-                  <span className="text-[11px] font-bold text-[#867F75] dark:text-[#9E978C] uppercase tracking-wider block">
-                    الحساب الحالي والصلاحية:
-                  </span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {users.map((u) => (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => setCurrentUser(u)}
-                        className={`p-2 rounded-xl text-center text-xs font-bold border transition-all ${
-                          currentUser.id === u.id
-                            ? 'bg-brand-primary text-white border-brand-primary shadow-xs'
-                            : 'bg-white dark:bg-[#1A1816] text-[#70695F] dark:text-[#A8A196] border-[#E8E2D5] dark:border-[#2D2A26]'
-                        }`}
-                      >
-                        <div className="truncate">{u.name.split(' ')[0]}</div>
-                        <div className="text-[9px] opacity-75 font-mono">
-                          {u.role === 'owner' ? 'مالك' : u.role === 'admin' ? 'مدير' : 'محرر'}
-                        </div>
-                      </button>
-                    ))}
+                <div className="pt-4 border-t border-[#E8E2D5] dark:border-[#262320]">
+                  <div className="text-[11px] font-bold text-[#867F75] dark:text-[#9E978C]">
+                    الحساب: <span className="text-brand-primary">{currentUser.name}</span>
                   </div>
                 </div>
 

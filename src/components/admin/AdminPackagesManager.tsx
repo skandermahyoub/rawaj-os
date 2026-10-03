@@ -22,8 +22,7 @@ import {
 } from 'lucide-react';
 import { ImageUploadPicker } from '../common/ImageUploadPicker';
 import { SECTOR_PACKAGES_DATA } from '../../data/sectorPackagesData';
-import { db } from '../../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { db, doc, setDoc } from '../../lib/cloudDb';
 
 export const AdminPackagesManager: React.FC = () => {
   const { packages, services, createPackage, updatePackage, deletePackage, navigate, isCloudSynced } = useApp();
@@ -99,7 +98,7 @@ export const AdminPackagesManager: React.FC = () => {
         await setDoc(doc(db, 'packages', pkg.id), pkg, { merge: true });
         count++;
       }
-      setSyncFeedback(`تمت مزامنة ورفع ${count} باقات قطاعية بنجاح إلى سحابة Firebase!`);
+      setSyncFeedback(`تمت مزامنة ورفع ${count} باقات قطاعية بنجاح إلى سحابة Supabase!`);
       setTimeout(() => setSyncFeedback(null), 5000);
     } catch (err: any) {
       setSyncFeedback(`حدث خطأ أثناء المزامنة: ${err.message}`);
@@ -144,7 +143,7 @@ export const AdminPackagesManager: React.FC = () => {
             onClick={handleSyncSectorPackagesToCloud}
             disabled={isSyncingCloud}
             className="flex-1 md:flex-initial bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all"
-            title="رفع وتحديث كافة باقات القطاعات الذهبية إلى Firebase"
+            title="رفع وتحديث كافة باقات القطاعات الذهبية إلى Supabase"
           >
             <RefreshCw className={`w-4 h-4 ${isSyncingCloud ? 'animate-spin' : ''}`} />
             <span>{isSyncingCloud ? 'جار المزامنة السحابية...' : 'مزامنة الباقات السحابية'}</span>

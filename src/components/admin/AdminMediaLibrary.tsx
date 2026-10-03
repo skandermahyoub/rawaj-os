@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Image, Upload, Trash2, Copy, Check, Search, Tag, ExternalLink, Plus, FolderPlus, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Image, Upload, Trash2, Copy, Check, FolderPlus } from 'lucide-react';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { VERIFIED_RAWAJ_ASSETS } from '../../data/rawajMediaAssets';
-import { AdminPromptsStudio } from './AdminPromptsStudio';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminMediaLibrary: React.FC = () => {
   const { mediaItems, uploadMedia, deleteMedia } = useApp();
 
-  const [activeMainTab, setActiveMainTab] = useState<'library' | 'prompts'>('library');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -40,10 +39,17 @@ export const AdminMediaLibrary: React.FC = () => {
       setIsUploading(true);
       try {
         const optimized = await optimizeImageFile(file, 1200, 1200, 0.85);
-        uploadMedia({
-          name: file.name.replace(/\.[^/.]+$/, ''),
-          url: optimized.dataUrl,
-          size_kb: optimized.sizeKb,
+        const cleanName = file.name.replace(/\.[^/.]+$/, '');
+        const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+          folder: newCategory || 'uploads',
+          fileName: cleanName || 'image',
+        });
+        await uploadMedia({
+          name: cleanName,
+          url: stored.publicUrl,
+          storage_path: stored.path,
+          mime_type: stored.mimeType,
+          size_kb: stored.sizeKb,
           category: newCategory,
           alt_ar: file.name,
         });
@@ -55,10 +61,10 @@ export const AdminMediaLibrary: React.FC = () => {
     }
   };
 
-  const handleAddDirectUrl = (e: React.FormEvent) => {
+  const handleAddDirectUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl.trim() || !newName.trim()) return;
-    uploadMedia({
+    await uploadMedia({
       name: newName,
       url: newUrl,
       size_kb: 250,
@@ -69,8 +75,8 @@ export const AdminMediaLibrary: React.FC = () => {
     setNewName('');
   };
 
-  const handleImportVerifiedAsset = (asset: typeof VERIFIED_RAWAJ_ASSETS[0]) => {
-    uploadMedia({
+  const handleImportVerifiedAsset = async (asset: typeof VERIFIED_RAWAJ_ASSETS[0]) => {
+    await uploadMedia({
       name: asset.title,
       url: asset.url,
       size_kb: 350,
@@ -82,66 +88,29 @@ export const AdminMediaLibrary: React.FC = () => {
   return (
     <div className="space-y-6 text-right pb-16 font-sans">
       
-      {/* Header & Tabs */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#FFFDFA] dark:bg-[#1C1A1A] p-4 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F]">
         <div>
           <h1 className="font-heading font-extrabold text-base sm:text-lg text-[#171616] dark:text-white flex items-center gap-2">
             <Image className="w-5 h-5 text-[#B9142D]" />
-            <span>مكتبة الوسائط واستوديو برومبتات رواج (Media & AI Studio)</span>
+            <span>مكتبة الوسائط والصور</span>
           </h1>
           <p className="text-xs text-[#78716C] dark:text-[#A8A29E]">
             إجمالي الصور المعتمدة: <strong>{mediaItems.length}</strong> وسائط فنية محفوظة
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-2 bg-[#FAF7F2] dark:bg-[#252220] p-1 rounded-xl border border-[#DCD5C5] dark:border-[#3A3533] self-start md:self-auto">
-          <button
-            type="button"
-            onClick={() => setActiveMainTab('library')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              activeMainTab === 'library'
-                ? 'bg-[#B9142D] text-white shadow-xs'
-                : 'text-[#57534E] dark:text-[#D6D3D1] hover:text-[#171616]'
-            }`}
-          >
-            <Image className="w-3.5 h-3.5" />
-            <span>معرض الصور والرفع</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveMainTab('prompts')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              activeMainTab === 'prompts'
-                ? 'bg-[#B9142D] text-white shadow-xs'
-                : 'text-[#57534E] dark:text-[#D6D3D1] hover:text-[#171616]'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>استوديو موجهات AI (Prompts)</span>
-          </button>
-
-          {activeMainTab === 'library' && (
-            <button
-              type="button"
-              onClick={() => setShowVerifiedPicker(!showVerifiedPicker)}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#D4AF37] hover:bg-[#D4AF37]/10 flex items-center gap-1 border-r border-[#E7E0D3] dark:border-[#332F2F] pr-2"
-              title="استعراض نماذج رواج المعتمدة"
-            >
-              <FolderPlus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{showVerifiedPicker ? 'إخفاء النماذج' : 'النماذج المعتمدة'}</span>
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowVerifiedPicker(!showVerifiedPicker)}
+          className="px-3 py-2 rounded-xl text-xs font-bold text-[#D4AF37] hover:bg-[#D4AF37]/10 flex items-center gap-1 border border-[#E7E0D3] dark:border-[#332F2F]"
+          title="استعراض نماذج رواج المعتمدة"
+        >
+          <FolderPlus className="w-3.5 h-3.5" />
+          <span>{showVerifiedPicker ? 'إخفاء النماذج' : 'النماذج المعتمدة'}</span>
+        </button>
       </div>
-
-      {/* RENDER PROMPTS STUDIO TAB */}
-      {activeMainTab === 'prompts' && <AdminPromptsStudio />}
-
-      {/* RENDER MEDIA LIBRARY TAB */}
-      {activeMainTab === 'library' && (
-        <div className="space-y-6">
+      <div className="space-y-6">
           {/* Verified Rawaj Assets Drawer */}
           {showVerifiedPicker && (
             <div className="bg-[#FFFDFA] dark:bg-[#1C1A1A] p-4 sm:p-5 rounded-2xl border-2 border-[#D4AF37]/50 shadow-md space-y-3">
@@ -305,8 +274,7 @@ export const AdminMediaLibrary: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-      )}
+      </div>
 
     </div>
   );

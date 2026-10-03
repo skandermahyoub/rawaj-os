@@ -13,6 +13,8 @@ import {
   Upload
 } from 'lucide-react';
 import { AboutUsModuleData } from '../../types';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminAboutModuleManager: React.FC = () => {
   const { aboutUsData, updateAboutUsData } = useApp();
@@ -23,11 +25,31 @@ export const AdminAboutModuleManager: React.FC = () => {
     setFormData({ ...aboutUsData });
   }, [aboutUsData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateAboutUsData(formData);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    try {
+      await updateAboutUsData(formData);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (error: any) {
+      console.error('Supabase about settings save failed:', error);
+      alert(error?.message || 'تعذر حفظ بيانات من نحن.');
+    }
+  };
+
+  const handleManagerPhotoUpload = async (file?: File) => {
+    if (!file) return;
+    try {
+      const optimized = await optimizeImageFile(file, 1000, 1000, 0.88);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: 'about',
+        fileName: 'general-manager',
+      });
+      setFormData((prev) => ({ ...prev, gm_photo_url: stored.publicUrl }));
+    } catch (error: any) {
+      console.error('Supabase manager photo upload failed:', error);
+      alert(error?.message || 'تعذر رفع صورة المدير العام.');
+    }
   };
 
   return (
@@ -120,18 +142,7 @@ export const AdminAboutModuleManager: React.FC = () => {
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            if (typeof reader.result === 'string') {
-                              setFormData({ ...formData, gm_photo_url: reader.result });
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
+                      onChange={(e) => void handleManagerPhotoUpload(e.target.files?.[0])}
                     />
                   </label>
                 </div>

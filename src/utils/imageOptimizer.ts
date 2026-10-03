@@ -1,7 +1,7 @@
 /**
  * Image Optimizer Utility for Client-side Image Upload
  * Automatically downsizes and compresses large phone camera pictures / screenshots
- * to optimized WebP/JPEG data URLs under 200KB for instant storage in Firestore & localStorage.
+ * to optimized WebP/JPEG data URLs used only as an in-memory transfer format before Supabase Storage upload.
  */
 
 export interface OptimizedImageResult {

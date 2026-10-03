@@ -25,8 +25,7 @@ import {
 } from 'lucide-react';
 import { Service, ServiceStatus } from '../../types';
 import { INITIAL_SERVICES } from '../../data/initialData';
-import { db } from '../../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { db, doc, setDoc } from '../../lib/cloudDb';
 
 interface AdminServicesListProps {
   onNavigateSubView: (view: any, editId?: string) => void;
@@ -72,7 +71,7 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
     setIsSyncing(true);
     setSyncSuccessMsg(null);
     try {
-      // Sync all initial 34 services into Firestore
+      // Sync all initial 34 services into Supabase
       const promises = INITIAL_SERVICES.map((s) => 
         setDoc(doc(db, 'services', s.id), s, { merge: true })
       );
