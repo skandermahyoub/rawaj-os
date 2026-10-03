@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { RawajLogo } from './RawajLogo';
 import { PWAInstallModal } from './PWAInstallModal';
@@ -35,35 +35,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCustomQuote }) => {
     currentRoute, 
     navigate, 
     quoteItems,
-    siteSettings,
-    updateSiteSettings
+    siteSettings
   } = useApp();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const cartCount = quoteItems.length;
   const isActive = (view: string) => currentRoute.view === view;
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 5 ميجابايت');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImgError(false);
-          updateSiteSettings({ logo_url: reader.result });
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const navLinks = [
     { label: 'الرئيسية', view: 'home', icon: Home },
@@ -78,15 +57,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCustomQuote }) => {
   return (
     <>
       <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 dark:bg-[#0E0D0C]/90 backdrop-blur-xl border-b border-[#E8E2D5]/80 dark:border-[#262320]/80 transition-colors duration-300">
-        {/* Hidden File Input for Logo Upload */}
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleLogoUpload} 
-          accept="image/*" 
-          className="hidden" 
-        />
-
         {/* Main Top Header Bar Row */}
         <div className="max-w-7xl mx-auto w-full h-16 sm:h-20 flex items-center justify-between gap-4 px-4 sm:px-8">
           
