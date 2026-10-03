@@ -256,17 +256,17 @@ interface AppContextType {
   deleteMedia: (id: string) => Promise<void>;
 
   // Packages & Portfolio & Blog CRUD
-  createPackage: (pkg: Omit<Package, 'id'>) => void;
-  updatePackage: (id: string, pkg: Partial<Package>) => void;
-  deletePackage: (id: string) => void;
+  createPackage: (pkg: Omit<Package, 'id'>) => Promise<void>;
+  updatePackage: (id: string, pkg: Partial<Package>) => Promise<void>;
+  deletePackage: (id: string) => Promise<void>;
 
-  createBlogPost: (post: Omit<BlogPost, 'id'>) => void;
-  updateBlogPost: (id: string, post: Partial<BlogPost>) => void;
-  deleteBlogPost: (id: string) => void;
+  createBlogPost: (post: Omit<BlogPost, 'id'>) => Promise<void>;
+  updateBlogPost: (id: string, post: Partial<BlogPost>) => Promise<void>;
+  deleteBlogPost: (id: string) => Promise<void>;
 
-  createPortfolioProject: (proj: Omit<PortfolioProject, 'id'>) => void;
-  updatePortfolioProject: (id: string, proj: Partial<PortfolioProject>) => void;
-  deletePortfolioProject: (id: string) => void;
+  createPortfolioProject: (proj: Omit<PortfolioProject, 'id'>) => Promise<void>;
+  updatePortfolioProject: (id: string, proj: Partial<PortfolioProject>) => Promise<void>;
+  deletePortfolioProject: (id: string) => Promise<void>;
 
   // Taxonomy & Settings & Users
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
@@ -1677,69 +1677,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Packages CRUD
-  const createPackage = (pkg: Omit<Package, 'id'>) => {
-    const id = `pkg-${Date.now()}`;
-    const newPkg: Package = { ...pkg, id };
-    setPackages((prev) => [...prev, newPkg]);
-    setDoc(doc(db, 'packages', id), newPkg).catch((e) => console.warn(e));
+  const createPackage = async (pkg: Omit<Package, 'id'>): Promise<void> => {
+    const newPackage: Package = {
+      ...pkg,
+      id: `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'packages', newPackage.id), newPackage);
+    setPackages((prev) => [...prev, newPackage]);
   };
-  const updatePackage = (id: string, pkg: Partial<Package>) => {
-    setPackages((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...pkg };
-        setDoc(doc(db, 'packages', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updatePackage = async (id: string, pkg: Partial<Package>): Promise<void> => {
+    const existing = packages.find((item) => item.id === id);
+    if (!existing) throw new Error('الباقة غير موجودة.');
+    const updated = { ...existing, ...pkg };
+    await setDoc(doc(db, 'packages', id), updated, { merge: true });
+    setPackages((prev) => prev.map((item) => item.id === id ? updated : item));
   };
-  const deletePackage = (id: string) => {
-    setPackages((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'packages', id)).catch((e) => console.warn(e));
+
+  const deletePackage = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'packages', id));
+    setPackages((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Blog CRUD
-  const createBlogPost = (post: Omit<BlogPost, 'id'>) => {
-    const id = `post-${Date.now()}`;
-    const newPost: BlogPost = { ...post, id };
+  const createBlogPost = async (post: Omit<BlogPost, 'id'>): Promise<void> => {
+    const newPost: BlogPost = {
+      ...post,
+      id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'blog', newPost.id), newPost);
     setBlogPosts((prev) => [newPost, ...prev]);
-    setDoc(doc(db, 'blog', id), newPost).catch((e) => console.warn(e));
   };
-  const updateBlogPost = (id: string, post: Partial<BlogPost>) => {
-    setBlogPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...post };
-        setDoc(doc(db, 'blog', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updateBlogPost = async (id: string, post: Partial<BlogPost>): Promise<void> => {
+    const existing = blogPosts.find((item) => item.id === id);
+    if (!existing) throw new Error('المقال غير موجود.');
+    const updated = { ...existing, ...post };
+    await setDoc(doc(db, 'blog', id), updated, { merge: true });
+    setBlogPosts((prev) => prev.map((item) => item.id === id ? updated : item));
   };
-  const deleteBlogPost = (id: string) => {
-    setBlogPosts((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'blog', id)).catch((e) => console.warn(e));
+
+  const deleteBlogPost = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'blog', id));
+    setBlogPosts((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Portfolio CRUD
-  const createPortfolioProject = (proj: Omit<PortfolioProject, 'id'>) => {
-    const id = `proj-${Date.now()}`;
-    const newProj: PortfolioProject = { ...proj, id };
-    setPortfolioProjects((prev) => [newProj, ...prev]);
-    setDoc(doc(db, 'portfolio', id), newProj).catch((e) => console.warn(e));
+  const createPortfolioProject = async (
+    project: Omit<PortfolioProject, 'id'>
+  ): Promise<void> => {
+    const newProject: PortfolioProject = {
+      ...project,
+      id: `proj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'portfolio', newProject.id), newProject);
+    setPortfolioProjects((prev) => [newProject, ...prev]);
   };
-  const updatePortfolioProject = (id: string, proj: Partial<PortfolioProject>) => {
-    setPortfolioProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const updated = { ...p, ...proj };
-        setDoc(doc(db, 'portfolio', id), updated, { merge: true }).catch((e) => console.warn(e));
-        return updated;
-      })
-    );
+
+  const updatePortfolioProject = async (
+    id: string,
+    project: Partial<PortfolioProject>
+  ): Promise<void> => {
+    const existing = portfolioProjects.find((item) => item.id === id);
+    if (!existing) throw new Error('المشروع غير موجود.');
+    const updated = { ...existing, ...project };
+    await setDoc(doc(db, 'portfolio', id), updated, { merge: true });
+    setPortfolioProjects((prev) => prev.map((item) => item.id === id ? updated : item));
   };
-  const deletePortfolioProject = (id: string) => {
-    setPortfolioProjects((prev) => prev.filter((p) => p.id !== id));
-    deleteDoc(doc(db, 'portfolio', id)).catch((e) => console.warn(e));
+
+  const deletePortfolioProject = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'portfolio', id));
+    setPortfolioProjects((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Taxonomy & Settings & Users
