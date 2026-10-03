@@ -65,8 +65,8 @@ import {
   INITIAL_CONTACT_MESSAGES,
   INITIAL_INDUSTRY_SECTORS
 } from '../data/initialData';
-import { db } from '../lib/firebase';
 import {
+  db,
   collection,
   doc,
   setDoc,
@@ -74,7 +74,7 @@ import {
   onSnapshot,
   getDocs,
   writeBatch,
-} from 'firebase/firestore';
+} from '../lib/cloudDb';
 
 export type NavigationTarget =
   | { view: 'home' }
@@ -675,7 +675,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       // Quotes Listener
       unsubQuotes = onSnapshot(collection(db, 'quotes'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: QuoteRequest[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as QuoteRequest);
@@ -688,7 +688,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Services Listener
       unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: Service[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as Service);
@@ -701,7 +701,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Templates Listener
       unsubTemplates = onSnapshot(collection(db, 'templates'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: ServiceTemplate[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as ServiceTemplate);
@@ -713,7 +713,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Packages Listener
       unsubPackages = onSnapshot(collection(db, 'packages'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: Package[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as Package);
@@ -725,7 +725,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Portfolio Listener
       unsubPortfolio = onSnapshot(collection(db, 'portfolio'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: PortfolioProject[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as PortfolioProject);
@@ -736,7 +736,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Blog Listener
       unsubBlog = onSnapshot(collection(db, 'blog'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: BlogPost[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as BlogPost);
@@ -747,7 +747,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Media Listener
       unsubMedia = onSnapshot(collection(db, 'media'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: MediaItem[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as MediaItem);
@@ -758,7 +758,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Home Slides Listener
       unsubHomeSlides = onSnapshot(collection(db, 'home_slides'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: HomeSlide[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as HomeSlide);
@@ -771,7 +771,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Marquee Listener
       unsubMarquee = onSnapshot(collection(db, 'marquee'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: MarqueeTickerItem[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as MarqueeTickerItem);
@@ -784,7 +784,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Features Listener
       unsubFeatures = onSnapshot(collection(db, 'features'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: RawajFeature[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as RawajFeature);
@@ -797,7 +797,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Client Logos Listener
       unsubClientLogos = onSnapshot(collection(db, 'client_logos'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: ClientLogo[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as ClientLogo);
@@ -810,7 +810,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Testimonials Listener
       unsubTestimonials = onSnapshot(collection(db, 'testimonials'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: Testimonial[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as Testimonial);
@@ -823,7 +823,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // FAQ Listener
       unsubFaq = onSnapshot(collection(db, 'faq'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: GlobalFAQItem[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as GlobalFAQItem);
@@ -836,7 +836,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Contact Messages Listener
       unsubContactMessages = onSnapshot(collection(db, 'contact_messages'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: ContactFormMessage[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as ContactFormMessage);
@@ -849,7 +849,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Users Listener
       unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: User[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as User);
@@ -861,7 +861,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Settings Listener
       unsubSettings = onSnapshot(collection(db, 'settings'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           snapshot.forEach((docSnap) => {
             if (docSnap.id === 'general') {
               const cloud = docSnap.data() as SiteSettings;
@@ -927,7 +927,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Design Tasks Listener
       unsubDesignTasks = onSnapshot(collection(db, 'design_tasks'), (snapshot) => {
-        if (!snapshot.empty) {
+        {
           const list: DesignTask[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as DesignTask);
