@@ -47,6 +47,8 @@ import {
   INITIAL_PORTFOLIO,
   INITIAL_BLOG_POSTS,
   INITIAL_SITE_SETTINGS,
+  INITIAL_USERS,
+  INITIAL_DESIGN_TASKS,
   INITIAL_MEDIA,
   INITIAL_HOME_SLIDES,
   INITIAL_MARQUEE_ITEMS,
@@ -60,6 +62,7 @@ import {
   INITIAL_FOOTER_SETTINGS,
   INITIAL_HOME_MODULES_CONFIG,
   INITIAL_THEME_SETTINGS,
+  INITIAL_CONTACT_MESSAGES,
   INITIAL_INDUSTRY_SECTORS
 } from '../data/initialData';
 import {
@@ -121,16 +124,16 @@ export type NavigationTarget =
 interface AppContextType {
   // Designer Tasks & Workflows
   designTasks: DesignTask[];
-  createDesignTask: (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>) => Promise<DesignTask>;
-  updateDesignTask: (id: string, updates: Partial<DesignTask>) => Promise<void>;
-  addDesignProof: (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => Promise<void>;
-  addDesignComment: (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => Promise<void>;
-  deleteDesignTask: (id: string) => Promise<void>;
+  createDesignTask: (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>) => DesignTask;
+  updateDesignTask: (id: string, updates: Partial<DesignTask>) => void;
+  addDesignProof: (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => void;
+  addDesignComment: (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => void;
+  deleteDesignTask: (id: string) => void;
   // Theme & Visual Styles
   isDarkMode: boolean;
   toggleTheme: () => void;
   themeSettings: ThemeCustomizerSettings;
-  updateThemeSettings: (settings: Partial<ThemeCustomizerSettings>) => Promise<void>;
+  updateThemeSettings: (settings: Partial<ThemeCustomizerSettings>) => void;
 
   // Cloud Sync State
   isCloudSynced: boolean;
@@ -154,13 +157,14 @@ interface AppContextType {
   siteSettings: SiteSettings;
   users: User[];
   currentUser: User;
+  setCurrentUser: (user: User) => void;
 
   // Home Page Section Customizer & Order
   homeModulesConfig: HomeModuleConfig[];
-  updateHomeModulesConfig: (configs: HomeModuleConfig[]) => Promise<void>;
-  toggleModuleVisibility: (id: HomeModuleId) => Promise<void>;
-  reorderHomeModules: (startIndex: number, endIndex: number) => Promise<void>;
-  updateModuleLayout: (id: HomeModuleId, layout_style: string) => Promise<void>;
+  updateHomeModulesConfig: (configs: HomeModuleConfig[]) => void;
+  toggleModuleVisibility: (id: HomeModuleId) => void;
+  reorderHomeModules: (startIndex: number, endIndex: number) => void;
+  updateModuleLayout: (id: HomeModuleId, layout_style: string) => void;
 
   // Module 1: Collapsible Hero Header
   heroHeaderSettings: HeroHeaderSettings;
@@ -168,15 +172,15 @@ interface AppContextType {
 
   // Module 2: Cinematic Slider
   homeSlides: HomeSlide[];
-  addHomeSlide: (slide: Omit<HomeSlide, 'id'>) => Promise<void>;
-  updateHomeSlide: (id: string, slide: Partial<HomeSlide>) => Promise<void>;
-  deleteHomeSlide: (id: string) => Promise<void>;
+  addHomeSlide: (slide: Omit<HomeSlide, 'id'>) => void;
+  updateHomeSlide: (id: string, slide: Partial<HomeSlide>) => void;
+  deleteHomeSlide: (id: string) => void;
 
   // Module 3: Marquee News Ticker
   marqueeItems: MarqueeTickerItem[];
-  addMarqueeItem: (item: Omit<MarqueeTickerItem, 'id'>) => Promise<void>;
-  updateMarqueeItem: (id: string, item: Partial<MarqueeTickerItem>) => Promise<void>;
-  deleteMarqueeItem: (id: string) => Promise<void>;
+  addMarqueeItem: (item: Omit<MarqueeTickerItem, 'id'>) => void;
+  updateMarqueeItem: (id: string, item: Partial<MarqueeTickerItem>) => void;
+  deleteMarqueeItem: (id: string) => void;
 
   // Module 4: About Us Mini-Module
   aboutUsData: AboutUsModuleData;
@@ -184,37 +188,37 @@ interface AppContextType {
 
   // Module 5: Features / Why Choose Us
   rawajFeatures: RawajFeature[];
-  addRawajFeature: (feat: Omit<RawajFeature, 'id'>) => Promise<void>;
-  updateRawajFeature: (id: string, feat: Partial<RawajFeature>) => Promise<void>;
-  deleteRawajFeature: (id: string) => Promise<void>;
+  addRawajFeature: (feat: Omit<RawajFeature, 'id'>) => void;
+  updateRawajFeature: (id: string, feat: Partial<RawajFeature>) => void;
+  deleteRawajFeature: (id: string) => void;
 
   // Module 8 & 9: Brands & Testimonials
   clientLogos: ClientLogo[];
   brandsDisplayMode: BrandDisplayMode;
   updateBrandsDisplayMode: (mode: BrandDisplayMode) => Promise<void>;
-  addClientLogo: (cli: Omit<ClientLogo, 'id'>) => Promise<void>;
-  updateClientLogo: (id: string, cli: Partial<ClientLogo>) => Promise<void>;
-  deleteClientLogo: (id: string) => Promise<void>;
+  addClientLogo: (cli: Omit<ClientLogo, 'id'>) => void;
+  updateClientLogo: (id: string, cli: Partial<ClientLogo>) => void;
+  deleteClientLogo: (id: string) => void;
 
   testimonials: Testimonial[];
-  addTestimonial: (test: Omit<Testimonial, 'id'>) => Promise<void>;
-  updateTestimonial: (id: string, test: Partial<Testimonial>) => Promise<void>;
-  deleteTestimonial: (id: string) => Promise<void>;
+  addTestimonial: (test: Omit<Testimonial, 'id'>) => void;
+  updateTestimonial: (id: string, test: Partial<Testimonial>) => void;
+  deleteTestimonial: (id: string) => void;
   submitPublicTestimonial: (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }) => Promise<void>;
-  updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => Promise<void>;
+  updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => void;
 
   // Module 10: Featured Offers & Promo Banners
   promoSettings: PromoModuleSettings;
-  updatePromoSettings: (settings: Partial<PromoModuleSettings>) => Promise<void>;
-  addPromoBanner: (banner: Omit<PromoBanner, 'id'>) => Promise<void>;
-  updatePromoBanner: (id: string, banner: Partial<PromoBanner>) => Promise<void>;
-  deletePromoBanner: (id: string) => Promise<void>;
+  updatePromoSettings: (settings: Partial<PromoModuleSettings>) => void;
+  addPromoBanner: (banner: Omit<PromoBanner, 'id'>) => void;
+  updatePromoBanner: (id: string, banner: Partial<PromoBanner>) => void;
+  deletePromoBanner: (id: string) => void;
 
   // Module 12: FAQ Accordion
   faqItems: GlobalFAQItem[];
-  addFaqItem: (item: Omit<GlobalFAQItem, 'id'>) => Promise<void>;
-  updateFaqItem: (id: string, item: Partial<GlobalFAQItem>) => Promise<void>;
-  deleteFaqItem: (id: string) => Promise<void>;
+  addFaqItem: (item: Omit<GlobalFAQItem, 'id'>) => void;
+  updateFaqItem: (id: string, item: Partial<GlobalFAQItem>) => void;
+  deleteFaqItem: (id: string) => void;
 
   // Module 13: Contact Messages & Inbox
   contactMessages: ContactFormMessage[];
@@ -240,33 +244,33 @@ interface AppContextType {
   assignQuoteSalesperson: (quoteId: string, salespersonId: string) => Promise<void>;
   updateQuoteNotes: (quoteId: string, internalNotes?: string, supplierNotes?: string) => Promise<void>;
 
-  // Service CRUD
+  // Service CRUD (Admin)
   createService: (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => Promise<Service>;
   updateService: (id: string, serviceData: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
-  duplicateService: (id: string) => Promise<Service>;
+  duplicateService: (id: string) => Service;
 
-  // Template CRUD
-  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => Promise<ServiceTemplate>;
-  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => Promise<void>;
-  deleteTemplate: (id: string) => Promise<void>;
+  // Template CRUD (Admin)
+  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => ServiceTemplate;
+  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => void;
+  deleteTemplate: (id: string) => void;
 
   // Media Library
   uploadMedia: (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }) => Promise<MediaItem>;
   deleteMedia: (id: string) => Promise<void>;
 
   // Packages & Portfolio & Blog CRUD
-  createPackage: (pkg: Omit<Package, 'id'>) => Promise<void>;
-  updatePackage: (id: string, pkg: Partial<Package>) => Promise<void>;
-  deletePackage: (id: string) => Promise<void>;
+  createPackage: (pkg: Omit<Package, 'id'>) => void;
+  updatePackage: (id: string, pkg: Partial<Package>) => void;
+  deletePackage: (id: string) => void;
 
-  createBlogPost: (post: Omit<BlogPost, 'id'>) => Promise<void>;
-  updateBlogPost: (id: string, post: Partial<BlogPost>) => Promise<void>;
-  deleteBlogPost: (id: string) => Promise<void>;
+  createBlogPost: (post: Omit<BlogPost, 'id'>) => void;
+  updateBlogPost: (id: string, post: Partial<BlogPost>) => void;
+  deleteBlogPost: (id: string) => void;
 
-  createPortfolioProject: (proj: Omit<PortfolioProject, 'id'>) => Promise<void>;
-  updatePortfolioProject: (id: string, proj: Partial<PortfolioProject>) => Promise<void>;
-  deletePortfolioProject: (id: string) => Promise<void>;
+  createPortfolioProject: (proj: Omit<PortfolioProject, 'id'>) => void;
+  updatePortfolioProject: (id: string, proj: Partial<PortfolioProject>) => void;
+  deletePortfolioProject: (id: string) => void;
 
   // Taxonomy & Settings & Users
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
@@ -589,7 +593,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return safeStorageLoad(STORAGE_KEYS.CART, []);
   });
 
-  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
+  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>(() => {
+    return safeStorageLoad(STORAGE_KEYS.QUOTES, []);
+  });
 
   // Home Modules State
   const [homeSlides, setHomeSlides] = useState<HomeSlide[]>(() => {
@@ -686,9 +692,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [themeSettings]);
 
-  const [contactMessages, setContactMessages] = useState<ContactFormMessage[]>([]);
+  const [contactMessages, setContactMessages] = useState<ContactFormMessage[]>(() => {
+    return safeStorageLoad(STORAGE_KEYS.CONTACT_MESSAGES, INITIAL_CONTACT_MESSAGES);
+  });
 
-  const [designTasks, setDesignTasks] = useState<DesignTask[]>([]);
+  const [designTasks, setDesignTasks] = useState<DesignTask[]>(() => {
+    return safeStorageLoad(STORAGE_KEYS.DESIGN_TASKS, INITIAL_DESIGN_TASKS);
+  });
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.DESIGN_TASKS, designTasks);
+  }, [designTasks]);
 
   const [brandsDisplayMode, setBrandsDisplayMode] = useState<BrandDisplayMode>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.BRANDS_MODE);
@@ -938,69 +952,405 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.warn('Supabase faq listener:', err.message));
 
-      // Contact Messages
+      // Contact Messages Listener
+      unsubContactMessages = onSnapshot(collection(db, 'contact_messages'), (snapshot) => {
+        {
+          const list: ContactFormMessage[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push(docSnap.data() as ContactFormMessage);
+          });
+          list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          setContactMessages(list);
+          safeStorageSave(STORAGE_KEYS.CONTACT_MESSAGES, list);
+        }
+      }, (err) => console.warn('Supabase contact_messages listener:', err.message));
+
+      // Users Listener
+      unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+        {
+          const list: User[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push(docSnap.data() as User);
+          });
+          setUsers(list);
+          safeStorageSave(STORAGE_KEYS.USERS, list);
+        }
+      }, (err) => console.warn('Supabase users listener:', err.message));
+
+      // Settings Listener
+      unsubSettings = onSnapshot(collection(db, 'settings'), (snapshot) => {
+        {
+          snapshot.forEach((docSnap) => {
+            if (docSnap.id === 'general') {
+              const cloud = docSnap.data() as SiteSettings;
+              setSiteSettings((prev) => {
+                const merged: SiteSettings = {
+                  ...prev,
+                  ...cloud,
+                  logo_url: cloud.logo_url || prev.logo_url || '',
+                  company_name_ar: cloud.company_name_ar || prev.company_name_ar || '',
+                  slogan_ar: cloud.slogan_ar || prev.slogan_ar || '',
+                  mobile_whatsapp: cloud.mobile_whatsapp || prev.mobile_whatsapp || '',
+                };
+                safeStorageSave(STORAGE_KEYS.SETTINGS, merged);
+                return merged;
+              });
+            }
+            if (docSnap.id === 'home_modules_order') {
+              const cloud = docSnap.data();
+              if (cloud && Array.isArray(cloud.configs)) {
+                setHomeModulesConfig(cloud.configs);
+                safeStorageSave(STORAGE_KEYS.HOME_MODULES, cloud.configs);
+              }
+            }
+            if (docSnap.id === 'theme_customizer') {
+              const cloud = docSnap.data() as ThemeCustomizerSettings;
+              if (cloud) {
+                setThemeSettings(cloud);
+                applyThemeToDocument(cloud);
+                safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, cloud);
+              }
+            }
+            if (docSnap.id === 'footer') {
+              const cloud = docSnap.data() as FooterSettings;
+              if (cloud) {
+                setFooterSettings(cloud);
+                safeStorageSave(STORAGE_KEYS.FOOTER, cloud);
+              }
+            }
+            if (docSnap.id === 'about_us' || docSnap.id === 'about_us_module') {
+              const cloud = docSnap.data() as AboutUsModuleData;
+              if (cloud) {
+                setAboutUsData(cloud);
+                safeStorageSave(STORAGE_KEYS.ABOUT_US, cloud);
+              }
+            }
+            if (docSnap.id === 'promo_module' || docSnap.id === 'promos') {
+              const cloud = docSnap.data() as PromoModuleSettings;
+              if (cloud && cloud.banners) {
+                setPromoSettings(cloud);
+                safeStorageSave(STORAGE_KEYS.PROMOS, cloud);
+              }
+            }
+            if (docSnap.id === 'hero_header') {
+              const cloud = docSnap.data() as HeroHeaderSettings;
+              if (cloud) {
+                setHeroHeaderSettings(cloud);
+                safeStorageSave(STORAGE_KEYS.HERO_HEADER, cloud);
+              }
+            }
+            if (docSnap.id === 'brands_display') {
+              const cloud = docSnap.data() as { mode?: BrandDisplayMode };
+              if (cloud?.mode) {
+                setBrandsDisplayMode(cloud.mode);
+                safeStorageSave(STORAGE_KEYS.BRANDS_MODE, cloud.mode);
+              }
+            }
+          });
+        }
+      }, (err) => console.warn('Supabase settings listener:', err.message));
+
+      // Design Tasks Listener
+      unsubDesignTasks = onSnapshot(collection(db, 'design_tasks'), (snapshot) => {
+        {
+          const list: DesignTask[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push(docSnap.data() as DesignTask);
+          });
+          list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          setDesignTasks(list);
+        }
+      }, (err) => console.warn('Supabase design_tasks listener:', err.message));
+
+    } catch (e) {
+      console.warn('Supabase setup note:', e);
+    }
+
+    return () => {
+      if (unsubQuotes) unsubQuotes();
+      if (unsubServices) unsubServices();
+      if (unsubTemplates) unsubTemplates();
+      if (unsubPackages) unsubPackages();
+      if (unsubPortfolio) unsubPortfolio();
+      if (unsubBlog) unsubBlog();
+      if (unsubMedia) unsubMedia();
+      if (unsubSettings) unsubSettings();
+      if (unsubDesignTasks) unsubDesignTasks();
+      if (unsubHomeSlides) unsubHomeSlides();
+      if (unsubMarquee) unsubMarquee();
+      if (unsubFeatures) unsubFeatures();
+      if (unsubClientLogos) unsubClientLogos();
+      if (unsubTestimonials) unsubTestimonials();
+      if (unsubFaq) unsubFaq();
+      if (unsubContactMessages) unsubContactMessages();
+      if (unsubUsers) unsubUsers();
+      if (unsubDepartments) unsubDepartments();
+      if (unsubCategories) unsubCategories();
+      if (unsubSubcategories) unsubSubcategories();
+      if (unsubIndustrySectors) unsubIndustrySectors();
+    };
+  }, []);
+
+  // Initial catalog data is migrated once to Supabase; runtime code never self-seeds production data.
+  // Save changes to localStorage safely
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.SERVICES, services);
+  }, [services]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.TEMPLATES, templates);
+  }, [templates]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.CART, quoteItems);
+  }, [quoteItems]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.QUOTES, quoteRequests);
+  }, [quoteRequests]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.MEDIA, mediaItems);
+  }, [mediaItems]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.PACKAGES, packages);
+  }, [packages]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.PORTFOLIO, portfolioProjects);
+  }, [portfolioProjects]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.BLOG, blogPosts);
+  }, [blogPosts]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.SETTINGS, siteSettings);
+  }, [siteSettings]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.USERS, users);
+  }, [users]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.HOME_SLIDES, homeSlides);
+  }, [homeSlides]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.MARQUEE, marqueeItems);
+  }, [marqueeItems]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.ABOUT_US, aboutUsData);
+  }, [aboutUsData]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.FEATURES, rawajFeatures);
+  }, [rawajFeatures]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.CLIENT_LOGOS, clientLogos);
+  }, [clientLogos]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.HERO_HEADER, heroHeaderSettings);
+  }, [heroHeaderSettings]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.PROMOS, promoSettings);
+  }, [promoSettings]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.FAQ, faqItems);
+  }, [faqItems]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.FOOTER, footerSettings);
+  }, [footerSettings]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.HOME_MODULES, homeModulesConfig);
+  }, [homeModulesConfig]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, themeSettings);
+  }, [themeSettings]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.CONTACT_MESSAGES, contactMessages);
+  }, [contactMessages]);
+
+  useEffect(() => {
+    safeStorageSave(STORAGE_KEYS.BRANDS_MODE, brandsDisplayMode);
+  }, [brandsDisplayMode]);
+
+  // Module 1: Hero Header settings
+  const updateHeroHeaderSettings = async (settings: Partial<HeroHeaderSettings>): Promise<void> => {
+    const updated = { ...heroHeaderSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'hero_header'), updated, { merge: true });
+    setHeroHeaderSettings(updated);
+    safeStorageSave(STORAGE_KEYS.HERO_HEADER, updated);
+  };
+
+  // Theme Customizer
+  const updateThemeSettings = (settings: Partial<ThemeCustomizerSettings>) => {
+    const updated = { ...themeSettings, ...settings };
+    setThemeSettings(updated);
+    applyThemeToDocument(updated);
+    setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true }).catch((e) => console.warn(e));
+  };
+
+  // Home Modules Config & Reordering
+  const updateHomeModulesConfig = (configs: HomeModuleConfig[]) => {
+    setHomeModulesConfig(configs);
+    safeStorageSave(STORAGE_KEYS.HOME_MODULES, configs);
+    setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true }).catch((e) => console.warn(e));
+  };
+
+  const toggleModuleVisibility = (id: HomeModuleId) => {
+    setHomeModulesConfig((prev) => {
+      const updated = prev.map((mod) => (mod.id === id ? { ...mod, is_visible: !mod.is_visible } : mod));
+      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
+      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
+      return updated;
+    });
+  };
+
+  const reorderHomeModules = (startIndex: number, endIndex: number) => {
+    setHomeModulesConfig((prev) => {
+      const result = Array.from(prev);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      const updated = result.map((item, index) => ({ ...item, sort_order: index + 1 }));
+      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
+      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
+      return updated;
+    });
+  };
+
+  const updateModuleLayout = (id: HomeModuleId, layout_style: string) => {
+    setHomeModulesConfig((prev) => {
+      const updated = prev.map((mod) => (mod.id === id ? { ...mod, layout_style } : mod));
+      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
+      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
+      return updated;
+    });
+  };
+
+  // Promo Banners & Module
+  const updatePromoSettings = (settings: Partial<PromoModuleSettings>) => {
+    const updated = { ...promoSettings, ...settings };
+    setPromoSettings(updated);
+    setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true }).catch((e) => console.warn(e));
+  };
+
+  const addPromoBanner = (banner: Omit<PromoBanner, 'id'>) => {
+    const id = `prm-${Date.now()}`;
+    const newBanner: PromoBanner = { ...banner, id };
+    const updatedBanners = [...promoSettings.banners, newBanner];
+    updatePromoSettings({ banners: updatedBanners });
+  };
+
+  const updatePromoBanner = (id: string, banner: Partial<PromoBanner>) => {
+    const updatedBanners = promoSettings.banners.map((b) => (b.id === id ? { ...b, ...banner } : b));
+    updatePromoSettings({ banners: updatedBanners });
+  };
+
+  const deletePromoBanner = (id: string) => {
+    const updatedBanners = promoSettings.banners.filter((b) => b.id !== id);
+    updatePromoSettings({ banners: updatedBanners });
+  };
+
+  // FAQ CRUD
+  const addFaqItem = (item: Omit<GlobalFAQItem, 'id'>) => {
+    const id = `faq-${Date.now()}`;
+    const newItem: GlobalFAQItem = { ...item, id };
+    setFaqItems((prev) => [...prev, newItem]);
+    setDoc(doc(db, 'faq', id), newItem).catch((e) => console.warn(e));
+  };
+
+  const updateFaqItem = (id: string, item: Partial<GlobalFAQItem>) => {
+    setFaqItems((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...item } : f))
+    );
+    setDoc(doc(db, 'faq', id), item, { merge: true }).catch((e) => console.warn(e));
+  };
+
+  const deleteFaqItem = (id: string) => {
+    setFaqItems((prev) => prev.filter((f) => f.id !== id));
+    deleteDoc(doc(db, 'faq', id)).catch((e) => console.warn(e));
+  };
+
+  // Contact Messages
   const submitContactMessage = async (data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>): Promise<void> => {
-    const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const id = `msg-${Date.now()}`;
     const newMsg: ContactFormMessage = {
       ...data,
       id,
       created_at: new Date().toISOString(),
       status: 'unread',
     };
-
-    await setDoc(doc(db, 'contact_messages', id), newMsg);
     setContactMessages((prev) => [newMsg, ...prev]);
+    try {
+      await setDoc(doc(db, 'contact_messages', id), newMsg);
+    } catch (e) {
+      console.error('Supabase contact message submit error:', e);
+      throw e;
+    }
   };
 
   const markContactMessageStatus = async (id: string, status: 'unread' | 'read' | 'replied'): Promise<void> => {
-    await setDoc(doc(db, 'contact_messages', id), { status }, { merge: true });
-    setContactMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)));
+    setContactMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status } : m))
+    );
+    await setDoc(doc(db, 'contact_messages', id), { status }, { merge: true }).catch((e) => console.warn(e));
   };
 
   const deleteContactMessage = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'contact_messages', id));
     setContactMessages((prev) => prev.filter((m) => m.id !== id));
+    await deleteDoc(doc(db, 'contact_messages', id)).catch((e) => console.warn(e));
   };
 
   // Footer Settings
   const updateFooterSettings = async (settings: Partial<FooterSettings>): Promise<void> => {
     const updated = { ...footerSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true });
     setFooterSettings(updated);
-    safeStorageSave(STORAGE_KEYS.FOOTER, updated);
+    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Brands Mode
   const updateBrandsDisplayMode = async (mode: BrandDisplayMode): Promise<void> => {
-    await setDoc(doc(db, 'settings', 'brands_display'), { mode }, { merge: true });
     setBrandsDisplayMode(mode);
-    safeStorageSave(STORAGE_KEYS.BRANDS_MODE, mode);
+    await setDoc(doc(db, 'settings', 'brands_display'), { mode }, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Testimonials Public Submit & Moderation
   const submitPublicTestimonial = async (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }): Promise<void> => {
-    const id = `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const id = `test-${Date.now()}`;
     const newTest: Testimonial = {
       ...data,
       id,
-      client_avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      status: 'pending',
+      client_avatar_url: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80`,
+      status: 'pending', // Pending admin approval!
       sort_order: testimonials.length + 1,
       is_active: false,
       created_at: new Date().toISOString(),
     };
-
-    await setDoc(doc(db, 'testimonials', id), newTest);
     setTestimonials((prev) => [newTest, ...prev]);
+    try {
+      await setDoc(doc(db, 'testimonials', id), newTest);
+    } catch (e) {
+      console.error('Supabase testimonial submit error:', e);
+      throw e;
+    }
   };
 
-  const updateTestimonialStatus = async (
-    id: string,
-    status: 'approved' | 'pending' | 'rejected'
-  ): Promise<void> => {
-    const patch = { status, is_active: status === 'approved' };
-    await setDoc(doc(db, 'testimonials', id), patch, { merge: true });
-    setTestimonials((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  const updateTestimonialStatus = (id: string, status: 'approved' | 'pending' | 'rejected') => {
+    setTestimonials((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status, is_active: status === 'approved' } : t))
+    );
+    setDoc(doc(db, 'testimonials', id), { status, is_active: status === 'approved' }, { merge: true }).catch((e) => console.warn(e));
   };
 
   // Cart operations
@@ -1154,11 +1504,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Quote status management
-  const updateQuoteStatus = async (
-    quoteId: string,
-    newStatus: QuoteStatus,
-    internalNotes?: string
-  ): Promise<void> => {
+  const updateQuoteStatus = async (quoteId: string, newStatus: QuoteStatus, internalNotes?: string) => {
     const statusNames: Record<QuoteStatus, string> = {
       new: 'جديد',
       reviewing: 'قيد المراجعة الفنية',
@@ -1172,33 +1518,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
+    if (!targetQuote) return;
+
+    const newTimeline = [
+      ...targetQuote.timeline,
+      {
+        id: `tl-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        user_name: currentUser.name,
+        action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
+        notes: internalNotes,
+      },
+    ];
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
       status: newStatus,
       internal_notes: internalNotes || targetQuote.internal_notes,
       updated_at: new Date().toISOString(),
-      timeline: [
-        ...targetQuote.timeline,
-        {
-          id: `tl-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          user_name: currentUser.name,
-          action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
-          notes: internalNotes,
-        },
-      ],
+      timeline: newTimeline,
     };
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
     setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
+
+    try {
+      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    } catch (e) {
+      console.warn('Supabase quote status update error:', e);
+    }
   };
 
-  const assignQuoteSalesperson = async (quoteId: string, salespersonId: string): Promise<void> => {
+  const assignQuoteSalesperson = async (quoteId: string, salespersonId: string) => {
     const sp = users.find((u) => u.id === salespersonId);
     const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
+    if (!targetQuote) return;
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
@@ -1215,17 +1568,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ],
     };
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
     setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
+
+    try {
+      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    } catch (e) {
+      console.warn('Supabase quote assignment error:', e);
+    }
   };
 
-  const updateQuoteNotes = async (
-    quoteId: string,
-    internalNotes?: string,
-    supplierNotes?: string
-  ): Promise<void> => {
+  const updateQuoteNotes = async (quoteId: string, internalNotes?: string, supplierNotes?: string) => {
     const targetQuote = quoteRequests.find((q) => q.id === quoteId);
-    if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
+    if (!targetQuote) return;
 
     const updatedQuote: QuoteRequest = {
       ...targetQuote,
@@ -1234,105 +1588,121 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updated_at: new Date().toISOString(),
     };
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
     setQuoteRequests((prev) => prev.map((q) => (q.id === quoteId ? updatedQuote : q)));
+
+    try {
+      await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
+    } catch (e) {
+      console.warn('Supabase quote notes update error:', e);
+    }
   };
 
   // Service CRUD
-  const createService = async (
-    serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>
-  ): Promise<Service> => {
-    const id = `srv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const now = new Date().toISOString();
+  const createService = async (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>): Promise<Service> => {
+    const id = `srv-${Date.now()}`;
     const newService: Service = {
       ...serviceData,
       id,
-      created_at: now,
-      updated_at: now,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-
-    await setDoc(doc(db, 'services', id), newService);
     setServices((prev) => {
       const updated = [newService, ...prev];
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
       return updated;
     });
+    try {
+      await setDoc(doc(db, 'services', id), newService);
+      console.log(`[Supabase] Service ${id} created on cloud`);
+    } catch (e) {
+      console.error(`[Supabase Error] Service creation failed:`, e);
+      throw e;
+    }
     return newService;
   };
 
   const updateService = async (id: string, serviceData: Partial<Service>): Promise<void> => {
-    const existing = services.find((s) => s.id === id);
-    if (!existing) throw new Error('الخدمة غير موجودة.');
-
-    const updatedService: Service = {
-      ...existing,
-      ...serviceData,
-      updated_at: new Date().toISOString(),
-    };
-
-    await setDoc(doc(db, 'services', id), updatedService, { merge: true });
+    let targetService: Service | undefined;
     setServices((prev) => {
-      const updated = prev.map((s) => (s.id === id ? updatedService : s));
+      const updated = prev.map((s) => {
+        if (s.id !== id) return s;
+        return { ...s, ...serviceData, updated_at: new Date().toISOString() };
+      });
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
+      targetService = updated.find((s) => s.id === id);
       return updated;
     });
+    if (targetService) {
+      try {
+        await setDoc(doc(db, 'services', id), targetService, { merge: true });
+        console.log(`[Supabase] Service ${id} updated on cloud`);
+      } catch (e) {
+        console.error(`[Supabase Error] Service update failed:`, e);
+        throw e;
+      }
+    }
   };
 
   const deleteService = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'services', id));
     setServices((prev) => {
       const updated = prev.filter((s) => s.id !== id);
       safeStorageSave(STORAGE_KEYS.SERVICES, updated);
       return updated;
     });
+    try {
+      await deleteDoc(doc(db, 'services', id));
+      console.log(`[Supabase] Service ${id} deleted from cloud`);
+    } catch (e) {
+      console.error(`[Supabase Error] Service deletion failed:`, e);
+      throw e;
+    }
   };
 
-  const duplicateService = async (id: string): Promise<Service> => {
+  const duplicateService = (id: string): Service => {
     const original = services.find((s) => s.id === id);
     if (!original) throw new Error('Service not found');
-
-    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newId = `srv-${Date.now()}`;
     const duplicated: Service = {
       ...original,
-      id: `srv-${suffix}`,
+      id: newId,
       name_ar: `${original.name_ar} (نسخة جديدة)`,
       name_en: `${original.name_en} (Copy)`,
-      slug: `${original.slug}-copy-${suffix}`,
+      slug: `${original.slug}-copy-${Date.now().toString().slice(-4)}`,
       service_status: 'draft',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-
-    await setDoc(doc(db, 'services', duplicated.id), duplicated);
     setServices((prev) => [duplicated, ...prev]);
+    setDoc(doc(db, 'services', newId), duplicated).catch((e) => console.warn(e));
     return duplicated;
   };
 
   // Template CRUD
-  const createTemplate = async (
-    templateData: Omit<ServiceTemplate, 'id'>
-  ): Promise<ServiceTemplate> => {
-    const id = `tmpl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const newTmpl: ServiceTemplate = { ...templateData, id };
-    await setDoc(doc(db, 'templates', id), newTmpl);
+  const createTemplate = (templateData: Omit<ServiceTemplate, 'id'>): ServiceTemplate => {
+    const id = `tmpl-${Date.now()}`;
+    const newTmpl: ServiceTemplate = {
+      ...templateData,
+      id,
+    };
     setTemplates((prev) => [...prev, newTmpl]);
+    setDoc(doc(db, 'templates', id), newTmpl).catch((e) => console.warn(e));
     return newTmpl;
   };
 
-  const updateTemplate = async (
-    id: string,
-    templateData: Partial<ServiceTemplate>
-  ): Promise<void> => {
-    const existing = templates.find((t) => t.id === id);
-    if (!existing) throw new Error('القالب غير موجود.');
-    const updated = { ...existing, ...templateData };
-    await setDoc(doc(db, 'templates', id), updated, { merge: true });
-    setTemplates((prev) => prev.map((t) => (t.id === id ? updated : t)));
+  const updateTemplate = (id: string, templateData: Partial<ServiceTemplate>) => {
+    setTemplates((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const updated = { ...t, ...templateData };
+        setDoc(doc(db, 'templates', id), updated, { merge: true }).catch((e) => console.warn(e));
+        return updated;
+      })
+    );
   };
 
-  const deleteTemplate = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'templates', id));
+  const deleteTemplate = (id: string) => {
     setTemplates((prev) => prev.filter((t) => t.id !== id));
+    deleteDoc(doc(db, 'templates', id)).catch((e) => console.warn(e));
   };
 
   // Media Library
@@ -1365,71 +1735,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Packages CRUD
-  const createPackage = async (pkg: Omit<Package, 'id'>): Promise<void> => {
-    const id = `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const createPackage = (pkg: Omit<Package, 'id'>) => {
+    const id = `pkg-${Date.now()}`;
     const newPkg: Package = { ...pkg, id };
-    await setDoc(doc(db, 'packages', id), newPkg);
     setPackages((prev) => [...prev, newPkg]);
+    setDoc(doc(db, 'packages', id), newPkg).catch((e) => console.warn(e));
   };
-
-  const updatePackage = async (id: string, pkg: Partial<Package>): Promise<void> => {
-    const existing = packages.find((p) => p.id === id);
-    if (!existing) throw new Error('الباقة غير موجودة.');
-    const updated = { ...existing, ...pkg };
-    await setDoc(doc(db, 'packages', id), updated, { merge: true });
-    setPackages((prev) => prev.map((p) => (p.id === id ? updated : p)));
+  const updatePackage = (id: string, pkg: Partial<Package>) => {
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const updated = { ...p, ...pkg };
+        setDoc(doc(db, 'packages', id), updated, { merge: true }).catch((e) => console.warn(e));
+        return updated;
+      })
+    );
   };
-
-  const deletePackage = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'packages', id));
+  const deletePackage = (id: string) => {
     setPackages((prev) => prev.filter((p) => p.id !== id));
+    deleteDoc(doc(db, 'packages', id)).catch((e) => console.warn(e));
   };
 
   // Blog CRUD
-  const createBlogPost = async (post: Omit<BlogPost, 'id'>): Promise<void> => {
-    const id = `post-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const createBlogPost = (post: Omit<BlogPost, 'id'>) => {
+    const id = `post-${Date.now()}`;
     const newPost: BlogPost = { ...post, id };
-    await setDoc(doc(db, 'blog', id), newPost);
     setBlogPosts((prev) => [newPost, ...prev]);
+    setDoc(doc(db, 'blog', id), newPost).catch((e) => console.warn(e));
   };
-
-  const updateBlogPost = async (id: string, post: Partial<BlogPost>): Promise<void> => {
-    const existing = blogPosts.find((p) => p.id === id);
-    if (!existing) throw new Error('المقال غير موجود.');
-    const updated = { ...existing, ...post };
-    await setDoc(doc(db, 'blog', id), updated, { merge: true });
-    setBlogPosts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+  const updateBlogPost = (id: string, post: Partial<BlogPost>) => {
+    setBlogPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const updated = { ...p, ...post };
+        setDoc(doc(db, 'blog', id), updated, { merge: true }).catch((e) => console.warn(e));
+        return updated;
+      })
+    );
   };
-
-  const deleteBlogPost = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'blog', id));
+  const deleteBlogPost = (id: string) => {
     setBlogPosts((prev) => prev.filter((p) => p.id !== id));
+    deleteDoc(doc(db, 'blog', id)).catch((e) => console.warn(e));
   };
 
   // Portfolio CRUD
-  const createPortfolioProject = async (
-    proj: Omit<PortfolioProject, 'id'>
-  ): Promise<void> => {
-    const id = `proj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const createPortfolioProject = (proj: Omit<PortfolioProject, 'id'>) => {
+    const id = `proj-${Date.now()}`;
     const newProj: PortfolioProject = { ...proj, id };
-    await setDoc(doc(db, 'portfolio', id), newProj);
     setPortfolioProjects((prev) => [newProj, ...prev]);
+    setDoc(doc(db, 'portfolio', id), newProj).catch((e) => console.warn(e));
   };
-
-  const updatePortfolioProject = async (
-    id: string,
-    proj: Partial<PortfolioProject>
-  ): Promise<void> => {
-    const existing = portfolioProjects.find((p) => p.id === id);
-    if (!existing) throw new Error('المشروع غير موجود.');
-    const updated = { ...existing, ...proj };
-    await setDoc(doc(db, 'portfolio', id), updated, { merge: true });
-    setPortfolioProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+  const updatePortfolioProject = (id: string, proj: Partial<PortfolioProject>) => {
+    setPortfolioProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const updated = { ...p, ...proj };
+        setDoc(doc(db, 'portfolio', id), updated, { merge: true }).catch((e) => console.warn(e));
+        return updated;
+      })
+    );
   };
-
-  const deletePortfolioProject = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'portfolio', id));
+  const deletePortfolioProject = (id: string) => {
     setPortfolioProjects((prev) => prev.filter((p) => p.id !== id));
+    deleteDoc(doc(db, 'portfolio', id)).catch((e) => console.warn(e));
   };
 
   // Taxonomy & Settings & Users
@@ -1480,54 +1848,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Home Slides CRUD
-  const addHomeSlide = async (slide: Omit<HomeSlide, 'id'>): Promise<void> => {
-    const id = `slide-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const addHomeSlide = (slide: Omit<HomeSlide, 'id'>) => {
+    const id = `slide-${Date.now()}`;
     const newSlide: HomeSlide = { ...slide, id };
-    await setDoc(doc(db, 'home_slides', id), newSlide);
     setHomeSlides((prev) => {
       const updated = [...prev, newSlide];
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
+    setDoc(doc(db, 'home_slides', id), newSlide).catch((e) => console.warn(e));
   };
 
-  const updateHomeSlide = async (id: string, slide: Partial<HomeSlide>): Promise<void> => {
-    await setDoc(doc(db, 'home_slides', id), slide, { merge: true });
+  const updateHomeSlide = (id: string, slide: Partial<HomeSlide>) => {
     setHomeSlides((prev) => {
       const updated = prev.map((s) => (s.id === id ? { ...s, ...slide } : s));
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
+    setDoc(doc(db, 'home_slides', id), slide, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const deleteHomeSlide = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'home_slides', id));
+  const deleteHomeSlide = (id: string) => {
     setHomeSlides((prev) => {
       const updated = prev.filter((s) => s.id !== id);
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
+    deleteDoc(doc(db, 'home_slides', id)).catch((e) => console.warn(e));
   };
 
   // Marquee CRUD
-  const addMarqueeItem = async (item: Omit<MarqueeTickerItem, 'id'>): Promise<void> => {
-    const id = `mrq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const addMarqueeItem = (item: Omit<MarqueeTickerItem, 'id'>) => {
+    const id = `mrq-${Date.now()}`;
     const newItem: MarqueeTickerItem = { ...item, id };
-    await setDoc(doc(db, 'marquee', id), newItem);
     setMarqueeItems((prev) => [...prev, newItem]);
+    setDoc(doc(db, 'marquee', id), newItem).catch((e) => console.warn(e));
   };
-
-  const updateMarqueeItem = async (
-    id: string,
-    item: Partial<MarqueeTickerItem>
-  ): Promise<void> => {
-    await setDoc(doc(db, 'marquee', id), item, { merge: true });
-    setMarqueeItems((prev) => prev.map((m) => (m.id === id ? { ...m, ...item } : m)));
+  const updateMarqueeItem = (id: string, item: Partial<MarqueeTickerItem>) => {
+    setMarqueeItems((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...item } : m))
+    );
+    setDoc(doc(db, 'marquee', id), item, { merge: true }).catch((e) => console.warn(e));
   };
-
-  const deleteMarqueeItem = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'marquee', id));
+  const deleteMarqueeItem = (id: string) => {
     setMarqueeItems((prev) => prev.filter((m) => m.id !== id));
+    deleteDoc(doc(db, 'marquee', id)).catch((e) => console.warn(e));
   };
 
   // About Us Update
@@ -1539,145 +1904,132 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Rawaj Features CRUD
-  const addRawajFeature = async (feat: Omit<RawajFeature, 'id'>): Promise<void> => {
-    const id = `feat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const addRawajFeature = (feat: Omit<RawajFeature, 'id'>) => {
+    const id = `feat-${Date.now()}`;
     const newFeat: RawajFeature = { ...feat, id };
-    await setDoc(doc(db, 'features', id), newFeat);
     setRawajFeatures((prev) => [...prev, newFeat]);
+    setDoc(doc(db, 'features', id), newFeat).catch((e) => console.warn(e));
   };
-
-  const updateRawajFeature = async (
-    id: string,
-    feat: Partial<RawajFeature>
-  ): Promise<void> => {
-    await setDoc(doc(db, 'features', id), feat, { merge: true });
-    setRawajFeatures((prev) => prev.map((f) => (f.id === id ? { ...f, ...feat } : f)));
+  const updateRawajFeature = (id: string, feat: Partial<RawajFeature>) => {
+    setRawajFeatures((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...feat } : f))
+    );
+    setDoc(doc(db, 'features', id), feat, { merge: true }).catch((e) => console.warn(e));
   };
-
-  const deleteRawajFeature = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'features', id));
+  const deleteRawajFeature = (id: string) => {
     setRawajFeatures((prev) => prev.filter((f) => f.id !== id));
+    deleteDoc(doc(db, 'features', id)).catch((e) => console.warn(e));
   };
 
   // Client Logos CRUD
-  const addClientLogo = async (cli: Omit<ClientLogo, 'id'>): Promise<void> => {
-    const id = `cli-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const addClientLogo = (cli: Omit<ClientLogo, 'id'>) => {
+    const id = `cli-${Date.now()}`;
     const newCli: ClientLogo = { ...cli, id };
-    await setDoc(doc(db, 'client_logos', id), newCli);
     setClientLogos((prev) => [...prev, newCli]);
+    setDoc(doc(db, 'client_logos', id), newCli).catch((e) => console.warn(e));
   };
-
-  const updateClientLogo = async (id: string, cli: Partial<ClientLogo>): Promise<void> => {
-    await setDoc(doc(db, 'client_logos', id), cli, { merge: true });
-    setClientLogos((prev) => prev.map((item) => (item.id === id ? { ...item, ...cli } : item)));
+  const updateClientLogo = (id: string, cli: Partial<ClientLogo>) => {
+    setClientLogos((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...cli } : c))
+    );
+    setDoc(doc(db, 'client_logos', id), cli, { merge: true }).catch((e) => console.warn(e));
   };
-
-  const deleteClientLogo = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'client_logos', id));
-    setClientLogos((prev) => prev.filter((item) => item.id !== id));
+  const deleteClientLogo = (id: string) => {
+    setClientLogos((prev) => prev.filter((c) => c.id !== id));
+    deleteDoc(doc(db, 'client_logos', id)).catch((e) => console.warn(e));
   };
 
   // Testimonials CRUD
-  const addTestimonial = async (test: Omit<Testimonial, 'id'>): Promise<void> => {
-    const id = `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const addTestimonial = (test: Omit<Testimonial, 'id'>) => {
+    const id = `test-${Date.now()}`;
     const newTest: Testimonial = { ...test, id };
-    await setDoc(doc(db, 'testimonials', id), newTest);
     setTestimonials((prev) => [...prev, newTest]);
+    setDoc(doc(db, 'testimonials', id), newTest).catch((e) => console.warn(e));
   };
-
-  const updateTestimonial = async (id: string, test: Partial<Testimonial>): Promise<void> => {
-    await setDoc(doc(db, 'testimonials', id), test, { merge: true });
-    setTestimonials((prev) => prev.map((item) => (item.id === id ? { ...item, ...test } : item)));
+  const updateTestimonial = (id: string, test: Partial<Testimonial>) => {
+    setTestimonials((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...test } : t))
+    );
+    setDoc(doc(db, 'testimonials', id), test, { merge: true }).catch((e) => console.warn(e));
   };
-
-  const deleteTestimonial = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'testimonials', id));
-    setTestimonials((prev) => prev.filter((item) => item.id !== id));
+  const deleteTestimonial = (id: string) => {
+    setTestimonials((prev) => prev.filter((t) => t.id !== id));
+    deleteDoc(doc(db, 'testimonials', id)).catch((e) => console.warn(e));
   };
 
   // Design Tasks & Proof Workflows CRUD
-  const createDesignTask = async (
-    taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>
-  ): Promise<DesignTask> => {
-    const id = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const now = new Date().toISOString();
+  const createDesignTask = (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>): DesignTask => {
+    const id = `task-${Date.now()}`;
     const newTask: DesignTask = {
       ...taskData,
       id,
       proof_versions: [],
       comments: [],
-      created_at: now,
-      updated_at: now,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-
-    await setDoc(doc(db, 'design_tasks', id), newTask);
     setDesignTasks((prev) => [newTask, ...prev]);
+    setDoc(doc(db, 'design_tasks', id), newTask).catch((e) => console.warn(e));
     return newTask;
   };
 
-  const updateDesignTask = async (id: string, updates: Partial<DesignTask>): Promise<void> => {
-    const existing = designTasks.find((t) => t.id === id);
-    if (!existing) throw new Error('مهمة التصميم غير موجودة.');
-
-    const updatedTask: DesignTask = {
-      ...existing,
-      ...updates,
-      updated_at: new Date().toISOString(),
-    };
-
-    await setDoc(doc(db, 'design_tasks', id), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
+  const updateDesignTask = (id: string, updates: Partial<DesignTask>) => {
+    setDesignTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t))
+    );
+    setDoc(doc(db, 'design_tasks', id), { ...updates, updated_at: new Date().toISOString() }, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const addDesignProof = async (
-    taskId: string,
-    proof: Omit<DesignProofVersion, 'id' | 'created_at'>
-  ): Promise<void> => {
-    const task = designTasks.find((t) => t.id === taskId);
-    if (!task) throw new Error('مهمة التصميم غير موجودة.');
-
+  const addDesignProof = (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => {
+    const proofId = `proof-${Date.now()}`;
     const newProof: DesignProofVersion = {
       ...proof,
-      id: `proof-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: proofId,
       created_at: new Date().toISOString(),
     };
-    const updatedTask: DesignTask = {
-      ...task,
-      proof_versions: [...task.proof_versions, newProof],
-      status: 'proof_submitted' as DesignTaskStatus,
-      updated_at: new Date().toISOString(),
-    };
-
-    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
+    setDesignTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const updatedProofs = [...t.proof_versions, newProof];
+        const updatedTask = {
+          ...t,
+          proof_versions: updatedProofs,
+          status: 'proof_submitted' as DesignTaskStatus,
+          updated_at: new Date().toISOString(),
+        };
+        setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true }).catch((e) => console.warn(e));
+        return updatedTask;
+      })
+    );
   };
 
-  const addDesignComment = async (
-    taskId: string,
-    comment: Omit<DesignComment, 'id' | 'created_at'>
-  ): Promise<void> => {
-    const task = designTasks.find((t) => t.id === taskId);
-    if (!task) throw new Error('مهمة التصميم غير موجودة.');
-
-    const newComment: DesignComment = {
+  const addDesignComment = (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => {
+    const commId = `comm-${Date.now()}`;
+    const newComm: DesignComment = {
       ...comment,
-      id: `comm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: commId,
       created_at: new Date().toISOString(),
     };
-    const updatedTask: DesignTask = {
-      ...task,
-      comments: [...task.comments, newComment],
-      status: comment.status_change || task.status,
-      updated_at: new Date().toISOString(),
-    };
-
-    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
+    setDesignTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const updatedComments = [...t.comments, newComm];
+        const newStatus = comment.status_change || t.status;
+        const updatedTask = {
+          ...t,
+          comments: updatedComments,
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        };
+        setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true }).catch((e) => console.warn(e));
+        return updatedTask;
+      })
+    );
   };
 
-  const deleteDesignTask = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'design_tasks', id));
+  const deleteDesignTask = (id: string) => {
     setDesignTasks((prev) => prev.filter((t) => t.id !== id));
+    deleteDoc(doc(db, 'design_tasks', id)).catch((e) => console.warn(e));
   };
 
   // Search Engine with synonym normalization
@@ -1754,6 +2106,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         siteSettings,
         users,
         currentUser,
+        setCurrentUser,
         homeSlides,
         addHomeSlide,
         updateHomeSlide,
