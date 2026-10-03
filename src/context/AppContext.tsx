@@ -124,16 +124,16 @@ export type NavigationTarget =
 interface AppContextType {
   // Designer Tasks & Workflows
   designTasks: DesignTask[];
-  createDesignTask: (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>) => DesignTask;
-  updateDesignTask: (id: string, updates: Partial<DesignTask>) => void;
-  addDesignProof: (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => void;
-  addDesignComment: (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => void;
-  deleteDesignTask: (id: string) => void;
+  createDesignTask: (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>) => Promise<DesignTask>;
+  updateDesignTask: (id: string, updates: Partial<DesignTask>) => Promise<void>;
+  addDesignProof: (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => Promise<void>;
+  addDesignComment: (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => Promise<void>;
+  deleteDesignTask: (id: string) => Promise<void>;
   // Theme & Visual Styles
   isDarkMode: boolean;
   toggleTheme: () => void;
   themeSettings: ThemeCustomizerSettings;
-  updateThemeSettings: (settings: Partial<ThemeCustomizerSettings>) => void;
+  updateThemeSettings: (settings: Partial<ThemeCustomizerSettings>) => Promise<void>;
 
   // Cloud Sync State
   isCloudSynced: boolean;
@@ -161,10 +161,10 @@ interface AppContextType {
 
   // Home Page Section Customizer & Order
   homeModulesConfig: HomeModuleConfig[];
-  updateHomeModulesConfig: (configs: HomeModuleConfig[]) => void;
-  toggleModuleVisibility: (id: HomeModuleId) => void;
-  reorderHomeModules: (startIndex: number, endIndex: number) => void;
-  updateModuleLayout: (id: HomeModuleId, layout_style: string) => void;
+  updateHomeModulesConfig: (configs: HomeModuleConfig[]) => Promise<void>;
+  toggleModuleVisibility: (id: HomeModuleId) => Promise<void>;
+  reorderHomeModules: (startIndex: number, endIndex: number) => Promise<void>;
+  updateModuleLayout: (id: HomeModuleId, layout_style: string) => Promise<void>;
 
   // Module 1: Collapsible Hero Header
   heroHeaderSettings: HeroHeaderSettings;
@@ -172,15 +172,15 @@ interface AppContextType {
 
   // Module 2: Cinematic Slider
   homeSlides: HomeSlide[];
-  addHomeSlide: (slide: Omit<HomeSlide, 'id'>) => void;
-  updateHomeSlide: (id: string, slide: Partial<HomeSlide>) => void;
-  deleteHomeSlide: (id: string) => void;
+  addHomeSlide: (slide: Omit<HomeSlide, 'id'>) => Promise<void>;
+  updateHomeSlide: (id: string, slide: Partial<HomeSlide>) => Promise<void>;
+  deleteHomeSlide: (id: string) => Promise<void>;
 
   // Module 3: Marquee News Ticker
   marqueeItems: MarqueeTickerItem[];
-  addMarqueeItem: (item: Omit<MarqueeTickerItem, 'id'>) => void;
-  updateMarqueeItem: (id: string, item: Partial<MarqueeTickerItem>) => void;
-  deleteMarqueeItem: (id: string) => void;
+  addMarqueeItem: (item: Omit<MarqueeTickerItem, 'id'>) => Promise<void>;
+  updateMarqueeItem: (id: string, item: Partial<MarqueeTickerItem>) => Promise<void>;
+  deleteMarqueeItem: (id: string) => Promise<void>;
 
   // Module 4: About Us Mini-Module
   aboutUsData: AboutUsModuleData;
@@ -188,37 +188,37 @@ interface AppContextType {
 
   // Module 5: Features / Why Choose Us
   rawajFeatures: RawajFeature[];
-  addRawajFeature: (feat: Omit<RawajFeature, 'id'>) => void;
-  updateRawajFeature: (id: string, feat: Partial<RawajFeature>) => void;
-  deleteRawajFeature: (id: string) => void;
+  addRawajFeature: (feat: Omit<RawajFeature, 'id'>) => Promise<void>;
+  updateRawajFeature: (id: string, feat: Partial<RawajFeature>) => Promise<void>;
+  deleteRawajFeature: (id: string) => Promise<void>;
 
   // Module 8 & 9: Brands & Testimonials
   clientLogos: ClientLogo[];
   brandsDisplayMode: BrandDisplayMode;
   updateBrandsDisplayMode: (mode: BrandDisplayMode) => Promise<void>;
-  addClientLogo: (cli: Omit<ClientLogo, 'id'>) => void;
-  updateClientLogo: (id: string, cli: Partial<ClientLogo>) => void;
-  deleteClientLogo: (id: string) => void;
+  addClientLogo: (cli: Omit<ClientLogo, 'id'>) => Promise<void>;
+  updateClientLogo: (id: string, cli: Partial<ClientLogo>) => Promise<void>;
+  deleteClientLogo: (id: string) => Promise<void>;
 
   testimonials: Testimonial[];
-  addTestimonial: (test: Omit<Testimonial, 'id'>) => void;
-  updateTestimonial: (id: string, test: Partial<Testimonial>) => void;
-  deleteTestimonial: (id: string) => void;
+  addTestimonial: (test: Omit<Testimonial, 'id'>) => Promise<void>;
+  updateTestimonial: (id: string, test: Partial<Testimonial>) => Promise<void>;
+  deleteTestimonial: (id: string) => Promise<void>;
   submitPublicTestimonial: (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }) => Promise<void>;
-  updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => void;
+  updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => Promise<void>;
 
   // Module 10: Featured Offers & Promo Banners
   promoSettings: PromoModuleSettings;
-  updatePromoSettings: (settings: Partial<PromoModuleSettings>) => void;
-  addPromoBanner: (banner: Omit<PromoBanner, 'id'>) => void;
-  updatePromoBanner: (id: string, banner: Partial<PromoBanner>) => void;
-  deletePromoBanner: (id: string) => void;
+  updatePromoSettings: (settings: Partial<PromoModuleSettings>) => Promise<void>;
+  addPromoBanner: (banner: Omit<PromoBanner, 'id'>) => Promise<void>;
+  updatePromoBanner: (id: string, banner: Partial<PromoBanner>) => Promise<void>;
+  deletePromoBanner: (id: string) => Promise<void>;
 
   // Module 12: FAQ Accordion
   faqItems: GlobalFAQItem[];
-  addFaqItem: (item: Omit<GlobalFAQItem, 'id'>) => void;
-  updateFaqItem: (id: string, item: Partial<GlobalFAQItem>) => void;
-  deleteFaqItem: (id: string) => void;
+  addFaqItem: (item: Omit<GlobalFAQItem, 'id'>) => Promise<void>;
+  updateFaqItem: (id: string, item: Partial<GlobalFAQItem>) => Promise<void>;
+  deleteFaqItem: (id: string) => Promise<void>;
 
   // Module 13: Contact Messages & Inbox
   contactMessages: ContactFormMessage[];
@@ -248,29 +248,29 @@ interface AppContextType {
   createService: (serviceData: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => Promise<Service>;
   updateService: (id: string, serviceData: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
-  duplicateService: (id: string) => Service;
+  duplicateService: (id: string) => Promise<Service>;
 
   // Template CRUD (Admin)
-  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => ServiceTemplate;
-  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => void;
-  deleteTemplate: (id: string) => void;
+  createTemplate: (templateData: Omit<ServiceTemplate, 'id'>) => Promise<ServiceTemplate>;
+  updateTemplate: (id: string, templateData: Partial<ServiceTemplate>) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
 
   // Media Library
   uploadMedia: (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }) => Promise<MediaItem>;
   deleteMedia: (id: string) => Promise<void>;
 
   // Packages & Portfolio & Blog CRUD
-  createPackage: (pkg: Omit<Package, 'id'>) => void;
-  updatePackage: (id: string, pkg: Partial<Package>) => void;
-  deletePackage: (id: string) => void;
+  createPackage: (pkg: Omit<Package, 'id'>) => Promise<void>;
+  updatePackage: (id: string, pkg: Partial<Package>) => Promise<void>;
+  deletePackage: (id: string) => Promise<void>;
 
-  createBlogPost: (post: Omit<BlogPost, 'id'>) => void;
-  updateBlogPost: (id: string, post: Partial<BlogPost>) => void;
-  deleteBlogPost: (id: string) => void;
+  createBlogPost: (post: Omit<BlogPost, 'id'>) => Promise<void>;
+  updateBlogPost: (id: string, post: Partial<BlogPost>) => Promise<void>;
+  deleteBlogPost: (id: string) => Promise<void>;
 
-  createPortfolioProject: (proj: Omit<PortfolioProject, 'id'>) => void;
-  updatePortfolioProject: (id: string, proj: Partial<PortfolioProject>) => void;
-  deletePortfolioProject: (id: string) => void;
+  createPortfolioProject: (proj: Omit<PortfolioProject, 'id'>) => Promise<void>;
+  updatePortfolioProject: (id: string, proj: Partial<PortfolioProject>) => Promise<void>;
+  deletePortfolioProject: (id: string) => Promise<void>;
 
   // Taxonomy & Settings & Users
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
@@ -1194,92 +1194,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Theme Customizer
-  const updateThemeSettings = (settings: Partial<ThemeCustomizerSettings>) => {
+  const updateThemeSettings = async (settings: Partial<ThemeCustomizerSettings>): Promise<void> => {
     const updated = { ...themeSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true });
     setThemeSettings(updated);
     applyThemeToDocument(updated);
-    setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.THEME_CUSTOM, updated);
   };
 
   // Home Modules Config & Reordering
-  const updateHomeModulesConfig = (configs: HomeModuleConfig[]) => {
+  const persistHomeModules = async (configs: HomeModuleConfig[]): Promise<void> => {
+    await setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true });
     setHomeModulesConfig(configs);
     safeStorageSave(STORAGE_KEYS.HOME_MODULES, configs);
-    setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const toggleModuleVisibility = (id: HomeModuleId) => {
-    setHomeModulesConfig((prev) => {
-      const updated = prev.map((mod) => (mod.id === id ? { ...mod, is_visible: !mod.is_visible } : mod));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const updateHomeModulesConfig = async (configs: HomeModuleConfig[]): Promise<void> => {
+    await persistHomeModules(configs);
   };
 
-  const reorderHomeModules = (startIndex: number, endIndex: number) => {
-    setHomeModulesConfig((prev) => {
-      const result = Array.from(prev);
-      const [removed] = result.splice(startIndex, 1);
-      result.splice(endIndex, 0, removed);
-      const updated = result.map((item, index) => ({ ...item, sort_order: index + 1 }));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const toggleModuleVisibility = async (id: HomeModuleId): Promise<void> => {
+    const updated = homeModulesConfig.map((mod) => (
+      mod.id === id ? { ...mod, is_visible: !mod.is_visible } : mod
+    ));
+    await persistHomeModules(updated);
   };
 
-  const updateModuleLayout = (id: HomeModuleId, layout_style: string) => {
-    setHomeModulesConfig((prev) => {
-      const updated = prev.map((mod) => (mod.id === id ? { ...mod, layout_style } : mod));
-      safeStorageSave(STORAGE_KEYS.HOME_MODULES, updated);
-      setDoc(doc(db, 'settings', 'home_modules_order'), { configs: updated }, { merge: true }).catch((e) => console.warn(e));
-      return updated;
-    });
+  const reorderHomeModules = async (startIndex: number, endIndex: number): Promise<void> => {
+    const result = Array.from(homeModulesConfig);
+    const [removed] = result.splice(startIndex, 1);
+    if (!removed) return;
+    result.splice(endIndex, 0, removed);
+    const updated = result.map((item, index) => ({ ...item, sort_order: index + 1 }));
+    await persistHomeModules(updated);
+  };
+
+  const updateModuleLayout = async (id: HomeModuleId, layout_style: string): Promise<void> => {
+    const updated = homeModulesConfig.map((mod) => (
+      mod.id === id ? { ...mod, layout_style } : mod
+    ));
+    await persistHomeModules(updated);
   };
 
   // Promo Banners & Module
-  const updatePromoSettings = (settings: Partial<PromoModuleSettings>) => {
+  const updatePromoSettings = async (settings: Partial<PromoModuleSettings>): Promise<void> => {
     const updated = { ...promoSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true });
     setPromoSettings(updated);
-    setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.PROMOS, updated);
   };
 
-  const addPromoBanner = (banner: Omit<PromoBanner, 'id'>) => {
+  const addPromoBanner = async (banner: Omit<PromoBanner, 'id'>): Promise<void> => {
     const id = `prm-${Date.now()}`;
     const newBanner: PromoBanner = { ...banner, id };
-    const updatedBanners = [...promoSettings.banners, newBanner];
-    updatePromoSettings({ banners: updatedBanners });
+    await updatePromoSettings({ banners: [...promoSettings.banners, newBanner] });
   };
 
-  const updatePromoBanner = (id: string, banner: Partial<PromoBanner>) => {
+  const updatePromoBanner = async (id: string, banner: Partial<PromoBanner>): Promise<void> => {
     const updatedBanners = promoSettings.banners.map((b) => (b.id === id ? { ...b, ...banner } : b));
-    updatePromoSettings({ banners: updatedBanners });
+    await updatePromoSettings({ banners: updatedBanners });
   };
 
-  const deletePromoBanner = (id: string) => {
+  const deletePromoBanner = async (id: string): Promise<void> => {
     const updatedBanners = promoSettings.banners.filter((b) => b.id !== id);
-    updatePromoSettings({ banners: updatedBanners });
+    await updatePromoSettings({ banners: updatedBanners });
   };
 
   // FAQ CRUD
-  const addFaqItem = (item: Omit<GlobalFAQItem, 'id'>) => {
+  const addFaqItem = async (item: Omit<GlobalFAQItem, 'id'>): Promise<void> => {
     const id = `faq-${Date.now()}`;
     const newItem: GlobalFAQItem = { ...item, id };
+    await setDoc(doc(db, 'faq', id), newItem);
     setFaqItems((prev) => [...prev, newItem]);
-    setDoc(doc(db, 'faq', id), newItem).catch((e) => console.warn(e));
   };
 
-  const updateFaqItem = (id: string, item: Partial<GlobalFAQItem>) => {
-    setFaqItems((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...item } : f))
-    );
-    setDoc(doc(db, 'faq', id), item, { merge: true }).catch((e) => console.warn(e));
+  const updateFaqItem = async (id: string, item: Partial<GlobalFAQItem>): Promise<void> => {
+    await setDoc(doc(db, 'faq', id), item, { merge: true });
+    setFaqItems((prev) => prev.map((f) => (f.id === id ? { ...f, ...item } : f)));
   };
 
-  const deleteFaqItem = (id: string) => {
+  const deleteFaqItem = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'faq', id));
     setFaqItems((prev) => prev.filter((f) => f.id !== id));
-    deleteDoc(doc(db, 'faq', id)).catch((e) => console.warn(e));
   };
 
   // Contact Messages
