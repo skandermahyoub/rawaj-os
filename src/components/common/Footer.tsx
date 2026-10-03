@@ -254,7 +254,7 @@ export const Footer: React.FC = () => {
             {footerSettings.copyright_text_ar || `جميع الحقوق محفوظة © ${new Date().getFullYear()} وكالة رواج للطباعة والإعلان والديكور.`}
           </div>
           <div className="flex items-center gap-2 font-semibold text-[#B3AA9E]">
-            <span>{footerSettings.powered_by_ar || 'منظومة رواج الذكية للإنتاج والتسويق الطباعي 2026'}</span>
+            <span>{footerSettings.powered_by_ar || 'منظومة رواج الرقمية للإنتاج والتسويق الطباعي 2026'}</span>
           </div>
         </div>
 
