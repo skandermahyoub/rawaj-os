@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 import { RawajLogo } from '../common/RawajLogo';
 import { PWAInstallModal } from '../common/PWAInstallModal';
 import { 
@@ -296,21 +298,28 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     }
   }, [currentSubView]);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 5 ميجابايت');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImgError(false);
-          updateSiteSettings({ logo_url: reader.result });
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 5 ميجابايت');
+      return;
+    }
+
+    try {
+      const optimized = await optimizeImageFile(file, 900, 900, 0.9);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
+        folder: 'branding',
+        fileName: 'rawaj-logo',
+      });
+      await updateSiteSettings({ logo_url: stored.publicUrl });
+      setImgError(false);
+    } catch (error: any) {
+      console.error('Supabase logo upload failed:', error);
+      alert(error?.message || 'تعذر رفع الشعار.');
+    } finally {
+      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
     }
   };
 
