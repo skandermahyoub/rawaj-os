@@ -47,8 +47,6 @@ import {
   INITIAL_PORTFOLIO,
   INITIAL_BLOG_POSTS,
   INITIAL_SITE_SETTINGS,
-  INITIAL_USERS,
-  INITIAL_DESIGN_TASKS,
   INITIAL_MEDIA,
   INITIAL_HOME_SLIDES,
   INITIAL_MARQUEE_ITEMS,
@@ -62,7 +60,6 @@ import {
   INITIAL_FOOTER_SETTINGS,
   INITIAL_HOME_MODULES_CONFIG,
   INITIAL_THEME_SETTINGS,
-  INITIAL_CONTACT_MESSAGES,
   INITIAL_INDUSTRY_SECTORS
 } from '../data/initialData';
 import {
@@ -157,7 +154,6 @@ interface AppContextType {
   siteSettings: SiteSettings;
   users: User[];
   currentUser: User;
-  setCurrentUser: (user: User) => void;
 
   // Home Page Section Customizer & Order
   homeModulesConfig: HomeModuleConfig[];
@@ -593,9 +589,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return safeStorageLoad(STORAGE_KEYS.CART, []);
   });
 
-  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.QUOTES, []);
-  });
+  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
 
   // Home Modules State
   const [homeSlides, setHomeSlides] = useState<HomeSlide[]>(() => {
@@ -692,17 +686,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [themeSettings]);
 
-  const [contactMessages, setContactMessages] = useState<ContactFormMessage[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.CONTACT_MESSAGES, INITIAL_CONTACT_MESSAGES);
-  });
+  const [contactMessages, setContactMessages] = useState<ContactFormMessage[]>([]);
 
-  const [designTasks, setDesignTasks] = useState<DesignTask[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.DESIGN_TASKS, INITIAL_DESIGN_TASKS);
-  });
-
-  useEffect(() => {
-    safeStorageSave(STORAGE_KEYS.DESIGN_TASKS, designTasks);
-  }, [designTasks]);
+  const [designTasks, setDesignTasks] = useState<DesignTask[]>([]);
 
   const [brandsDisplayMode, setBrandsDisplayMode] = useState<BrandDisplayMode>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.BRANDS_MODE);
@@ -1768,7 +1754,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         siteSettings,
         users,
         currentUser,
-        setCurrentUser,
         homeSlides,
         addHomeSlide,
         updateHomeSlide,
