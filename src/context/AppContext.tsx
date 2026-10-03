@@ -121,11 +121,11 @@ export type NavigationTarget =
 interface AppContextType {
   // Designer Tasks & Workflows
   designTasks: DesignTask[];
-  createDesignTask: (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>) => DesignTask;
-  updateDesignTask: (id: string, updates: Partial<DesignTask>) => void;
-  addDesignProof: (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => void;
-  addDesignComment: (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => void;
-  deleteDesignTask: (id: string) => void;
+  createDesignTask: (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>) => Promise<DesignTask>;
+  updateDesignTask: (id: string, updates: Partial<DesignTask>) => Promise<void>;
+  addDesignProof: (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => Promise<void>;
+  addDesignComment: (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => Promise<void>;
+  deleteDesignTask: (id: string) => Promise<void>;
   // Theme & Visual Styles
   isDarkMode: boolean;
   toggleTheme: () => void;
@@ -168,15 +168,15 @@ interface AppContextType {
 
   // Module 2: Cinematic Slider
   homeSlides: HomeSlide[];
-  addHomeSlide: (slide: Omit<HomeSlide, 'id'>) => void;
-  updateHomeSlide: (id: string, slide: Partial<HomeSlide>) => void;
-  deleteHomeSlide: (id: string) => void;
+  addHomeSlide: (slide: Omit<HomeSlide, 'id'>) => Promise<void>;
+  updateHomeSlide: (id: string, slide: Partial<HomeSlide>) => Promise<void>;
+  deleteHomeSlide: (id: string) => Promise<void>;
 
   // Module 3: Marquee News Ticker
   marqueeItems: MarqueeTickerItem[];
-  addMarqueeItem: (item: Omit<MarqueeTickerItem, 'id'>) => void;
-  updateMarqueeItem: (id: string, item: Partial<MarqueeTickerItem>) => void;
-  deleteMarqueeItem: (id: string) => void;
+  addMarqueeItem: (item: Omit<MarqueeTickerItem, 'id'>) => Promise<void>;
+  updateMarqueeItem: (id: string, item: Partial<MarqueeTickerItem>) => Promise<void>;
+  deleteMarqueeItem: (id: string) => Promise<void>;
 
   // Module 4: About Us Mini-Module
   aboutUsData: AboutUsModuleData;
@@ -184,22 +184,22 @@ interface AppContextType {
 
   // Module 5: Features / Why Choose Us
   rawajFeatures: RawajFeature[];
-  addRawajFeature: (feat: Omit<RawajFeature, 'id'>) => void;
-  updateRawajFeature: (id: string, feat: Partial<RawajFeature>) => void;
-  deleteRawajFeature: (id: string) => void;
+  addRawajFeature: (feat: Omit<RawajFeature, 'id'>) => Promise<void>;
+  updateRawajFeature: (id: string, feat: Partial<RawajFeature>) => Promise<void>;
+  deleteRawajFeature: (id: string) => Promise<void>;
 
   // Module 8 & 9: Brands & Testimonials
   clientLogos: ClientLogo[];
   brandsDisplayMode: BrandDisplayMode;
   updateBrandsDisplayMode: (mode: BrandDisplayMode) => Promise<void>;
-  addClientLogo: (cli: Omit<ClientLogo, 'id'>) => void;
-  updateClientLogo: (id: string, cli: Partial<ClientLogo>) => void;
-  deleteClientLogo: (id: string) => void;
+  addClientLogo: (cli: Omit<ClientLogo, 'id'>) => Promise<void>;
+  updateClientLogo: (id: string, cli: Partial<ClientLogo>) => Promise<void>;
+  deleteClientLogo: (id: string) => Promise<void>;
 
   testimonials: Testimonial[];
-  addTestimonial: (test: Omit<Testimonial, 'id'>) => void;
-  updateTestimonial: (id: string, test: Partial<Testimonial>) => void;
-  deleteTestimonial: (id: string) => void;
+  addTestimonial: (test: Omit<Testimonial, 'id'>) => Promise<void>;
+  updateTestimonial: (id: string, test: Partial<Testimonial>) => Promise<void>;
+  deleteTestimonial: (id: string) => Promise<void>;
   submitPublicTestimonial: (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }) => Promise<void>;
   updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => Promise<void>;
 
@@ -1798,51 +1798,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Home Slides CRUD
-  const addHomeSlide = (slide: Omit<HomeSlide, 'id'>) => {
-    const id = `slide-${Date.now()}`;
-    const newSlide: HomeSlide = { ...slide, id };
+  const addHomeSlide = async (slide: Omit<HomeSlide, 'id'>): Promise<void> => {
+    const newSlide: HomeSlide = {
+      ...slide,
+      id: `slide-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'home_slides', newSlide.id), newSlide);
     setHomeSlides((prev) => {
       const updated = [...prev, newSlide];
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
-    setDoc(doc(db, 'home_slides', id), newSlide).catch((e) => console.warn(e));
   };
 
-  const updateHomeSlide = (id: string, slide: Partial<HomeSlide>) => {
+  const updateHomeSlide = async (id: string, slide: Partial<HomeSlide>): Promise<void> => {
+    await setDoc(doc(db, 'home_slides', id), slide, { merge: true });
     setHomeSlides((prev) => {
-      const updated = prev.map((s) => (s.id === id ? { ...s, ...slide } : s));
+      const updated = prev.map((item) => item.id === id ? { ...item, ...slide } : item);
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
-    setDoc(doc(db, 'home_slides', id), slide, { merge: true }).catch((e) => console.warn(e));
   };
 
-  const deleteHomeSlide = (id: string) => {
+  const deleteHomeSlide = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'home_slides', id));
     setHomeSlides((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
+      const updated = prev.filter((item) => item.id !== id);
       safeStorageSave(STORAGE_KEYS.HOME_SLIDES, updated);
       return updated;
     });
-    deleteDoc(doc(db, 'home_slides', id)).catch((e) => console.warn(e));
   };
 
   // Marquee CRUD
-  const addMarqueeItem = (item: Omit<MarqueeTickerItem, 'id'>) => {
-    const id = `mrq-${Date.now()}`;
-    const newItem: MarqueeTickerItem = { ...item, id };
+  const addMarqueeItem = async (item: Omit<MarqueeTickerItem, 'id'>): Promise<void> => {
+    const newItem: MarqueeTickerItem = {
+      ...item,
+      id: `mrq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'marquee', newItem.id), newItem);
     setMarqueeItems((prev) => [...prev, newItem]);
-    setDoc(doc(db, 'marquee', id), newItem).catch((e) => console.warn(e));
   };
-  const updateMarqueeItem = (id: string, item: Partial<MarqueeTickerItem>) => {
-    setMarqueeItems((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...item } : m))
-    );
-    setDoc(doc(db, 'marquee', id), item, { merge: true }).catch((e) => console.warn(e));
+
+  const updateMarqueeItem = async (
+    id: string,
+    item: Partial<MarqueeTickerItem>
+  ): Promise<void> => {
+    await setDoc(doc(db, 'marquee', id), item, { merge: true });
+    setMarqueeItems((prev) => prev.map((entry) => entry.id === id ? { ...entry, ...item } : entry));
   };
-  const deleteMarqueeItem = (id: string) => {
-    setMarqueeItems((prev) => prev.filter((m) => m.id !== id));
-    deleteDoc(doc(db, 'marquee', id)).catch((e) => console.warn(e));
+
+  const deleteMarqueeItem = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'marquee', id));
+    setMarqueeItems((prev) => prev.filter((entry) => entry.id !== id));
   };
 
   // About Us Update
@@ -1854,132 +1861,143 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Rawaj Features CRUD
-  const addRawajFeature = (feat: Omit<RawajFeature, 'id'>) => {
-    const id = `feat-${Date.now()}`;
-    const newFeat: RawajFeature = { ...feat, id };
-    setRawajFeatures((prev) => [...prev, newFeat]);
-    setDoc(doc(db, 'features', id), newFeat).catch((e) => console.warn(e));
+  const addRawajFeature = async (feat: Omit<RawajFeature, 'id'>): Promise<void> => {
+    const newFeature: RawajFeature = {
+      ...feat,
+      id: `feat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'features', newFeature.id), newFeature);
+    setRawajFeatures((prev) => [...prev, newFeature]);
   };
-  const updateRawajFeature = (id: string, feat: Partial<RawajFeature>) => {
-    setRawajFeatures((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...feat } : f))
-    );
-    setDoc(doc(db, 'features', id), feat, { merge: true }).catch((e) => console.warn(e));
+
+  const updateRawajFeature = async (id: string, feat: Partial<RawajFeature>): Promise<void> => {
+    await setDoc(doc(db, 'features', id), feat, { merge: true });
+    setRawajFeatures((prev) => prev.map((item) => item.id === id ? { ...item, ...feat } : item));
   };
-  const deleteRawajFeature = (id: string) => {
-    setRawajFeatures((prev) => prev.filter((f) => f.id !== id));
-    deleteDoc(doc(db, 'features', id)).catch((e) => console.warn(e));
+
+  const deleteRawajFeature = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'features', id));
+    setRawajFeatures((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Client Logos CRUD
-  const addClientLogo = (cli: Omit<ClientLogo, 'id'>) => {
-    const id = `cli-${Date.now()}`;
-    const newCli: ClientLogo = { ...cli, id };
-    setClientLogos((prev) => [...prev, newCli]);
-    setDoc(doc(db, 'client_logos', id), newCli).catch((e) => console.warn(e));
+  const addClientLogo = async (client: Omit<ClientLogo, 'id'>): Promise<void> => {
+    const newClient: ClientLogo = {
+      ...client,
+      id: `cli-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'client_logos', newClient.id), newClient);
+    setClientLogos((prev) => [...prev, newClient]);
   };
-  const updateClientLogo = (id: string, cli: Partial<ClientLogo>) => {
-    setClientLogos((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...cli } : c))
-    );
-    setDoc(doc(db, 'client_logos', id), cli, { merge: true }).catch((e) => console.warn(e));
+
+  const updateClientLogo = async (id: string, client: Partial<ClientLogo>): Promise<void> => {
+    await setDoc(doc(db, 'client_logos', id), client, { merge: true });
+    setClientLogos((prev) => prev.map((item) => item.id === id ? { ...item, ...client } : item));
   };
-  const deleteClientLogo = (id: string) => {
-    setClientLogos((prev) => prev.filter((c) => c.id !== id));
-    deleteDoc(doc(db, 'client_logos', id)).catch((e) => console.warn(e));
+
+  const deleteClientLogo = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'client_logos', id));
+    setClientLogos((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Testimonials CRUD
-  const addTestimonial = (test: Omit<Testimonial, 'id'>) => {
-    const id = `test-${Date.now()}`;
-    const newTest: Testimonial = { ...test, id };
-    setTestimonials((prev) => [...prev, newTest]);
-    setDoc(doc(db, 'testimonials', id), newTest).catch((e) => console.warn(e));
+  const addTestimonial = async (testimonial: Omit<Testimonial, 'id'>): Promise<void> => {
+    const newTestimonial: Testimonial = {
+      ...testimonial,
+      id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    await setDoc(doc(db, 'testimonials', newTestimonial.id), newTestimonial);
+    setTestimonials((prev) => [...prev, newTestimonial]);
   };
-  const updateTestimonial = (id: string, test: Partial<Testimonial>) => {
-    setTestimonials((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...test } : t))
-    );
-    setDoc(doc(db, 'testimonials', id), test, { merge: true }).catch((e) => console.warn(e));
+
+  const updateTestimonial = async (
+    id: string,
+    testimonial: Partial<Testimonial>
+  ): Promise<void> => {
+    await setDoc(doc(db, 'testimonials', id), testimonial, { merge: true });
+    setTestimonials((prev) => prev.map((item) => item.id === id ? { ...item, ...testimonial } : item));
   };
-  const deleteTestimonial = (id: string) => {
-    setTestimonials((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'testimonials', id)).catch((e) => console.warn(e));
+
+  const deleteTestimonial = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'testimonials', id));
+    setTestimonials((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Design Tasks & Proof Workflows CRUD
-  const createDesignTask = (taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>): DesignTask => {
-    const id = `task-${Date.now()}`;
+  const createDesignTask = async (
+    taskData: Omit<DesignTask, 'id' | 'created_at' | 'updated_at' | 'proof_versions' | 'comments'>
+  ): Promise<DesignTask> => {
+    const now = new Date().toISOString();
     const newTask: DesignTask = {
       ...taskData,
-      id,
+      id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       proof_versions: [],
       comments: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     };
+    await setDoc(doc(db, 'design_tasks', newTask.id), newTask);
     setDesignTasks((prev) => [newTask, ...prev]);
-    setDoc(doc(db, 'design_tasks', id), newTask).catch((e) => console.warn(e));
     return newTask;
   };
 
-  const updateDesignTask = (id: string, updates: Partial<DesignTask>) => {
-    setDesignTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t))
-    );
-    setDoc(doc(db, 'design_tasks', id), { ...updates, updated_at: new Date().toISOString() }, { merge: true }).catch((e) => console.warn(e));
+  const updateDesignTask = async (id: string, updates: Partial<DesignTask>): Promise<void> => {
+    const existing = designTasks.find((task) => task.id === id);
+    if (!existing) throw new Error('مهمة التصميم غير موجودة.');
+    const updatedTask: DesignTask = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    await setDoc(doc(db, 'design_tasks', id), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((task) => task.id === id ? updatedTask : task));
   };
 
-  const addDesignProof = (taskId: string, proof: Omit<DesignProofVersion, 'id' | 'created_at'>) => {
-    const proofId = `proof-${Date.now()}`;
+  const addDesignProof = async (
+    taskId: string,
+    proof: Omit<DesignProofVersion, 'id' | 'created_at'>
+  ): Promise<void> => {
+    const task = designTasks.find((item) => item.id === taskId);
+    if (!task) throw new Error('مهمة التصميم غير موجودة.');
     const newProof: DesignProofVersion = {
       ...proof,
-      id: proofId,
+      id: `proof-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       created_at: new Date().toISOString(),
     };
-    setDesignTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const updatedProofs = [...t.proof_versions, newProof];
-        const updatedTask = {
-          ...t,
-          proof_versions: updatedProofs,
-          status: 'proof_submitted' as DesignTaskStatus,
-          updated_at: new Date().toISOString(),
-        };
-        setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true }).catch((e) => console.warn(e));
-        return updatedTask;
-      })
-    );
+    const updatedTask: DesignTask = {
+      ...task,
+      proof_versions: [...task.proof_versions, newProof],
+      status: 'proof_submitted',
+      updated_at: new Date().toISOString(),
+    };
+    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((item) => item.id === taskId ? updatedTask : item));
   };
 
-  const addDesignComment = (taskId: string, comment: Omit<DesignComment, 'id' | 'created_at'>) => {
-    const commId = `comm-${Date.now()}`;
-    const newComm: DesignComment = {
+  const addDesignComment = async (
+    taskId: string,
+    comment: Omit<DesignComment, 'id' | 'created_at'>
+  ): Promise<void> => {
+    const task = designTasks.find((item) => item.id === taskId);
+    if (!task) throw new Error('مهمة التصميم غير موجودة.');
+    const newComment: DesignComment = {
       ...comment,
-      id: commId,
+      id: `comm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       created_at: new Date().toISOString(),
     };
-    setDesignTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const updatedComments = [...t.comments, newComm];
-        const newStatus = comment.status_change || t.status;
-        const updatedTask = {
-          ...t,
-          comments: updatedComments,
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        };
-        setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true }).catch((e) => console.warn(e));
-        return updatedTask;
-      })
-    );
+    const updatedTask: DesignTask = {
+      ...task,
+      comments: [...task.comments, newComment],
+      status: comment.status_change || task.status,
+      updated_at: new Date().toISOString(),
+    };
+    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
+    setDesignTasks((prev) => prev.map((item) => item.id === taskId ? updatedTask : item));
   };
 
-  const deleteDesignTask = (id: string) => {
-    setDesignTasks((prev) => prev.filter((t) => t.id !== id));
-    deleteDoc(doc(db, 'design_tasks', id)).catch((e) => console.warn(e));
+  const deleteDesignTask = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'design_tasks', id));
+    setDesignTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
   // Search Engine with synonym normalization
