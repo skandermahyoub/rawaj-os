@@ -75,6 +75,7 @@ import {
   getDocs,
   writeBatch,
 } from '../lib/cloudDb';
+import { supabase } from '../lib/supabase';
 
 export type NavigationTarget =
   | { view: 'home' }
@@ -275,8 +276,8 @@ interface AppContextType {
 
   // Taxonomy & Settings & Users
   updateSiteSettings: (settings: Partial<SiteSettings>) => void;
-  addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
-  deleteUser: (userId: string) => boolean;
+  addUser: (user: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
+  deleteUser: (userId: string) => Promise<boolean>;
 
   // Search Engine
   searchServices: (query: string) => Service[];
@@ -498,11 +499,97 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return safeStorageLoad(STORAGE_KEYS.SETTINGS, INITIAL_SITE_SETTINGS);
   });
 
-  const [users, setUsers] = useState<User[]>(() => {
-    return safeStorageLoad(STORAGE_KEYS.USERS, INITIAL_USERS);
-  });
+  const [users, setUsers] = useState<User[]>([]);
 
-  const [currentUser, setCurrentUser] = useState<User>(() => (users && users.length > 0 ? users[0] : INITIAL_USERS[0]));
+  const [currentUser, setCurrentUser] = useState<User>(() => ({
+    id: 'anonymous',
+    name: 'غير مسجل',
+    email: '',
+    role: 'editor',
+    createdAt: new Date(0).toISOString(),
+  }));
+
+  useEffect(() => {
+    let active = true;
+
+    const syncAuthenticatedUser = async (authUserId?: string) => {
+      if (!authUserId) {
+        if (active) {
+          setCurrentUser({
+            id: 'anonymous',
+            name: 'غير مسجل',
+            email: '',
+            role: 'editor',
+            createdAt: new Date(0).toISOString(),
+          });
+          setUsers([]);
+        }
+        return;
+      }
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, role, avatar_url, phone, created_at')
+        .eq('id', authUserId)
+        .single();
+
+      if (error) {
+        console.error('Supabase profile sync failed:', error);
+        return;
+      }
+
+      const mappedUser: User = {
+        id: profile.id,
+        name: profile.name || profile.email || 'مستخدم',
+        email: profile.email || '',
+        role: profile.role as User['role'],
+        avatar: profile.avatar_url || undefined,
+        phone: profile.phone || undefined,
+        createdAt: profile.created_at,
+        isOwnerProtected: profile.role === 'owner',
+      };
+
+      if (!active) return;
+      setCurrentUser(mappedUser);
+
+      const { data: visibleProfiles, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, name, email, role, avatar_url, phone, created_at');
+
+      if (!usersError && visibleProfiles) {
+        const mappedUsers: User[] = visibleProfiles.map((row) => ({
+          id: row.id,
+          name: row.name || row.email || 'مستخدم',
+          email: row.email || '',
+          role: row.role as User['role'],
+          avatar: row.avatar_url || undefined,
+          phone: row.phone || undefined,
+          createdAt: row.created_at,
+          isOwnerProtected: row.role === 'owner',
+        }));
+        setUsers(mappedUsers);
+      } else {
+        setUsers([mappedUser]);
+      }
+    };
+
+    void supabase.auth.getSession().then(({ data }) => {
+      void syncAuthenticatedUser(data.session?.user.id);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTimeout(() => {
+        void syncAuthenticatedUser(session?.user.id);
+      }, 0);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>(() => {
     return safeStorageLoad(STORAGE_KEYS.CART, []);
@@ -652,7 +739,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // Real-time Firestore Listeners
+  // Real-time Supabase listeners
   useEffect(() => {
     let unsubQuotes: (() => void) | undefined;
     let unsubServices: (() => void) | undefined;
@@ -684,7 +771,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setQuoteRequests(list);
         }
         setIsCloudSynced(true);
-      }, (err) => console.warn('Firestore quotes listener:', err.message));
+      }, (err) => console.warn('Supabase quotes listener:', err.message));
 
       // Services Listener
       unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
@@ -697,7 +784,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setServices(list);
           safeStorageSave(STORAGE_KEYS.SERVICES, list);
         }
-      }, (err) => console.warn('Firestore services listener:', err.message));
+      }, (err) => console.warn('Supabase services listener:', err.message));
 
       // Templates Listener
       unsubTemplates = onSnapshot(collection(db, 'templates'), (snapshot) => {
@@ -709,7 +796,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setTemplates(list);
           safeStorageSave(STORAGE_KEYS.TEMPLATES, list);
         }
-      }, (err) => console.warn('Firestore templates listener:', err.message));
+      }, (err) => console.warn('Supabase templates listener:', err.message));
 
       // Packages Listener
       unsubPackages = onSnapshot(collection(db, 'packages'), (snapshot) => {
@@ -721,7 +808,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setPackages(list);
           safeStorageSave(STORAGE_KEYS.PACKAGES, list);
         }
-      }, (err) => console.warn('Firestore packages listener:', err.message));
+      }, (err) => console.warn('Supabase packages listener:', err.message));
 
       // Portfolio Listener
       unsubPortfolio = onSnapshot(collection(db, 'portfolio'), (snapshot) => {
@@ -732,7 +819,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           setPortfolioProjects(list);
         }
-      }, (err) => console.warn('Firestore portfolio listener:', err.message));
+      }, (err) => console.warn('Supabase portfolio listener:', err.message));
 
       // Blog Listener
       unsubBlog = onSnapshot(collection(db, 'blog'), (snapshot) => {
@@ -743,7 +830,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           setBlogPosts(list);
         }
-      }, (err) => console.warn('Firestore blog listener:', err.message));
+      }, (err) => console.warn('Supabase blog listener:', err.message));
 
       // Media Listener
       unsubMedia = onSnapshot(collection(db, 'media'), (snapshot) => {
@@ -754,7 +841,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           setMediaItems(list);
         }
-      }, (err) => console.warn('Firestore media listener:', err.message));
+      }, (err) => console.warn('Supabase media listener:', err.message));
 
       // Home Slides Listener
       unsubHomeSlides = onSnapshot(collection(db, 'home_slides'), (snapshot) => {
@@ -767,7 +854,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setHomeSlides(list);
           safeStorageSave(STORAGE_KEYS.HOME_SLIDES, list);
         }
-      }, (err) => console.warn('Firestore home_slides listener:', err.message));
+      }, (err) => console.warn('Supabase home_slides listener:', err.message));
 
       // Marquee Listener
       unsubMarquee = onSnapshot(collection(db, 'marquee'), (snapshot) => {
@@ -780,7 +867,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setMarqueeItems(list);
           safeStorageSave(STORAGE_KEYS.MARQUEE, list);
         }
-      }, (err) => console.warn('Firestore marquee listener:', err.message));
+      }, (err) => console.warn('Supabase marquee listener:', err.message));
 
       // Features Listener
       unsubFeatures = onSnapshot(collection(db, 'features'), (snapshot) => {
@@ -793,7 +880,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setRawajFeatures(list);
           safeStorageSave(STORAGE_KEYS.FEATURES, list);
         }
-      }, (err) => console.warn('Firestore features listener:', err.message));
+      }, (err) => console.warn('Supabase features listener:', err.message));
 
       // Client Logos Listener
       unsubClientLogos = onSnapshot(collection(db, 'client_logos'), (snapshot) => {
@@ -806,7 +893,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setClientLogos(list);
           safeStorageSave(STORAGE_KEYS.CLIENT_LOGOS, list);
         }
-      }, (err) => console.warn('Firestore client_logos listener:', err.message));
+      }, (err) => console.warn('Supabase client_logos listener:', err.message));
 
       // Testimonials Listener
       unsubTestimonials = onSnapshot(collection(db, 'testimonials'), (snapshot) => {
@@ -819,7 +906,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setTestimonials(list);
           safeStorageSave(STORAGE_KEYS.TESTIMONIALS, list);
         }
-      }, (err) => console.warn('Firestore testimonials listener:', err.message));
+      }, (err) => console.warn('Supabase testimonials listener:', err.message));
 
       // FAQ Listener
       unsubFaq = onSnapshot(collection(db, 'faq'), (snapshot) => {
@@ -832,7 +919,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setFaqItems(list);
           safeStorageSave(STORAGE_KEYS.FAQ, list);
         }
-      }, (err) => console.warn('Firestore faq listener:', err.message));
+      }, (err) => console.warn('Supabase faq listener:', err.message));
 
       // Contact Messages Listener
       unsubContactMessages = onSnapshot(collection(db, 'contact_messages'), (snapshot) => {
@@ -845,7 +932,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setContactMessages(list);
           safeStorageSave(STORAGE_KEYS.CONTACT_MESSAGES, list);
         }
-      }, (err) => console.warn('Firestore contact_messages listener:', err.message));
+      }, (err) => console.warn('Supabase contact_messages listener:', err.message));
 
       // Users Listener
       unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
@@ -857,7 +944,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setUsers(list);
           safeStorageSave(STORAGE_KEYS.USERS, list);
         }
-      }, (err) => console.warn('Firestore users listener:', err.message));
+      }, (err) => console.warn('Supabase users listener:', err.message));
 
       // Settings Listener
       unsubSettings = onSnapshot(collection(db, 'settings'), (snapshot) => {
@@ -923,7 +1010,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           });
         }
-      }, (err) => console.warn('Firestore settings listener:', err.message));
+      }, (err) => console.warn('Supabase settings listener:', err.message));
 
       // Design Tasks Listener
       unsubDesignTasks = onSnapshot(collection(db, 'design_tasks'), (snapshot) => {
@@ -935,10 +1022,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           setDesignTasks(list);
         }
-      }, (err) => console.warn('Firestore design_tasks listener:', err.message));
+      }, (err) => console.warn('Supabase design_tasks listener:', err.message));
 
     } catch (e) {
-      console.warn('Firebase setup note:', e);
+      console.warn('Supabase setup note:', e);
     }
 
     return () => {
@@ -962,7 +1049,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Function to seed Firestore if empty
+  // Seed initial Supabase data only when the catalog is empty
   const seedInitialDataToCloud = async () => {
     try {
       const snap = await getDocs(collection(db, 'services'));
@@ -1197,7 +1284,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await setDoc(doc(db, 'contact_messages', id), newMsg);
     } catch (e) {
-      console.error('Firestore contact message submit error:', e);
+      console.error('Supabase contact message submit error:', e);
       throw e;
     }
   };
@@ -1243,7 +1330,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await setDoc(doc(db, 'testimonials', id), newTest);
     } catch (e) {
-      console.error('Firestore testimonial submit error:', e);
+      console.error('Supabase testimonial submit error:', e);
       throw e;
     }
   };
@@ -1301,7 +1388,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setQuoteItems([]);
   };
 
-  // Submit quote request & persist to Firestore + build WhatsApp message
+  // Submit quote request & persist to Supabase + build WhatsApp message
   const submitQuoteRequest = async (
     customer: any,
     generalNotes?: string,
@@ -1343,11 +1430,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Optimistic local state update
     setQuoteRequests((prev) => [newQuote, ...prev]);
 
-    // Persist directly to Firebase Firestore
+    // Persist to Supabase before reporting success or clearing the cart.
     try {
       await setDoc(doc(db, 'quotes', quoteId), newQuote);
     } catch (e) {
-      console.warn('Firestore quote save note:', e);
+      setQuoteRequests((prev) => prev.filter((q) => q.id !== quoteId));
+      console.error('Supabase quote save failed:', e);
+      throw e;
     }
 
     // Build structured WhatsApp message
@@ -1444,7 +1533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
     } catch (e) {
-      console.warn('Firestore quote status update error:', e);
+      console.warn('Supabase quote status update error:', e);
     }
   };
 
@@ -1473,7 +1562,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
     } catch (e) {
-      console.warn('Firestore quote assignment error:', e);
+      console.warn('Supabase quote assignment error:', e);
     }
   };
 
@@ -1493,7 +1582,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
     } catch (e) {
-      console.warn('Firestore quote notes update error:', e);
+      console.warn('Supabase quote notes update error:', e);
     }
   };
 
@@ -1513,9 +1602,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     try {
       await setDoc(doc(db, 'services', id), newService);
-      console.log(`[Firestore] Service ${id} created on cloud`);
+      console.log(`[Supabase] Service ${id} created on cloud`);
     } catch (e) {
-      console.error(`[Firestore Error] Service creation failed:`, e);
+      console.error(`[Supabase Error] Service creation failed:`, e);
       throw e;
     }
     return newService;
@@ -1535,9 +1624,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (targetService) {
       try {
         await setDoc(doc(db, 'services', id), targetService, { merge: true });
-        console.log(`[Firestore] Service ${id} updated on cloud`);
+        console.log(`[Supabase] Service ${id} updated on cloud`);
       } catch (e) {
-        console.error(`[Firestore Error] Service update failed:`, e);
+        console.error(`[Supabase Error] Service update failed:`, e);
         throw e;
       }
     }
@@ -1551,9 +1640,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     try {
       await deleteDoc(doc(db, 'services', id));
-      console.log(`[Firestore] Service ${id} deleted from cloud`);
+      console.log(`[Supabase] Service ${id} deleted from cloud`);
     } catch (e) {
-      console.error(`[Firestore Error] Service deletion failed:`, e);
+      console.error(`[Supabase Error] Service deletion failed:`, e);
       throw e;
     }
   };
@@ -1707,25 +1796,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const addUser = (userData: Omit<User, 'id' | 'createdAt'>) => {
-    const id = `usr-${Date.now()}`;
-    const newUser: User = {
-      ...userData,
-      id,
-      createdAt: new Date().toISOString(),
-    };
-    setUsers((prev) => [...prev, newUser]);
-    setDoc(doc(db, 'users', id), newUser).catch((e) => console.warn(e));
+  const addUser = async (userData: Omit<User, 'id' | 'createdAt'>): Promise<User> => {
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: {
+        action: 'invite',
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone || '',
+        role: userData.role,
+      },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    if (!data?.user) throw new Error('لم يتم إنشاء المستخدم في Supabase Auth.');
+
+    const newUser = data.user as User;
+    setUsers((prev) => {
+      const withoutExisting = prev.filter((u) => u.id !== newUser.id);
+      return [...withoutExisting, newUser];
+    });
+    return newUser;
   };
 
-  const deleteUser = (userId: string): boolean => {
+  const deleteUser = async (userId: string): Promise<boolean> => {
     const target = users.find((u) => u.id === userId);
     if (!target) return false;
-    if (target.isOwnerProtected) return false;
-    const owners = users.filter((u) => u.role === 'owner');
-    if (target.role === 'owner' && owners.length <= 1) return false;
+    if (target.id === currentUser.id) return false;
+
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: { action: 'delete', userId },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
     setUsers((prev) => prev.filter((u) => u.id !== userId));
-    deleteDoc(doc(db, 'users', userId)).catch((e) => console.warn(e));
     return true;
   };
 
