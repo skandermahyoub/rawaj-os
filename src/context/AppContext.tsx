@@ -822,17 +822,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((docSnap) => {
             if (docSnap.id === 'general') {
               const cloud = docSnap.data() as SiteSettings;
-              setSiteSettings((prev) => {
-                const merged: SiteSettings = {
-                  ...prev,
-                  ...cloud,
-                  logo_url: cloud.logo_url || prev.logo_url || '',
-                  company_name_ar: cloud.company_name_ar || prev.company_name_ar || '',
-                  slogan_ar: cloud.slogan_ar || prev.slogan_ar || '',
-                  mobile_whatsapp: cloud.mobile_whatsapp || prev.mobile_whatsapp || '',
-                };
-                return merged;
-              });
+              setSiteSettings((prev) => ({
+                ...prev,
+                ...cloud,
+              }));
             }
             if (docSnap.id === 'home_modules_order') {
               const cloud = docSnap.data();
