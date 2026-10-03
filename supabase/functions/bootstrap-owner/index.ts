@@ -13,8 +13,6 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const expectedTokenHash = "41073fd5bf2f0b4db0b8f2f02fc219aad6ba01a556421bc0c384656cbc400d1d";
-
 async function sha256(value: string) {
   const bytes = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -61,7 +59,16 @@ Deno.serve(async (req: Request) => {
   }
 
   const providedHash = await sha256(token);
-  if (providedHash !== expectedTokenHash) return json({ error: "Invalid bootstrap token" }, 403);
+
+  const { data: bootstrapRow, error: tokenError } = await admin
+    .from("owner_bootstrap_tokens")
+    .select("token_hash, consumed_at")
+    .eq("token_hash", providedHash)
+    .is("consumed_at", null)
+    .maybeSingle();
+
+  if (tokenError) return json({ error: tokenError.message }, 500);
+  if (!bootstrapRow) return json({ error: "Invalid or consumed bootstrap token" }, 403);
 
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
@@ -86,6 +93,17 @@ Deno.serve(async (req: Request) => {
   if (profileError) {
     await admin.auth.admin.deleteUser(created.user.id);
     return json({ error: profileError.message }, 500);
+  }
+
+  const { error: consumeError } = await admin
+    .from("owner_bootstrap_tokens")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("token_hash", providedHash)
+    .is("consumed_at", null);
+
+  if (consumeError) {
+    await admin.auth.admin.deleteUser(created.user.id);
+    return json({ error: consumeError.message }, 500);
   }
 
   return json({ success: true });
