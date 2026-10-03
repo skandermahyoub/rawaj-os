@@ -201,7 +201,7 @@ interface AppContextType {
   updateTestimonial: (id: string, test: Partial<Testimonial>) => void;
   deleteTestimonial: (id: string) => void;
   submitPublicTestimonial: (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }) => Promise<void>;
-  updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => void;
+  updateTestimonialStatus: (id: string, status: 'approved' | 'pending' | 'rejected') => Promise<void>;
 
   // Module 10: Featured Offers & Promo Banners
   promoSettings: PromoModuleSettings;
@@ -1253,74 +1253,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Contact Messages
-  const submitContactMessage = async (data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>): Promise<void> => {
-    const id = `msg-${Date.now()}`;
+  const submitContactMessage = async (
+    data: Omit<ContactFormMessage, 'id' | 'created_at' | 'status'>
+  ): Promise<void> => {
     const newMsg: ContactFormMessage = {
       ...data,
-      id,
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       created_at: new Date().toISOString(),
       status: 'unread',
     };
+    await setDoc(doc(db, 'contact_messages', newMsg.id), newMsg);
     setContactMessages((prev) => [newMsg, ...prev]);
-    try {
-      await setDoc(doc(db, 'contact_messages', id), newMsg);
-    } catch (e) {
-      console.error('Supabase contact message submit error:', e);
-      throw e;
-    }
   };
 
-  const markContactMessageStatus = async (id: string, status: 'unread' | 'read' | 'replied'): Promise<void> => {
-    setContactMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status } : m))
-    );
-    await setDoc(doc(db, 'contact_messages', id), { status }, { merge: true }).catch((e) => console.warn(e));
+  const markContactMessageStatus = async (
+    id: string,
+    status: 'unread' | 'read' | 'replied'
+  ): Promise<void> => {
+    await setDoc(doc(db, 'contact_messages', id), { status }, { merge: true });
+    setContactMessages((prev) => prev.map((item) => item.id === id ? { ...item, status } : item));
   };
 
   const deleteContactMessage = async (id: string): Promise<void> => {
-    setContactMessages((prev) => prev.filter((m) => m.id !== id));
-    await deleteDoc(doc(db, 'contact_messages', id)).catch((e) => console.warn(e));
+    await deleteDoc(doc(db, 'contact_messages', id));
+    setContactMessages((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Footer Settings
   const updateFooterSettings = async (settings: Partial<FooterSettings>): Promise<void> => {
     const updated = { ...footerSettings, ...settings };
+    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true });
     setFooterSettings(updated);
-    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.FOOTER, updated);
   };
 
   // Brands Mode
   const updateBrandsDisplayMode = async (mode: BrandDisplayMode): Promise<void> => {
+    await setDoc(doc(db, 'settings', 'brands_display'), { mode }, { merge: true });
     setBrandsDisplayMode(mode);
-    await setDoc(doc(db, 'settings', 'brands_display'), { mode }, { merge: true }).catch((e) => console.warn(e));
+    safeStorageSave(STORAGE_KEYS.BRANDS_MODE, mode);
   };
 
   // Testimonials Public Submit & Moderation
-  const submitPublicTestimonial = async (data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }): Promise<void> => {
-    const id = `test-${Date.now()}`;
+  const submitPublicTestimonial = async (
+    data: { client_name_ar: string; client_title_ar: string; client_company_ar: string; comment_ar: string; rating: number }
+  ): Promise<void> => {
     const newTest: Testimonial = {
       ...data,
-      id,
-      client_avatar_url: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80`,
-      status: 'pending', // Pending admin approval!
+      id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      client_avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      status: 'pending',
       sort_order: testimonials.length + 1,
       is_active: false,
       created_at: new Date().toISOString(),
     };
+    await setDoc(doc(db, 'testimonials', newTest.id), newTest);
     setTestimonials((prev) => [newTest, ...prev]);
-    try {
-      await setDoc(doc(db, 'testimonials', id), newTest);
-    } catch (e) {
-      console.error('Supabase testimonial submit error:', e);
-      throw e;
-    }
   };
 
-  const updateTestimonialStatus = (id: string, status: 'approved' | 'pending' | 'rejected') => {
-    setTestimonials((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status, is_active: status === 'approved' } : t))
-    );
-    setDoc(doc(db, 'testimonials', id), { status, is_active: status === 'approved' }, { merge: true }).catch((e) => console.warn(e));
+  const updateTestimonialStatus = async (
+    id: string,
+    status: 'approved' | 'pending' | 'rejected'
+  ): Promise<void> => {
+    const patch = { status, is_active: status === 'approved' };
+    await setDoc(doc(db, 'testimonials', id), patch, { merge: true });
+    setTestimonials((prev) => prev.map((item) => item.id === id ? { ...item, ...patch } : item));
   };
 
   // Cart operations
