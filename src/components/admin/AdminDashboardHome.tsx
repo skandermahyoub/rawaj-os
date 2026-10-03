@@ -343,7 +343,7 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
                   ٤. المعرض والمحتوى التسويقي
                 </h4>
                 <p className="text-xs text-[#706A62] dark:text-[#A0988F] leading-relaxed mt-1">
-                  نشر صور المشاريع المنجزة، مكتبة الوسائط ومولدات الذكاء الاصطناعي، ومقالات دليل الخامات.
+                  نشر صور المشاريع المنجزة، إدارة مكتبة الوسائط، ومقالات دليل الخامات.
                 </p>
               </div>
             </div>
