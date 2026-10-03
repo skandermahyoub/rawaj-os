@@ -34,15 +34,15 @@ export const AdminHeaderHeroManager: React.FC = () => {
     if (!file) return;
 
     try {
-      const optimized = awt optimizeImageFile(file, 900, 900, 0.9);
-      const stored = awt uploadDataUrlToRawajStorage(optimized.dataUrl, {
+      const optimized = await optimizeImageFile(file, 900, 900, 0.9);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
         folder: 'branding',
         fileName: 'rawaj-logo',
       });
       setLogoUrl(stored.publicUrl);
-      awt updateSiteSettings({ logo_url: stored.publicUrl });
+      await updateSiteSettings({ logo_url: stored.publicUrl });
     } catch (error: any) {
-      console.error('Supabase logo upload fled:', error);
+      console.error('Supabase logo upload failed:', error);
       alert(error?.message || 'تعذر رفع الشعار.');
     }
   };
@@ -52,14 +52,14 @@ export const AdminHeaderHeroManager: React.FC = () => {
     if (!file) return;
 
     try {
-      const optimized = awt optimizeImageFile(file, 1920, 1200, 0.88);
-      const stored = awt uploadDataUrlToRawajStorage(optimized.dataUrl, {
+      const optimized = await optimizeImageFile(file, 1920, 1200, 0.88);
+      const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
         folder: 'hero',
         fileName: 'hero-background',
       });
       setFormData((prev) => ({ ...prev, bg_image_url: stored.publicUrl }));
     } catch (error: any) {
-      console.error('Supabase hero background upload fled:', error);
+      console.error('Supabase hero background upload failed:', error);
       alert(error?.message || 'تعذر رفع خلفية الهيدر.');
     }
   };
@@ -67,7 +67,7 @@ export const AdminHeaderHeroManager: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      awt Promise.all([
+      await Promise.all([
         updateHeroHeaderSettings({
           ...formData,
           company_name_ar: companyName,
@@ -82,7 +82,7 @@ export const AdminHeaderHeroManager: React.FC = () => {
       setSavedNotice(true);
       setTimeout(() => setSavedNotice(false), 3000);
     } catch (error: any) {
-      console.error('Supabase header settings save fled:', error);
+      console.error('Supabase header settings save failed:', error);
       alert(error?.message || 'تعذر حفظ إعدادات الهيدر.');
     }
   };
@@ -146,7 +146,7 @@ export const AdminHeaderHeroManager: React.FC = () => {
                 className="w-24 h-24 rounded-2xl bg-[#F5F1E9] dark:bg-[#252220] border-2 border-dashed border-[#B9142D]/40 p-2 flex items-center justify-center cursor-pointer hover:scale-105 transition-all shadow-md group relative overflow-hidden"
               >
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="w-full h-full object-contn" />
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-center text-[#746E67] text-[10px]">
                     <Upload className="w-5 h-5 mx-auto mb-1 text-[#B9142D]" />
