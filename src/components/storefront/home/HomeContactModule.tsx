@@ -52,7 +52,7 @@ export const HomeContactModule: React.FC = () => {
     }
   };
 
-  const whatsappNumber = siteSettings.mobile_whatsapp || '+967772110131';
+  const whatsappNumber = siteSettings.mobile_whatsapp || footerSettings.mobile_whatsapp || '';
   const cleanWhatsapp = whatsappNumber.replace(/[^0-9]/g, '');
 
   return (
@@ -90,7 +90,7 @@ export const HomeContactModule: React.FC = () => {
 
             {/* Direct Phone Call */}
             <a
-              href={`tel:${siteSettings.phone || '+9671234567'}`}
+              href={`tel:${siteSettings.phone || footerSettings.phone || ''}`}
               className="flex items-center justify-between p-3.5 rounded-xl bg-brand-primary-10 hover:bg-brand-primary-15 border border-brand-primary/30 text-[#171616] dark:text-white font-bold text-xs sm:text-sm transition-all group"
             >
               <div className="flex items-center gap-3">
@@ -99,7 +99,7 @@ export const HomeContactModule: React.FC = () => {
                 </span>
                 <div>
                   <span className="block leading-tight">الهاتف الموحد للإدارة</span>
-                  <span className="text-[11px] font-normal text-brand-primary font-mono" dir="ltr">{siteSettings.phone || '+967 1 234567'}</span>
+                  <span className="text-[11px] font-normal text-brand-primary font-mono" dir="ltr">{siteSettings.phone || footerSettings.phone || 'غير محدد'}</span>
                 </div>
               </div>
               <ExternalLink className="w-4 h-4 text-brand-primary group-hover:translate-x-[-2px] transition-transform" />
