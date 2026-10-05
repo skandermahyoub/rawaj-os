@@ -202,7 +202,7 @@ export const onSnapshot = (
   void refresh();
 
   const tableName = physicalTable(ref.table);
-  const channelName = `rawaj-${ref.table}-${Math.random().toString(36).slice(2)}`;
+  const channelName = `rawaj-${ref.table}-${crypto.randomUUID()}`;
 
   channel = supabase
     .channel(channelName)
