@@ -42,6 +42,8 @@ export const AdminStyleCustomizer: React.FC = () => {
   }));
   const [savedToast, setSavedToast] = useState(false);
   const [resetToast, setResetToast] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sync draft when global settings change
   useEffect(() => {
@@ -89,14 +91,22 @@ export const AdminStyleCustomizer: React.FC = () => {
     applyLivePreview(updated);
   };
 
-  const handleSave = () => {
-    updateThemeSettings(draft);
-    applyLivePreview(draft);
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 2500);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await updateThemeSettings(draft);
+      applyLivePreview(draft);
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+    } catch (error: any) {
+      setSaveError(error?.message || 'تعذر حفظ إعدادات الهوية في Supabase.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleResetToDefault = () => {
+  const handleResetToDefault = async () => {
     const defaultPreset = COLOR_PRESETS[0];
     const defaultSettings: ThemeCustomizerSettings = {
       theme_mode: 'light',
@@ -113,10 +123,18 @@ export const AdminStyleCustomizer: React.FC = () => {
       header_style: 'collapsible_hero',
     };
     setDraft(defaultSettings);
-    updateThemeSettings(defaultSettings);
-    applyLivePreview(defaultSettings);
-    setResetToast(true);
-    setTimeout(() => setResetToast(false), 2500);
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await updateThemeSettings(defaultSettings);
+      applyLivePreview(defaultSettings);
+      setResetToast(true);
+      setTimeout(() => setResetToast(false), 2500);
+    } catch (error: any) {
+      setSaveError(error?.message || 'تعذر استعادة الإعدادات الافتراضية.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const fontOptions: { id: ArabicFontFamily; name: string; sample: string }[] = [
@@ -162,7 +180,8 @@ export const AdminStyleCustomizer: React.FC = () => {
         {/* Global Action Buttons */}
         <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
           <button
-            onClick={handleResetToDefault}
+            onClick={() => void handleResetToDefault()}
+            disabled={isSaving}
             className="px-4 py-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#1A1816] hover:bg-[#F3EFEA] dark:hover:bg-[#252220] text-[#70695F] dark:text-[#A8A196] border border-[#E8E2D5] dark:border-[#2D2A26] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
             title="استعادة إعدادات رواج الافتراضية"
           >
@@ -171,7 +190,8 @@ export const AdminStyleCustomizer: React.FC = () => {
           </button>
 
           <button
-            onClick={handleSave}
+            onClick={() => void handleSave()}
+            disabled={isSaving}
             className="px-6 py-2.5 rounded-xl bg-[#B9142D] hover:bg-[#A01026] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer border border-[#E03A53]/30 hover:scale-102"
           >
             <Save className="w-4 h-4" />
@@ -179,6 +199,12 @@ export const AdminStyleCustomizer: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {saveError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-700 dark:text-red-300 text-xs font-bold text-center">
+          لم يتم الحفظ: {saveError}
+        </div>
+      )}
 
       {savedToast && (
         <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-700 dark:text-emerald-300 text-xs font-bold text-center flex items-center justify-center gap-2 animate-in fade-in duration-200">
@@ -597,6 +623,7 @@ export const AdminStyleCustomizer: React.FC = () => {
             {/* Save Button below sticky preview */}
             <button
               onClick={handleSave}
+              disabled={isSaving}
               className="w-full py-3 rounded-xl bg-[#B9142D] hover:bg-[#A01026] text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#E03A53]/30"
             >
               <Save className="w-4 h-4" />
