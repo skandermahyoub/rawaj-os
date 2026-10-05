@@ -283,6 +283,7 @@ interface AppContextType {
   deleteIndustrySector: (id: string) => Promise<void>;
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
+  updateUser: (userId: string, changes: { role?: UserRole; is_active?: boolean; name?: string; phone?: string }) => Promise<User>;
   deleteUser: (userId: string) => Promise<boolean>;
 
   // Search Engine
@@ -1665,6 +1666,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newUser;
   };
 
+  const updateUser = async (
+    userId: string,
+    changes: { role?: UserRole; is_active?: boolean; name?: string; phone?: string }
+  ): Promise<User> => {
+    const target = users.find((u) => u.id === userId);
+    if (!target) throw new Error('المستخدم غير موجود.');
+
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: {
+        action: 'update',
+        userId,
+        role: changes.role || target.role,
+        isActive: changes.is_active ?? target.is_active ?? true,
+        name: changes.name ?? target.name,
+        phone: changes.phone ?? target.phone ?? '',
+      },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    if (!data?.user) throw new Error('تعذر تحديث المستخدم.');
+
+    const updated = data.user as User;
+    setUsers((prev) => prev.map((u) => u.id === userId ? updated : u));
+    return updated;
+  };
+
   const deleteUser = async (userId: string): Promise<boolean> => {
     const target = users.find((u) => u.id === userId);
     if (!target) return false;
@@ -2018,6 +2046,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteIndustrySector,
         updateSiteSettings,
         addUser,
+        updateUser,
         deleteUser,
         designTasks,
         createDesignTask,
