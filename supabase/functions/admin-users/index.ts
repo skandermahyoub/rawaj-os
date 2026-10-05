@@ -100,6 +100,83 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  if (body?.action === "update") {
+    const userId = String(body.userId || "").trim();
+    const role = String(body.role || "").trim();
+    const name = String(body.name || "").trim();
+    const phone = String(body.phone || "").trim();
+    const isActive = body.isActive !== false;
+    const allowedRoles = ["owner", "admin", "editor", "sales", "designer"];
+
+    if (!userId || !allowedRoles.includes(role)) {
+      return json({ error: "Invalid user update" }, 400);
+    }
+
+    const { data: target, error: targetError } = await admin
+      .from("profiles")
+      .select("id, name, email, phone, role, is_active, created_at")
+      .eq("id", userId)
+      .single();
+
+    if (targetError || !target) return json({ error: "User not found" }, 404);
+
+    if (userId === caller.id && !isActive) {
+      return json({ error: "You cannot deactivate your own account" }, 400);
+    }
+
+    const isRemovingActiveOwner =
+      target.role === "owner" &&
+      target.is_active &&
+      (role !== "owner" || !isActive);
+
+    if (isRemovingActiveOwner) {
+      const { count, error: countError } = await admin
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "owner")
+        .eq("is_active", true);
+
+      if (countError) return json({ error: countError.message }, 500);
+      if ((count || 0) <= 1) return json({ error: "At least one active owner must remain" }, 400);
+    }
+
+    const { data: updatedProfile, error: updateError } = await admin
+      .from("profiles")
+      .update({
+        role,
+        name: name || target.name,
+        phone: phone || null,
+        is_active: isActive,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId)
+      .select("id, name, email, phone, role, is_active, created_at")
+      .single();
+
+    if (updateError || !updatedProfile) {
+      return json({ error: updateError?.message || "Could not update user" }, 400);
+    }
+
+    if (name && name !== target.name) {
+      await admin.auth.admin.updateUserById(userId, {
+        user_metadata: { name },
+      });
+    }
+
+    return json({
+      user: {
+        id: updatedProfile.id,
+        name: updatedProfile.name || updatedProfile.email || "مستخدم",
+        email: updatedProfile.email || "",
+        phone: updatedProfile.phone || undefined,
+        role: updatedProfile.role,
+        is_active: updatedProfile.is_active,
+        createdAt: updatedProfile.created_at,
+        isOwnerProtected: updatedProfile.role === "owner",
+      },
+    });
+  }
+
   if (body?.action === "delete") {
     const userId = String(body.userId || "").trim();
     if (!userId) return json({ error: "Missing userId" }, 400);
