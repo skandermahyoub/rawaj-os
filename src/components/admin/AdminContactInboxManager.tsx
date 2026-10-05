@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 
 export const AdminContactInboxManager: React.FC = () => {
-  const { contactMessages, markContactMessageStatus, deleteContactMessage } = useApp();
+  const { contactMessages, markContactMessageStatus, deleteContactMessage, currentUser } = useApp();
+  const canDeleteMessages = ['owner', 'admin'].includes(currentUser.role);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [actionError, setActionError] = useState('');
 
@@ -179,17 +180,19 @@ export const AdminContactInboxManager: React.FC = () => {
                       </button>
                     )}
 
-                    <button
-                      onClick={() => {
-                        if (confirm('هل أنت متأكد من حذف هذه الرسالة؟')) {
-                          void deleteContactMessage(msg.id).catch((error) => setActionError(error?.message || 'تعذر حذف الرسالة.'));
-                        }
-                      }}
-                      className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
-                      title="حذف الرسالة"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canDeleteMessages && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm('هل أنت متأكد من حذف هذه الرسالة؟')) {
+                            void deleteContactMessage(msg.id).catch((error) => setActionError(error?.message || 'تعذر حذف الرسالة.'));
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
+                        title="حذف الرسالة"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
