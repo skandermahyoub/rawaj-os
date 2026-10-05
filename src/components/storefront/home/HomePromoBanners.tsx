@@ -19,6 +19,7 @@ export const HomePromoBanners: React.FC = () => {
   const { promoSettings, siteSettings, footerSettings, navigate } = useApp();
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const whatsappNumber = (siteSettings.mobile_whatsapp || footerSettings.mobile_whatsapp || '').replace(/[^0-9]/g, '');
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
@@ -267,15 +268,17 @@ export const HomePromoBanners: React.FC = () => {
                 </button>
 
                 {/* Direct Sales WhatsApp Quick Contact Button */}
-                <a
-                  href={`https://wa.me/${(siteSettings.mobile_whatsapp || footerSettings.mobile_whatsapp || '+967770000000').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`مرحباً وكالة رواج، أود الاستفسار والحجز بخصوص: ${currentBanner.title_ar}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-3 rounded-2xl bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/25 hover:border-white/50 text-white font-bold text-xs sm:text-sm shadow-md flex items-center gap-2 transition-all cursor-pointer"
-                >
-                  <MessageSquare className="w-4 h-4 text-[#25D366]" />
-                  <span>تواصل مباشر للطلب</span>
-                </a>
+                {whatsappNumber && (
+                  <a
+                    href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`مرحباً وكالة رواج، أود الاستفسار والحجز بخصوص: ${currentBanner.title_ar}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-3 rounded-2xl bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/25 hover:border-white/50 text-white font-bold text-xs sm:text-sm shadow-md flex items-center gap-2 transition-all cursor-pointer"
+                  >
+                    <MessageSquare className="w-4 h-4 text-[#25D366]" />
+                    <span>تواصل مباشر للطلب</span>
+                  </a>
+                )}
               </div>
 
             </div>
