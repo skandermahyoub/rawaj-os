@@ -11,6 +11,7 @@ import {
   BlogPost,
   SiteSettings,
   User,
+  UserRole,
   QuoteRequest,
   QuoteItem,
   MediaItem,
