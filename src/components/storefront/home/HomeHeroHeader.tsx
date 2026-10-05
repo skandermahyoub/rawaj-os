@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { RawajLogo } from '../../common/RawajLogo';
 import { 
@@ -10,7 +10,6 @@ import {
   Box, 
   Building2, 
   ChevronLeft,
-  Upload,
   Check
 } from 'lucide-react';
 
@@ -84,30 +83,12 @@ const CAPABILITIES: CapabilityItem[] = [
 ];
 
 export const HomeHeroHeader: React.FC<HomeHeroHeaderProps> = ({ onOpenCustomQuote }) => {
-  const { heroHeaderSettings, siteSettings, navigate, updateSiteSettings } = useApp();
+  const { heroHeaderSettings, siteSettings, navigate } = useApp();
   const [activeTab, setActiveTab] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!heroHeaderSettings.enabled) return null;
 
   const currentCap = CAPABILITIES[activeTab];
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('حجم الصورة كبير، يرجى اختيار ملف أقل من 5 ميجابايت');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          updateSiteSettings({ logo_url: reader.result });
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleScrollToCalculator = () => {
     const calc = document.getElementById('calculator-module');
@@ -118,20 +99,11 @@ export const HomeHeroHeader: React.FC<HomeHeroHeaderProps> = ({ onOpenCustomQuot
     }
   };
 
-  const whatsappNumber = siteSettings.mobile_whatsapp?.replace(/[^\d+]/g, '') || '+967772110131';
+  const whatsappNumber = (siteSettings.mobile_whatsapp || siteSettings.phone || '').replace(/[^0-9]/g, '');
 
   return (
     <section className="relative w-full bg-[#12100F] text-[#F7F4EE] border-b border-[#2B2623] overflow-hidden">
       
-      {/* Hidden file input for logo change by owner */}
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleLogoUpload} 
-        accept="image/*" 
-        className="hidden" 
-      />
-
       {/* 1. Architectural Texture & Background Lighting */}
       {heroHeaderSettings.bg_image_url ? (
         <div className="absolute inset-0 pointer-events-none opacity-25">
@@ -203,16 +175,27 @@ export const HomeHeroHeader: React.FC<HomeHeroHeaderProps> = ({ onOpenCustomQuot
               </button>
 
               {/* WhatsApp Quick Consultation */}
-              <a
-                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('السلام عليكم، أود استشارة فريق رواج بخصوص مواصفات مشروع طباعي.')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-3.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-300 border border-emerald-800/40 font-bold text-xs flex items-center gap-2 transition-colors"
-                title="تواصل مباشر عبر واتساب"
-              >
-                <MessageCircle className="w-4 h-4 text-emerald-400" />
-                <span className="hidden sm:inline">استشارة مباشرة</span>
-              </a>
+              {whatsappNumber ? (
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('السلام عليكم، أود استشارة فريق رواج بخصوص مواصفات مشروع طباعي.')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-3.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-300 border border-emerald-800/40 font-bold text-xs flex items-center gap-2 transition-colors"
+                  title="تواصل مباشر عبر واتساب"
+                >
+                  <MessageCircle className="w-4 h-4 text-emerald-400" />
+                  <span className="hidden sm:inline">استشارة مباشرة</span>
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onOpenCustomQuote}
+                  className="px-4 py-3.5 rounded-xl bg-[#24201D] text-[#D6CFC5] border border-[#3A332E] font-bold text-xs flex items-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">طلب استشارة</span>
+                </button>
+              )}
 
             </div>
 
