@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { 
   Briefcase, 
   ArrowLeft, 
@@ -87,9 +88,10 @@ export const HomeProudPortfolio: React.FC = () => {
             >
               {/* Project Image */}
               <div className="relative aspect-16/10 overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-                <img
-                  src={project.images[0] || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80'}
+                <SafeImage
+                  src={project.images?.[0] || ''}
                   alt={project.title_ar}
+                  fallbackCategory={project.industry || project.title_ar}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                 />

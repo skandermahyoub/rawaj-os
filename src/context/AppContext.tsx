@@ -974,15 +974,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeStorageSave(STORAGE_KEYS.CART, quoteItems);
   }, [quoteItems]);
 
-  useEffect(() => {
-    applyThemeToDocument(themeSettings);
-    if (themeSettings.theme_mode === 'dark' && !isDarkMode) {
-      setIsDarkMode(true);
-    } else if (themeSettings.theme_mode === 'light' && isDarkMode) {
-      setIsDarkMode(false);
-    }
-  }, [themeSettings]);
-
   // Module 1: Hero Header settings
   const updateHeroHeaderSettings = async (settings: Partial<HeroHeaderSettings>): Promise<void> => {
     const updated = { ...heroHeaderSettings, ...settings };

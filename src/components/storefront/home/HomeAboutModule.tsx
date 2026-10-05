@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { 
   Target, 
   Eye, 
@@ -75,9 +76,10 @@ export const HomeAboutModule: React.FC = () => {
           <div className="lg:col-span-5 flex flex-col items-center sm:flex-row lg:flex-col text-center sm:text-right lg:text-center gap-6 p-6 rounded-2xl bg-white dark:bg-[#201D1C] shadow-md border border-[#EBE5DA] dark:border-[#2E2A28]">
             <div className="relative">
               <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-4 border-[#B9142D] shadow-lg">
-                <img
-                  src={aboutUsData.gm_photo_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'}
-                  alt={aboutUsData.gm_name_ar}
+                <SafeImage
+                  src={aboutUsData.gm_photo_url || ''}
+                  alt={aboutUsData.gm_name_ar || 'الإدارة العامة'}
+                  fallbackCategory="الإدارة العامة"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -120,19 +122,19 @@ export const HomeAboutModule: React.FC = () => {
             <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#EBE5DA] dark:border-[#2E2A28] text-center">
               <div>
                 <span className="block text-lg sm:text-xl font-extrabold text-[#B9142D]">
-                  {aboutUsData.years_experience || 18}+
+                  {aboutUsData.years_experience ? `${aboutUsData.years_experience}+` : '—'}
                 </span>
                 <span className="text-[11px] sm:text-xs text-[#746E67] dark:text-[#A0988F]">عاماً من التميز</span>
               </div>
               <div>
                 <span className="block text-lg sm:text-xl font-extrabold text-[#171616] dark:text-[#F5F1EA]">
-                  {aboutUsData.completed_projects_count || '+14,000'}
+                  {aboutUsData.completed_projects_count || '—'}
                 </span>
                 <span className="text-[11px] sm:text-xs text-[#746E67] dark:text-[#A0988F]">مشروع منجز</span>
               </div>
               <div>
                 <span className="block text-lg sm:text-xl font-extrabold text-[#171616] dark:text-[#F5F1EA]">
-                  {aboutUsData.happy_clients_count || '+2,800'}
+                  {aboutUsData.happy_clients_count || '—'}
                 </span>
                 <span className="text-[11px] sm:text-xs text-[#746E67] dark:text-[#A0988F]">عميل ومؤسسة</span>
               </div>
