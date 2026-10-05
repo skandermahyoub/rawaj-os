@@ -159,70 +159,6 @@ export const AdminPromoManager: React.FC = () => {
     await savePromoSettings({ banners: updated });
   };
 
-  // Add a preset quick template
-  const handleAddPreset = (type: 'store_opening' | 'packaging_cafe' | 'exhibition_vip') => {
-    let preset: Omit<PromoBanner, 'id'>;
-    if (type === 'store_opening') {
-      preset = {
-        title_ar: 'باقة تدشين الهوية التجارية والمقرات 2026',
-        subtitle_ar: 'خصم استثنائي 20% يشمل واجهات الكلادينج، الحروف المضيئة، وتجهيزات المكاتب ومطبوعات الاستقبال.',
-        badge_ar: 'عرض تدشين الشركات',
-        discount_tag: 'خصم 20%',
-        valid_until: 'ساري حتى نهاية الشهر الحالي',
-        highlights: [
-          'واجهات كلادينج ألمنيوم مقاومة للمناخ وضمان 5 سنوات',
-          'حروف بارزة 3D إكريليك وزنكور بإضاءة LED موفرة',
-          'مجموعة مطبوعات فاخرة: دفاتر، فولدرات، وبطاقات NFC'
-        ],
-        image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
-        cta_text_ar: 'احجز العرض واستشر مهندسنا',
-        link_view: 'packages',
-        is_active: true,
-        sort_order: promoSettings.banners.length + 1,
-      };
-    } else if (type === 'packaging_cafe') {
-      preset = {
-        title_ar: 'باقة التغليف الفاخر للمطاعم والمقاهي',
-        subtitle_ar: 'أكواب دبل كرافت حرارية، أكياس تسوق ورقية معزولة، وعلب طعام صديقة للبيئة بأسعار الجملة للكميات الكبرى.',
-        badge_ar: 'الأكثر طلباً للضيافة',
-        discount_tag: 'أسعار الجملة للكميات',
-        valid_until: 'تسليم سريع خلال 72 ساعة',
-        highlights: [
-          'أكواب دبل كرافت عازلة للحرارة بطباعة Pantone مخصصة',
-          'أكياس ورقية كرافت متينة بأيدي حبلية أنيقة',
-          'ورق تغليف شحمي مضاد للزيوت معتمد صحياً'
-        ],
-        image_url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
-        cta_text_ar: 'طلب باقة المقاهي المعتمدة',
-        link_view: 'packages',
-        is_active: true,
-        sort_order: promoSettings.banners.length + 1,
-      };
-    } else {
-      preset = {
-        title_ar: 'تجهيز أجنحة المعارض والمؤتمرات السريع',
-        subtitle_ar: 'بوثات هندسية متكاملة، بوب اب ماجنتيك، رول اب فاخر، وبطاقات زوار VIP مع خدمة التركيب والتسليم الميداني.',
-        badge_ar: 'تسليم فوري 48 ساعة',
-        discount_tag: 'تجهيز VIP متكامل',
-        valid_until: 'شامل التركيب الميداني في صنعاء',
-        highlights: [
-          'أنظمة معارض محمولة خفيفة سريعة الفك والتركيب',
-          'طباعة قماشية عالية الدقة مقاومة للتوهج والانعكاس',
-          'إشراف هندسي متكامل ومتابعة ميدانية في المعرض'
-        ],
-        image_url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80',
-        cta_text_ar: 'تسعير بوثات المعارض',
-        link_view: 'packages',
-        is_active: true,
-        sort_order: promoSettings.banners.length + 1,
-      };
-    }
-
-    void addPromoBanner(preset)
-      .then(showNotice)
-      .catch((error) => setActionError(error?.message || 'تعذر إضافة القالب الجاهز.'));
-  };
-
   const activeBanners = promoSettings.banners.filter(b => b.is_active);
 
   return (
@@ -431,44 +367,7 @@ export const AdminPromoManager: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Quick One-Click Preset Offer Templates */}
-      <div className="p-5 rounded-2xl bg-[#FCFAF7] dark:bg-[#171514] border border-[#EBE4D5] dark:border-[#2A2624] space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-[#554F48] dark:text-[#C5BCB1]">
-            قوالب عروض جاهزة وسريعة للإضافة الفورية:
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          <button
-            type="button"
-            onClick={() => handleAddPreset('store_opening')}
-            className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#201D1C] border border-[#E0D7C5] dark:border-[#352F2D] hover:border-[#B9142D] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#B9142D]" />
-            <span>عرض تدشين الشركات والمقرات</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAddPreset('packaging_cafe')}
-            className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#201D1C] border border-[#E0D7C5] dark:border-[#352F2D] hover:border-[#B9142D] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#B9142D]" />
-            <span>عرض تغليف المقاهي والضيافة</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAddPreset('exhibition_vip')}
-            className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#201D1C] border border-[#E0D7C5] dark:border-[#352F2D] hover:border-[#B9142D] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#B9142D]" />
-            <span>عرض أجنحة المعارض السريعة</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 4. Form (Create or Edit Banner) */}
+      {/* Create or Edit Banner */}
       {(isCreating || editingBanner) && (
         <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-white dark:bg-[#1E1B1A] border-2 border-[#B9142D]/40 shadow-xl space-y-4 animate-fade-in">
           <div className="flex items-center justify-between border-b border-[#F0EBE0] dark:border-[#2E2A28] pb-3">
