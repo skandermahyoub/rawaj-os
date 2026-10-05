@@ -68,6 +68,7 @@ export interface User {
   avatar?: string;
   phone?: string;
   createdAt: string;
+  is_active?: boolean;
   isOwnerProtected?: boolean;
 }
 
