@@ -1,4 +1,5 @@
 import React from 'react';
+import { useApp } from '../../../context/AppContext';
 import { Sparkles, ArrowLeft, MessageSquare, FileUp } from 'lucide-react';
 
 interface CustomRequestCTAProps {
@@ -6,6 +7,9 @@ interface CustomRequestCTAProps {
 }
 
 export const CustomRequestCTA: React.FC<CustomRequestCTAProps> = ({ onCustomQuote }) => {
+  const { siteSettings } = useApp();
+  const whatsappNumber = (siteSettings.mobile_whatsapp || siteSettings.phone || '').replace(/[^0-9]/g, '');
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-[#B9142D] via-[#A01227] to-[#800F20] text-white rounded-[26px] sm:rounded-[32px] p-6 sm:p-9 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-right">
       
@@ -34,15 +38,26 @@ export const CustomRequestCTA: React.FC<CustomRequestCTAProps> = ({ onCustomQuot
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        <a
-          href="https://wa.me/967772110131"
-          target="_blank"
-          rel="noreferrer"
-          className="touch-target flex-1 sm:flex-initial bg-black/25 hover:bg-black/35 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-[14px] flex items-center justify-center gap-2 transition-colors border border-white/20"
-        >
-          <MessageSquare className="w-4 h-4 text-emerald-400" />
-          <span>استشارة فورية عبر واتساب</span>
-        </a>
+        {whatsappNumber ? (
+          <a
+            href={`https://wa.me/${whatsappNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="touch-target flex-1 sm:flex-initial bg-black/25 hover:bg-black/35 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-[14px] flex items-center justify-center gap-2 transition-colors border border-white/20"
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-400" />
+            <span>استشارة فورية عبر واتساب</span>
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={onCustomQuote}
+            className="touch-target flex-1 sm:flex-initial bg-black/25 hover:bg-black/35 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-[14px] flex items-center justify-center gap-2 transition-colors border border-white/20"
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>ابدأ طلبك الآن</span>
+          </button>
+        )}
       </div>
     </section>
   );
