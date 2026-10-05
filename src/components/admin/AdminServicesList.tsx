@@ -141,6 +141,7 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
           </div>
 
         </div>
+      </div>
 
       {actionError && (
         <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
