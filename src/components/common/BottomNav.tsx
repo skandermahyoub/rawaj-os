@@ -18,13 +18,14 @@ import {
 } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
-  const { currentRoute, navigate, quoteItems, isDarkMode, toggleTheme } = useApp();
+  const { currentRoute, navigate, quoteItems, isDarkMode, toggleTheme, siteSettings } = useApp();
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
 
   const cartCount = quoteItems.length;
   const isHome = currentRoute.view === 'home';
   const isCart = currentRoute.view === 'quote-cart';
   const isServices = currentRoute.view === 'services' || currentRoute.view === 'service-detail';
+  const whatsappNumber = (siteSettings.mobile_whatsapp || siteSettings.phone || '').replace(/[^0-9]/g, '');
 
   return (
     <>
@@ -113,15 +114,26 @@ export const BottomNav: React.FC = () => {
 
             {/* Quick WhatsApp & Theme Controls */}
             <div className="py-2.5 flex items-center gap-2">
-              <a
-                href="https://wa.me/967772110131"
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#25D366]/15 text-[#16834A] dark:text-[#25D366] text-xs font-bold hover:bg-[#25D366]/25 transition-colors"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>واتساب مباشر: 772110131 967+</span>
-              </a>
+              {whatsappNumber ? (
+                <a
+                  href={`https://wa.me/${whatsappNumber}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#25D366]/15 text-[#16834A] dark:text-[#25D366] text-xs font-bold hover:bg-[#25D366]/25 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>واتساب مباشر</span>
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setMoreDrawerOpen(false); navigate({ view: 'quote-cart' }); }}
+                  className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#F5F1E9] dark:bg-[#1E1B1A] text-xs font-bold"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>طلب عرض سعر</span>
+                </button>
+              )}
               <button
                 onClick={toggleTheme}
                 className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white dark:bg-[#1E1B1A] border border-[#E8E2D5] dark:border-[#2D2A26] text-xs font-semibold text-[#171616] dark:text-[#F7F5F0]"
