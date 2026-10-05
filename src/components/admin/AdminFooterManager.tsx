@@ -21,6 +21,8 @@ export const AdminFooterManager: React.FC = () => {
   const [social, setSocial] = useState<SocialLinks>({ ...footerSettings.social_links });
   const [branches, setBranches] = useState<FooterBranch[]>([...footerSettings.branches]);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   React.useEffect(() => {
     setFormData({ ...footerSettings });
@@ -51,15 +53,23 @@ export const AdminFooterManager: React.FC = () => {
     setBranches((prev) => prev.filter((b) => b.id !== id));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateFooterSettings({
-      ...formData,
-      social_links: social,
-      branches,
-    });
-    setSavedNotice(true);
-    setTimeout(() => setSavedNotice(false), 3000);
+    setSaveError('');
+    setIsSaving(true);
+    try {
+      await updateFooterSettings({
+        ...formData,
+        social_links: social,
+        branches,
+      });
+      setSavedNotice(true);
+      setTimeout(() => setSavedNotice(false), 3000);
+    } catch (error: any) {
+      setSaveError(error?.message || 'تعذر حفظ إعدادات الفوتر.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -78,6 +88,12 @@ export const AdminFooterManager: React.FC = () => {
           تخصيص كامل للنصوص، أرقام الهواتف، عناوين الفروع في صنعاء، روابط منصات التواصل الاجتماعي، وشريط الحقوق.
         </p>
       </div>
+
+      {saveError && (
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs font-bold">
+          {saveError}
+        </div>
+      )}
 
       {savedNotice && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm flex items-center gap-2 animate-fade-in shadow-xs">
@@ -353,10 +369,11 @@ export const AdminFooterManager: React.FC = () => {
         <div className="flex justify-end">
           <button
             type="submit"
+            disabled={isSaving}
             className="px-8 py-3 rounded-2xl bg-gradient-to-r from-[#B9142D] to-[#910E23] hover:from-[#910E23] hover:to-[#B9142D] text-white font-bold text-xs sm:text-sm shadow-md flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            <span>حفظ إعدادات الفوتر</span>
+            <span>{isSaving ? 'جارٍ الحفظ...' : 'حفظ إعدادات الفوتر'}</span>
           </button>
         </div>
 
