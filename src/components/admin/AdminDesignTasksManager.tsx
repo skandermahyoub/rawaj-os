@@ -78,6 +78,9 @@ export const AdminDesignTasksManager: React.FC = () => {
 
   // Designers List
   const designers = users.filter((u) => u.role === 'designer' || u.role === 'owner' || u.role === 'admin');
+  const canManageTasks = ['owner', 'admin', 'sales'].includes(currentUser.role);
+  const canDeleteTasks = ['owner', 'admin'].includes(currentUser.role);
+  const isDesigner = currentUser.role === 'designer';
 
   const activeTask = designTasks.find((t) => t.id === activeTaskId);
 
@@ -265,13 +268,15 @@ export const AdminDesignTasksManager: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="px-5 py-3 rounded-xl bg-[#B9142D] hover:bg-[#A01026] text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>إضافة طلب تصميم جديد</span>
-        </button>
+        {canManageTasks && (
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-5 py-3 rounded-xl bg-[#B9142D] hover:bg-[#A01026] text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة طلب تصميم جديد</span>
+          </button>
+        )}
       </div>
 
       {/* 2. Stats Bar */}
@@ -516,6 +521,7 @@ export const AdminDesignTasksManager: React.FC = () => {
                 </div>
 
                 {/* Designer Assignment Selector */}
+                {canManageTasks && (
                 <div className="p-4 rounded-2xl bg-white dark:bg-[#181615] border border-[#E8E2D5] dark:border-[#262320] space-y-2">
                   <label className="block text-xs font-bold text-[#171616] dark:text-[#F7F5F0]">
                     إسناد أو تغيير المصمم المسؤول:
@@ -546,6 +552,7 @@ export const AdminDesignTasksManager: React.FC = () => {
                     ))}
                   </select>
                 </div>
+                )}
 
                 {/* Proof Versions Area */}
                 <div className="space-y-4">
@@ -690,9 +697,19 @@ export const AdminDesignTasksManager: React.FC = () => {
                         className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-[#181615] border border-[#E8E2D5] dark:border-[#262320] text-xs font-semibold text-[#171616] dark:text-[#F7F5F0]"
                       >
                         <option value="">بدون تغيير حالة المهمة</option>
-                        <option value="feedback_requested">طلب تعديلات إضافية من المصمم</option>
-                        <option value="approved">اعتماد البروفة فنياً</option>
-                        <option value="sent_to_print">تحويل الملف النهائي لمصنع الطباعة</option>
+                        {isDesigner ? (
+                          <>
+                            <option value="in_progress">قيد التنفيذ</option>
+                            <option value="proof_submitted">تم رفع البروفة للمراجعة</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="feedback_requested">طلب تعديلات إضافية من المصمم</option>
+                            <option value="approved">اعتماد البروفة فنياً</option>
+                            <option value="sent_to_print">تحويل الملف النهائي لمصنع الطباعة</option>
+                            <option value="completed">مكتمل ومُسلم</option>
+                          </>
+                        )}
                       </select>
 
                       <button
@@ -709,18 +726,28 @@ export const AdminDesignTasksManager: React.FC = () => {
 
               {/* Drawer Footer Actions */}
               <div className="p-6 border-t border-[#E8E2D5] dark:border-[#262320] bg-white dark:bg-[#151312] flex items-center justify-between">
-                <button
-                  onClick={() => {
-                    if (confirm('هل أنتِ متأكدة من حذف مهمة التصميم هذه؟')) {
-                      deleteDesignTask(activeTask.id);
-                      setActiveTaskId(null);
-                    }
-                  }}
-                  className="px-4 py-2 rounded-xl bg-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white font-bold text-xs transition-colors flex items-center gap-1.5"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>حذف المهمة</span>
-                </button>
+                {canDeleteTasks ? (
+                  <button
+                    onClick={() => {
+                      if (!window.confirm('هل أنت متأكد من حذف مهمة التصميم هذه؟')) return;
+                      void (async () => {
+                        try {
+                          setActionError('');
+                          await deleteDesignTask(activeTask.id);
+                          setActiveTaskId(null);
+                        } catch (error: any) {
+                          setActionError(error?.message || 'تعذر حذف المهمة.');
+                        }
+                      })();
+                    }}
+                    className="px-4 py-2 rounded-xl bg-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>حذف المهمة</span>
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-[#867F75]">الحذف متاح للمالك ومدير العمليات فقط.</span>
+                )}
 
                 <button
                   onClick={() => setActiveTaskId(null)}
@@ -736,7 +763,7 @@ export const AdminDesignTasksManager: React.FC = () => {
       )}
 
       {/* 6. CREATE NEW TASK MODAL */}
-      {isCreateModalOpen && (
+      {isCreateModalOpen && canManageTasks && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-[#FAF8F5] dark:bg-[#141211] rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-6">
             
