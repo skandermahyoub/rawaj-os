@@ -7,9 +7,37 @@ export const AdminTemplatesList: React.FC = () => {
   const { templates, departments, createTemplate, updateTemplate, deleteTemplate } = useApp();
 
   const [editingTemplate, setEditingTemplate] = useState<ServiceTemplate | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveTemplate = async () => {
+    if (!editingTemplate) return;
+    setActionError('');
+    setIsSaving(true);
+    try {
+      await updateTemplate(editingTemplate.id, {
+        name_ar: editingTemplate.name_ar,
+        description_ar: editingTemplate.description_ar,
+        name_en: editingTemplate.name_en,
+        code: editingTemplate.code,
+        department_id: editingTemplate.department_id,
+        specification_groups: editingTemplate.specification_groups,
+      });
+      setEditingTemplate(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ القالب.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6 text-right pb-16">
+      {actionError && (
+        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
+          {actionError}
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between bg-[#FFFDFA] dark:bg-[#1C1A1A] p-4 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F]">
@@ -104,7 +132,7 @@ export const AdminTemplatesList: React.FC = () => {
                 <button
                   onClick={() => {
                     if (window.confirm(`هل أنت متأكد من حذف قالب «${tmpl.name_ar}»؟`)) {
-                      deleteTemplate(tmpl.id);
+                      void deleteTemplate(tmpl.id).catch((error) => setActionError(error?.message || 'تعذر حذف القالب.'));
                     }
                   }}
                   className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
@@ -156,9 +184,7 @@ export const AdminTemplatesList: React.FC = () => {
                   type="text"
                   value={editingTemplate.name_ar}
                   onChange={(e) => {
-                    const next = { ...editingTemplate, name_ar: e.target.value };
-                    setEditingTemplate(next);
-                    updateTemplate(editingTemplate.id, { name_ar: e.target.value });
+                    setEditingTemplate({ ...editingTemplate, name_ar: e.target.value });
                   }}
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded px-3 py-1.5"
                 />
@@ -170,17 +196,24 @@ export const AdminTemplatesList: React.FC = () => {
                   rows={2}
                   value={editingTemplate.description_ar}
                   onChange={(e) => {
-                    const next = { ...editingTemplate, description_ar: e.target.value };
-                    setEditingTemplate(next);
-                    updateTemplate(editingTemplate.id, { description_ar: e.target.value });
+                    setEditingTemplate({ ...editingTemplate, description_ar: e.target.value });
                   }}
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded p-2"
                 />
               </div>
 
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg text-emerald-800 dark:text-emerald-300 text-[11px]">
-                ✓ يتم تحديث القالب تلقائياً. عند إنشاء أي خدمة جديدة واختيار هذا القالب، سيتم استيراد كافة حقوله.
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-amber-800 dark:text-amber-300 text-[11px]">
+                التعديلات تبقى مسودة داخل هذه النافذة حتى تضغط «حفظ القالب».
               </div>
+
+              <button
+                type="button"
+                onClick={() => void handleSaveTemplate()}
+                disabled={isSaving}
+                className="w-full py-2.5 rounded-xl bg-[#B9142D] text-white font-bold text-xs disabled:opacity-50"
+              >
+                {isSaving ? 'جارٍ الحفظ...' : 'حفظ القالب في Supabase'}
+              </button>
             </div>
           </div>
         </div>

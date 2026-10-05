@@ -20,6 +20,8 @@ export const AdminSliderManager: React.FC = () => {
   const { homeSlides, addHomeSlide, updateHomeSlide, deleteHomeSlide } = useApp();
   const [editingSlide, setEditingSlide] = useState<HomeSlide | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<Omit<HomeSlide, 'id'>>({
@@ -69,21 +71,30 @@ export const AdminSliderManager: React.FC = () => {
     setIsCreating(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title_ar.trim()) return;
 
-    if (editingSlide) {
-      updateHomeSlide(editingSlide.id, formData);
-    } else {
-      addHomeSlide(formData);
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (editingSlide) {
+        await updateHomeSlide(editingSlide.id, formData);
+      } else {
+        await addHomeSlide(formData);
+      }
+      setIsCreating(false);
+      setEditingSlide(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ الشريحة.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsCreating(false);
-    setEditingSlide(null);
   };
 
   return (
     <div className="space-y-6">
+      {actionError && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">{actionError}</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F] shadow-xs">
         <div>
@@ -291,6 +302,7 @@ export const AdminSliderManager: React.FC = () => {
               </button>
               <button
                 type="submit"
+                disabled={isSaving}
                 className="px-6 py-2 rounded-xl bg-[#B9142D] hover:bg-[#951126] text-white text-sm font-bold shadow-md transition-colors"
               >
                 {editingSlide ? 'حفظ التعديلات' : 'إضافة الشريحة'}
@@ -350,7 +362,7 @@ export const AdminSliderManager: React.FC = () => {
             {/* Action Buttons */}
             <div className="flex items-center gap-2 self-end md:self-auto border-t md:border-t-0 pt-3 md:pt-0 border-neutral-100 dark:border-neutral-800">
               <button
-                onClick={() => updateHomeSlide(slide.id, { is_active: !slide.is_active })}
+                onClick={() => void updateHomeSlide(slide.id, { is_active: !slide.is_active }).catch((error) => setActionError(error?.message || 'تعذر تحديث حالة الشريحة.'))}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#F5F1E9] dark:bg-[#252222] hover:bg-[#E7E0D3] dark:hover:bg-[#2E2A2A] text-[#171616] dark:text-white transition-colors"
               >
                 {slide.is_active ? 'تعطيل' : 'تفعيل'}
@@ -367,7 +379,7 @@ export const AdminSliderManager: React.FC = () => {
               <button
                 onClick={() => {
                   if (confirm('هل أنت متأكد من حذف هذه الشريحة؟')) {
-                    deleteHomeSlide(slide.id);
+                    void deleteHomeSlide(slide.id).catch((error) => setActionError(error?.message || 'تعذر حذف الشريحة.'));
                   }
                 }}
                 className="p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"

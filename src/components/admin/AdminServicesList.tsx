@@ -15,7 +15,6 @@ import {
   LayoutGrid,
   List,
   Sparkles,
-  RefreshCw,
   Tag,
   ExternalLink,
   ShieldCheck,
@@ -24,22 +23,20 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Service, ServiceStatus } from '../../types';
-import { INITIAL_SERVICES } from '../../data/initialData';
-import { db, doc, setDoc } from '../../lib/cloudDb';
 
 interface AdminServicesListProps {
   onNavigateSubView: (view: any, editId?: string) => void;
 }
 
 export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigateSubView }) => {
-  const { services, departments, updateService, deleteService, duplicateService, navigate } = useApp();
+  const { services, departments, updateService, deleteService, duplicateService, navigate, currentUser } = useApp();
+  const canEditServices = ['owner', 'admin', 'editor'].includes(currentUser.role);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncSuccessMsg, setSyncSuccessMsg] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
   // Metrics
   const totalCount = services.length;
@@ -61,27 +58,15 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
     });
   }, [services, selectedDept, selectedStatus, searchQuery]);
 
-  const handleToggleStatus = (serviceId: string, currentStatus: ServiceStatus, e?: React.MouseEvent) => {
+  const handleToggleStatus = async (serviceId: string, currentStatus: ServiceStatus, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (!canEditServices) return;
     const nextStatus: ServiceStatus = currentStatus === 'published' ? 'draft' : 'published';
-    updateService(serviceId, { service_status: nextStatus });
-  };
-
-  const handleManualSyncAll = async () => {
-    setIsSyncing(true);
-    setSyncSuccessMsg(null);
+    setActionError('');
     try {
-      // Sync all initial 34 services into Supabase
-      const promises = INITIAL_SERVICES.map((s) => 
-        setDoc(doc(db, 'services', s.id), s, { merge: true })
-      );
-      await Promise.all(promises);
-      setSyncSuccessMsg('تمت مزامنة كافة الـ 34 خدمة بنجاح مع قاعدة البيانات السحابية!');
-      setTimeout(() => setSyncSuccessMsg(null), 5000);
-    } catch (err: any) {
-      console.warn('Sync error:', err);
-    } finally {
-      setIsSyncing(false);
+      await updateService(serviceId, { service_status: nextStatus });
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر تحديث حالة الخدمة.');
     }
   };
 
@@ -146,35 +131,31 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 self-start md:self-center">
-            <button
-              onClick={handleManualSyncAll}
-              disabled={isSyncing}
-              className="bg-[#FAF7F2] dark:bg-[#252222] hover:bg-[#EFE9DF] dark:hover:bg-[#2E2B2B] text-[#57534E] dark:text-[#D6D3D1] text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-2 border border-[#E7E0D3] dark:border-[#3A3535] shadow-xs transition-all active:scale-95 disabled:opacity-50"
-              title="مزامنة وتحديث كافة الـ 34 خدمة مع قاعدة البيانات السحابية"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-[#B9142D]' : ''}`} />
-              <span>{isSyncing ? 'جارِ المزامنة...' : 'مزامنة الـ 34 خدمة'}</span>
-            </button>
 
-            <button
-              onClick={() => onNavigateSubView('service-edit')}
-              className="bg-gradient-to-r from-[#B9142D] to-[#930F23] hover:from-[#930F23] hover:to-[#720B1B] text-white text-xs sm:text-sm font-black px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span>إضافة خدمة جديدة</span>
-            </button>
+
+            {canEditServices ? (
+              <button
+                onClick={() => onNavigateSubView('service-edit')}
+                className="bg-gradient-to-r from-[#B9142D] to-[#930F23] hover:from-[#930F23] hover:to-[#720B1B] text-white text-xs sm:text-sm font-black px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span>إضافة خدمة جديدة</span>
+              </button>
+            ) : (
+              <span className="px-4 py-2 rounded-xl bg-[#F5F1E9] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#3A3535] text-xs font-bold text-[#78716C] dark:text-[#A8A29E]">
+                صلاحية عرض فقط
+              </span>
+            )}
           </div>
 
         </div>
-
-        {/* Sync Success Alert */}
-        {syncSuccessMsg && (
-          <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs flex items-center gap-2 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
-            <span>{syncSuccessMsg}</span>
-          </div>
-        )}
       </div>
+
+      {actionError && (
+        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
+          {actionError}
+        </div>
+      )}
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -466,13 +447,15 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
                   <div className="pt-3 border-t border-[#F5F1E9] dark:border-[#252222] flex items-center justify-between gap-2">
                     
                     {/* Primary Edit Button */}
-                    <button
-                      onClick={() => onNavigateSubView('service-edit', service.id)}
-                      className="flex-1 bg-[#FAF7F2] dark:bg-[#252222] hover:bg-[#B9142D] hover:text-white dark:hover:bg-[#B9142D] text-[#171616] dark:text-white text-xs font-bold py-2 px-3 rounded-xl border border-[#E7E0D3] dark:border-[#3A3535] hover:border-[#B9142D] flex items-center justify-center gap-1.5 transition-all shadow-xs"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>تعديل المواصفات</span>
-                    </button>
+                    {canEditServices && (
+                      <button
+                        onClick={() => onNavigateSubView('service-edit', service.id)}
+                        className="flex-1 bg-[#FAF7F2] dark:bg-[#252222] hover:bg-[#B9142D] hover:text-white dark:hover:bg-[#B9142D] text-[#171616] dark:text-white text-xs font-bold py-2 px-3 rounded-xl border border-[#E7E0D3] dark:border-[#3A3535] hover:border-[#B9142D] flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>تعديل المواصفات</span>
+                      </button>
+                    )}
 
                     {/* Secondary Action Icons */}
                     <div className="flex items-center gap-1 shrink-0">
@@ -484,25 +467,29 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
                         <Eye className="w-4 h-4" />
                       </button>
 
-                      <button
-                        onClick={() => duplicateService(service.id)}
-                        className="p-2 rounded-xl text-[#78716C] hover:text-blue-600 hover:bg-[#FAF7F2] dark:hover:bg-[#252222] border border-transparent hover:border-[#E7E0D3] dark:hover:border-[#332F2F] transition-colors"
-                        title="تكرار وإنشاء نسخة جديدة"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
+                      {canEditServices && (
+                        <>
+                          <button
+                            onClick={() => void duplicateService(service.id).catch((error) => setActionError(error?.message || 'تعذر تكرار الخدمة.'))}
+                            className="p-2 rounded-xl text-[#78716C] hover:text-blue-600 hover:bg-[#FAF7F2] dark:hover:bg-[#252222] border border-transparent hover:border-[#E7E0D3] dark:hover:border-[#332F2F] transition-colors"
+                            title="تكرار وإنشاء نسخة جديدة"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
 
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`هل أنت متأكد من حذف خدمة «${service.name_ar}»؟`)) {
-                            deleteService(service.id);
-                          }
-                        }}
-                        className="p-2 rounded-xl text-[#78716C] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 border border-transparent hover:border-red-200 dark:hover:border-red-900 transition-colors"
-                        title="حذف الخدمة"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`هل أنت متأكد من حذف خدمة «${service.name_ar}»؟`)) {
+                                void deleteService(service.id).catch((error) => setActionError(error?.message || 'تعذر حذف الخدمة.'));
+                              }
+                            }}
+                            className="p-2 rounded-xl text-[#78716C] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 border border-transparent hover:border-red-200 dark:hover:border-red-900 transition-colors"
+                            title="حذف الخدمة"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
 
                   </div>
@@ -570,13 +557,17 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
 
                       {/* Status Toggle */}
                       <td className="p-3.5">
-                        <button
-                          onClick={() => handleToggleStatus(service.id, service.service_status)}
-                          title="انقر لتغيير حالة النشر"
-                          className="transition-transform active:scale-95"
-                        >
-                          {getStatusBadge(service.service_status)}
-                        </button>
+                        {canEditServices ? (
+                          <button
+                            onClick={() => void handleToggleStatus(service.id, service.service_status)}
+                            title="انقر لتغيير حالة النشر"
+                            className="transition-transform active:scale-95"
+                          >
+                            {getStatusBadge(service.service_status)}
+                          </button>
+                        ) : (
+                          getStatusBadge(service.service_status)
+                        )}
                       </td>
 
                       {/* Actions */}
@@ -584,13 +575,15 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
                         <div className="flex items-center justify-center gap-2">
                           
                           {/* Edit */}
-                          <button
-                            onClick={() => onNavigateSubView('service-edit', service.id)}
-                            className="p-2 rounded-xl bg-[#FAF7F2] dark:bg-[#252222] text-[#171616] dark:text-white hover:bg-[#B9142D] hover:text-white border border-[#E7E0D3] dark:border-[#3A3535] transition-colors shadow-xs"
-                            title="تعديل المواصفات والبيانات"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
+                          {canEditServices && (
+                            <button
+                              onClick={() => onNavigateSubView('service-edit', service.id)}
+                              className="p-2 rounded-xl bg-[#FAF7F2] dark:bg-[#252222] text-[#171616] dark:text-white hover:bg-[#B9142D] hover:text-white border border-[#E7E0D3] dark:border-[#3A3535] transition-colors shadow-xs"
+                              title="تعديل المواصفات والبيانات"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                          )}
 
                           {/* View in storefront */}
                           <button
@@ -602,26 +595,30 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
                           </button>
 
                           {/* Duplicate */}
-                          <button
-                            onClick={() => duplicateService(service.id)}
-                            className="p-2 rounded-xl text-[#78716C] hover:text-blue-600 hover:bg-[#FAF7F2] dark:hover:bg-[#252222] transition-colors"
-                            title="تكرار وإنشاء نسخة جديدة"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
+                          {canEditServices && (
+                            <>
+                              <button
+                                onClick={() => void duplicateService(service.id).catch((error) => setActionError(error?.message || 'تعذر تكرار الخدمة.'))}
+                                className="p-2 rounded-xl text-[#78716C] hover:text-blue-600 hover:bg-[#FAF7F2] dark:hover:bg-[#252222] transition-colors"
+                                title="تكرار وإنشاء نسخة جديدة"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
 
-                          {/* Delete */}
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`هل أنت متأكد من حذف خدمة «${service.name_ar}»؟`)) {
-                                deleteService(service.id);
-                              }
-                            }}
-                            className="p-2 rounded-xl text-[#78716C] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-                            title="حذف الخدمة"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                              {/* Delete */}
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`هل أنت متأكد من حذف خدمة «${service.name_ar}»؟`)) {
+                                    void deleteService(service.id).catch((error) => setActionError(error?.message || 'تعذر حذف الخدمة.'));
+                                  }
+                                }}
+                                className="p-2 rounded-xl text-[#78716C] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                                title="حذف الخدمة"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
 
                         </div>
                       </td>

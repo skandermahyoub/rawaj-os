@@ -7,6 +7,8 @@ import { ImageUploadPicker } from '../common/ImageUploadPicker';
 export const AdminBlogManager: React.FC = () => {
   const { blogPosts, createBlogPost, updateBlogPost, deleteBlogPost } = useApp();
   const [editingPost, setEditingPost] = useState<any>(null);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleAddNew = () => {
     setEditingPost({
@@ -15,7 +17,7 @@ export const AdminBlogManager: React.FC = () => {
       category_ar: 'دليل الخامات والطباعة',
       read_time_minutes: 5,
       publish_date: new Date().toISOString().slice(0, 10),
-      hero_image: '/src/assets/images/printing_brochures_1790806872644.jpg',
+      hero_image: '',
       excerpt_ar: 'ملخص المقال الفني لمساعدة العميل...',
       content_markdown_ar: '### محتوى الدليل الفني بالتفصيل...',
       published: true,
@@ -23,18 +25,28 @@ export const AdminBlogManager: React.FC = () => {
     });
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingPost.id) {
-      updateBlogPost(editingPost.id, editingPost);
-    } else {
-      createBlogPost(editingPost);
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (editingPost.id) await updateBlogPost(editingPost.id, editingPost);
+      else await createBlogPost(editingPost);
+      setEditingPost(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ المقال.');
+    } finally {
+      setIsSaving(false);
     }
-    setEditingPost(null);
   };
 
   return (
     <div className="space-y-6 text-right pb-16">
+      {actionError && (
+        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
+          {actionError}
+        </div>
+      )}
       <div className="flex items-center justify-between bg-[#FFFDFA] dark:bg-[#1C1A1A] p-4 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F]">
         <div>
           <h1 className="font-heading font-extrabold text-base sm:text-lg text-[#171616] dark:text-white flex items-center gap-2">
@@ -70,7 +82,11 @@ export const AdminBlogManager: React.FC = () => {
 
             <div className="pt-2 border-t border-[#F5F1E9] dark:border-[#252222] flex items-center justify-between">
               <button
-                onClick={() => deleteBlogPost(post.id)}
+                onClick={() => {
+                  if (window.confirm('هل تريد حذف هذا المقال؟')) {
+                    void deleteBlogPost(post.id).catch((error) => setActionError(error?.message || 'تعذر حذف المقال.'));
+                  }
+                }}
                 className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -174,6 +190,7 @@ export const AdminBlogManager: React.FC = () => {
               </button>
               <button
                 type="submit"
+                disabled={isSaving}
                 className="bg-[#B9142D] text-white font-bold px-4 py-1.5 rounded-lg"
               >
                 حفظ المقال

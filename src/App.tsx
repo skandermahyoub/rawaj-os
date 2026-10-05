@@ -45,22 +45,27 @@ import { AdminPromoManager } from './components/admin/AdminPromoManager';
 import { AdminFAQManager } from './components/admin/AdminFAQManager';
 import { AdminContactInboxManager } from './components/admin/AdminContactInboxManager';
 import { AdminFooterManager } from './components/admin/AdminFooterManager';
+import { canAccessAdminView } from './lib/adminAccess';
 
 const AppContent: React.FC = () => {
-  const { currentRoute, navigate } = useApp();
+  const { currentRoute, navigate, currentUser } = useApp();
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [customQuoteModalOpen, setCustomQuoteModalOpen] = useState(false);
 
   // If in Admin view
   if (currentRoute.view === 'admin') {
-    const subView = currentRoute.subView || 'dashboard';
+    const requestedSubView = currentRoute.subView || 'dashboard';
+    const subView = canAccessAdminView(currentUser.role, requestedSubView)
+      ? requestedSubView
+      : 'dashboard';
 
     const handleAdminSubNav = (view: any, editId?: string) => {
+      const safeView = canAccessAdminView(currentUser.role, view) ? view : 'dashboard';
       navigate({
         view: 'admin',
-        subView: view,
-        editServiceId: editId,
+        subView: safeView,
+        editServiceId: safeView === 'service-edit' ? editId : undefined,
       });
     };
 

@@ -9,7 +9,6 @@ import {
   HelpCircle, 
   Layers, 
   FileText, 
-  Upload, 
   Info, 
   ChevronDown, 
   ChevronUp, 
@@ -25,7 +24,7 @@ interface ServiceDetailViewProps {
 }
 
 export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId }) => {
-  const { services, departments, categories, addToQuote, navigate, packages } = useApp();
+  const { services, departments, categories, addToQuote, navigate, packages, siteSettings } = useApp();
 
   const service = services.find((s) => s.id === serviceId);
 
@@ -35,7 +34,6 @@ export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId 
   const [quantity, setQuantity] = useState<number>(100);
   const [customNotes, setCustomNotes] = useState<string>('');
   const [artworkStatus, setArtworkStatus] = useState<ArtworkStatus>('ready');
-  const [artworkFileName, setArtworkFileName] = useState<string>('');
   const [addedToast, setAddedToast] = useState<boolean>(false);
   const [openFaq, setOpenFaq] = useState<Record<string, boolean>>({});
 
@@ -163,8 +161,7 @@ export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId 
       { ...selectedSpecs, _recommendations: recommendations },
       specSummary,
       customNotes,
-      artworkStatus,
-      artworkFileName
+      artworkStatus
     );
 
     setAddedToast(true);
@@ -194,18 +191,15 @@ export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId 
 ${specsText}
 
 📁 حالة ملف التصميم: ${artworkStatusMap[artworkStatus]}
-${artworkFileName ? `📎 اسم الملف: ${artworkFileName}\n` : ''}${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
+${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
 يرجى تزويدي بعرض السعر والمدة المتوقعة للإنتاج والتسليم. شكراً لكم!`;
 
-    const phone = '967772110131';
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setArtworkFileName(file.name);
+    const phone = (siteSettings.mobile_whatsapp || siteSettings.phone || '').replace(/[^0-9]/g, '');
+    if (!phone) {
+      navigate({ view: 'quote-cart' });
+      return;
     }
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -571,28 +565,9 @@ ${artworkFileName ? `📎 اسم الملف: ${artworkFileName}\n` : ''}${custom
                 </div>
               </div>
 
-              {/* Optional File Upload */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-xs text-[#181616] dark:text-[#F7F5F2] flex items-center justify-between">
-                  <span>إرفاق ملف التصميم أو المخطط (اختياري)</span>
-                  {artworkFileName && (
-                    <span className="text-[10px] text-emerald-600 font-bold truncate max-w-[200px]">
-                      تم اختيار: {artworkFileName}
-                    </span>
-                  )}
-                </label>
-                <label className="border-2 border-dashed border-[#D4C9BC] dark:border-[#332E2E] hover:border-brand-primary rounded-2xl p-3.5 text-center cursor-pointer flex items-center justify-center gap-2 bg-[#FAF8F5] dark:bg-[#1C1919] transition-colors">
-                  <Upload className="w-4 h-4 text-[#7A736C]" />
-                  <span className="text-xs text-[#7A736C] dark:text-[#9E978F]">
-                    انقر لاختيار ملف PDF / AI / TIFF أو صورة مرجعية
-                  </span>
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    accept=".pdf,.ai,.eps,.psd,.tiff,.jpg,.png"
-                  />
-                </label>
+              <div className="rounded-2xl border border-[#E6DFD5] dark:border-[#2D2828] bg-[#FAF8F5] dark:bg-[#1C1919] p-3.5 text-xs text-[#7A736C] dark:text-[#9E978F]">
+                <strong className="text-[#181616] dark:text-[#F7F5F2]">الملفات الفنية:</strong>{' '}
+                حفاظاً على ملفات العميل، لا يتم رفع ملفات التصميم في صفحة عامة. بعد إرسال طلب عرض السعر سيطلب فريق رواج الملف عبر قناة التسليم المعتمدة.
               </div>
 
               {/* Notes */}

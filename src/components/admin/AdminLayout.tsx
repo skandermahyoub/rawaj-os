@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { uploadDataUrlToRawajStorage } from '../../lib/storage';
+import { adminRoleLabel, canAccessAdminView } from '../../lib/adminAccess';
 import { BrandLogo } from '../common/BrandLogo';
 import { PWAInstallModal } from '../common/PWAInstallModal';
 import { 
@@ -330,24 +331,34 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     }
   ], [pendingQuotes, activeTasks, draftServices, unreadMessages, activePromos]);
 
+  const visiblePillars = useMemo(
+    () => pillars
+      .map((pillar) => ({
+        ...pillar,
+        options: pillar.options.filter((option) => canAccessAdminView(currentUser.role, option.id)),
+      }))
+      .filter((pillar) => pillar.options.length > 0),
+    [pillars, currentUser.role]
+  );
+
   // Active Main Pillar based on currently selected subview
   const activePillar = useMemo(() => {
-    for (const p of pillars) {
+    for (const p of visiblePillars) {
       if (p.options.some(opt => opt.id === currentSubView)) {
         return p;
       }
     }
-    return pillars[0];
-  }, [pillars, currentSubView]);
+    return visiblePillars[0] || pillars[0];
+  }, [visiblePillars, pillars, currentSubView]);
 
   // Current active sub-option details
   const currentOption = useMemo(() => {
-    for (const p of pillars) {
+    for (const p of visiblePillars) {
       const found = p.options.find(opt => opt.id === currentSubView);
       if (found) return found;
     }
-    return pillars[0].options[0];
-  }, [pillars, currentSubView]);
+    return (visiblePillars[0] || pillars[0]).options[0];
+  }, [visiblePillars, pillars, currentSubView]);
 
   // Auto scroll active option into view on change
   useEffect(() => {
@@ -410,7 +421,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   };
 
   const handlePillarClick = (pillar: MainPillar) => {
-    onNavigateSubView(pillar.options[0].id);
+    const firstAllowed = pillar.options.find((option) => canAccessAdminView(currentUser.role, option.id));
+    if (firstAllowed) onNavigateSubView(firstAllowed.id);
   };
 
   if (isCheckingAuth) {
@@ -646,7 +658,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
           {/* DESKTOP NAVIGATION LINKS (Executive Pillars of Admin) */}
           <nav className="hidden lg:flex items-center gap-6 xl:gap-7 text-[13.5px] font-semibold text-[#70695F] dark:text-[#A8A196]">
-            {pillars.map((pillar) => {
+            {visiblePillars.map((pillar) => {
               const active = activePillar.id === pillar.id;
               const Icon = pillar.icon;
               return (
@@ -720,7 +732,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                 <div className="text-right">
                   <div className="text-xs font-bold leading-tight text-[#171616] dark:text-[#F7F5F0]">{currentUser.name}</div>
                   <div className="text-[10px] text-brand-primary font-bold">
-                    {currentUser.role === 'owner' ? 'المالك / المدير العام' : currentUser.role}
+                    {adminRoleLabel(currentUser.role)}
                   </div>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-[#867F75]" />
@@ -885,7 +897,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
                 {/* All Pillars and their Sub-Options */}
                 <div className="space-y-4">
-                  {pillars.map((pillar) => {
+                  {visiblePillars.map((pillar) => {
                     const PillarIcon = pillar.icon;
                     const isPillarActive = activePillar.id === pillar.id;
 

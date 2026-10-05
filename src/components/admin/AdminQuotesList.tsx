@@ -21,7 +21,8 @@ import {
 import { QuoteRequest, QuoteStatus } from '../../types';
 
 export const AdminQuotesList: React.FC = () => {
-  const { quoteRequests, updateQuoteStatus, assignQuoteSalesperson, updateQuoteNotes, users, siteSettings } = useApp();
+  const { quoteRequests, updateQuoteStatus, assignQuoteSalesperson, updateQuoteNotes, users, siteSettings, currentUser } = useApp();
+  const canEditQuotes = ['owner', 'admin', 'sales'].includes(currentUser.role);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -30,6 +31,8 @@ export const AdminQuotesList: React.FC = () => {
   // Notes state inside drawer
   const [internalNotesInput, setInternalNotesInput] = useState('');
   const [supplierNotesInput, setSupplierNotesInput] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const filteredQuotes = quoteRequests.filter((q) => {
     if (statusFilter !== 'all' && q.status !== statusFilter) return false;
@@ -47,10 +50,18 @@ export const AdminQuotesList: React.FC = () => {
     setSupplierNotesInput(quote.supplier_notes || '');
   };
 
-  const handleSaveNotes = () => {
-    if (!selectedQuote) return;
-    updateQuoteNotes(selectedQuote.id, internalNotesInput, supplierNotesInput);
-    setSelectedQuote((prev) => prev ? { ...prev, internal_notes: internalNotesInput, supplier_notes: supplierNotesInput } : null);
+  const handleSaveNotes = async () => {
+    if (!selectedQuote || !canEditQuotes) return;
+    setActionError('');
+    setIsSaving(true);
+    try {
+      await updateQuoteNotes(selectedQuote.id, internalNotesInput, supplierNotesInput);
+      setSelectedQuote((prev) => prev ? { ...prev, internal_notes: internalNotesInput, supplier_notes: supplierNotesInput } : null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ الملاحظات.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getStatusBadge = (status: QuoteStatus) => {
@@ -214,16 +225,30 @@ export const AdminQuotesList: React.FC = () => {
               </button>
             </div>
 
+            {actionError && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
+                {actionError}
+              </div>
+            )}
+
             {/* Quick Status & Assign Selector */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#FAF7F2] dark:bg-[#221F1F] p-3 rounded-xl border border-[#E7E0D3] dark:border-[#332F2F] text-xs">
               <div className="space-y-1">
                 <label className="font-bold">تغيير حالة الطلب:</label>
                 <select
                   value={selectedQuote.status}
+                  disabled={!canEditQuotes}
                   onChange={(e) => {
                     const newSt = e.target.value as QuoteStatus;
-                    updateQuoteStatus(selectedQuote.id, newSt);
-                    setSelectedQuote((prev) => prev ? { ...prev, status: newSt } : null);
+                    void (async () => {
+                      setActionError('');
+                      try {
+                        await updateQuoteStatus(selectedQuote.id, newSt);
+                        setSelectedQuote((prev) => prev ? { ...prev, status: newSt } : null);
+                      } catch (error: any) {
+                        setActionError(error?.message || 'تعذر تحديث حالة الطلب.');
+                      }
+                    })();
                   }}
                   className="w-full bg-white dark:bg-[#252222] border border-[#E7E0D3] rounded px-2.5 py-1.5 font-bold"
                 >
@@ -243,16 +268,27 @@ export const AdminQuotesList: React.FC = () => {
                 <label className="font-bold">إسناد لمسؤول مبيعات:</label>
                 <select
                   value={selectedQuote.assigned_to || ''}
+                  disabled={!canEditQuotes}
                   onChange={(e) => {
-                    assignQuoteSalesperson(selectedQuote.id, e.target.value);
-                    setSelectedQuote((prev) => prev ? { ...prev, assigned_to: e.target.value } : null);
+                    const nextAssignee = e.target.value;
+                    void (async () => {
+                      setActionError('');
+                      try {
+                        await assignQuoteSalesperson(selectedQuote.id, nextAssignee);
+                        setSelectedQuote((prev) => prev ? { ...prev, assigned_to: nextAssignee || undefined } : null);
+                      } catch (error: any) {
+                        setActionError(error?.message || 'تعذر إسناد الطلب.');
+                      }
+                    })();
                   }}
                   className="w-full bg-white dark:bg-[#252222] border border-[#E7E0D3] rounded px-2.5 py-1.5"
                 >
                   <option value="">-- اختر المسؤول --</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                  ))}
+                  {users
+                    .filter((u) => ['owner', 'admin', 'sales'].includes(u.role))
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -326,6 +362,7 @@ export const AdminQuotesList: React.FC = () => {
                 <textarea
                   rows={2}
                   value={internalNotesInput}
+                  readOnly={!canEditQuotes}
                   onChange={(e) => setInternalNotesInput(e.target.value)}
                   placeholder="ملاحظات سرية للإدارة والمبيعات..."
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded p-2"
@@ -337,6 +374,7 @@ export const AdminQuotesList: React.FC = () => {
                 <textarea
                   rows={2}
                   value={supplierNotesInput}
+                  readOnly={!canEditQuotes}
                   onChange={(e) => setSupplierNotesInput(e.target.value)}
                   placeholder="اسم المورد، تكلفة الخامات، الشحن..."
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded p-2"
@@ -346,13 +384,18 @@ export const AdminQuotesList: React.FC = () => {
 
             {/* Save notes & WhatsApp Action */}
             <div className="flex items-center justify-between pt-3 border-t border-[#E7E0D3] dark:border-[#332F2F]">
-              <button
-                type="button"
-                onClick={handleSaveNotes}
-                className="bg-[#171616] dark:bg-white text-white dark:text-[#171616] text-xs font-bold px-4 py-2 rounded-lg"
-              >
-                حفظ الملاحظات
-              </button>
+              {canEditQuotes ? (
+                <button
+                  type="button"
+                  onClick={() => void handleSaveNotes()}
+                  disabled={isSaving}
+                  className="bg-[#171616] dark:bg-white text-white dark:text-[#171616] text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {isSaving ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
+                </button>
+              ) : (
+                <span className="text-[11px] text-[#78716C]">عرض فقط — التعديل متاح للمبيعات والإدارة.</span>
+              )}
 
               <a
                 href={`https://wa.me/${selectedQuote.customer.whatsapp.replace(/[^0-9]/g, '')}`}

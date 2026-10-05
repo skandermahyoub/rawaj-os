@@ -21,28 +21,38 @@ export const HomeContactModule: React.FC = () => {
   const [serviceInterest, setServiceInterest] = useState('طباعة تجارية وتغليف');
   const [message, setMessage] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !message.trim()) return;
 
-    submitContactMessage({
-      name,
-      phone,
-      email,
-      service_interest: serviceInterest,
-      message,
-    });
+    setSubmitError('');
+    setIsSubmitting(true);
+    try {
+      await submitContactMessage({
+        name,
+        phone,
+        email,
+        service_interest: serviceInterest,
+        message,
+      });
 
-    setIsSubmitted(true);
-    setName('');
-    setPhone('');
-    setEmail('');
-    setMessage('');
-    setTimeout(() => setIsSubmitted(false), 6000);
+      setIsSubmitted(true);
+      setName('');
+      setPhone('');
+      setEmail('');
+      setMessage('');
+      setTimeout(() => setIsSubmitted(false), 6000);
+    } catch (error: any) {
+      setSubmitError(error?.message || 'تعذر إرسال الرسالة. حاول مرة أخرى.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const whatsappNumber = siteSettings.mobile_whatsapp || '+967772110131';
+  const whatsappNumber = siteSettings.mobile_whatsapp || footerSettings.mobile_whatsapp || '';
   const cleanWhatsapp = whatsappNumber.replace(/[^0-9]/g, '');
 
   return (
@@ -80,7 +90,7 @@ export const HomeContactModule: React.FC = () => {
 
             {/* Direct Phone Call */}
             <a
-              href={`tel:${siteSettings.phone || '+9671234567'}`}
+              href={`tel:${siteSettings.phone || footerSettings.phone || ''}`}
               className="flex items-center justify-between p-3.5 rounded-xl bg-brand-primary-10 hover:bg-brand-primary-15 border border-brand-primary/30 text-[#171616] dark:text-white font-bold text-xs sm:text-sm transition-all group"
             >
               <div className="flex items-center gap-3">
@@ -89,7 +99,7 @@ export const HomeContactModule: React.FC = () => {
                 </span>
                 <div>
                   <span className="block leading-tight">الهاتف الموحد للإدارة</span>
-                  <span className="text-[11px] font-normal text-brand-primary font-mono" dir="ltr">{siteSettings.phone || '+967 1 234567'}</span>
+                  <span className="text-[11px] font-normal text-brand-primary font-mono" dir="ltr">{siteSettings.phone || footerSettings.phone || 'غير محدد'}</span>
                 </div>
               </div>
               <ExternalLink className="w-4 h-4 text-brand-primary group-hover:translate-x-[-2px] transition-transform" />
@@ -159,6 +169,12 @@ export const HomeContactModule: React.FC = () => {
                 تصل رسالتك مباشرة إلى صندوق البريد الداخلي لإدارة رواج ويتم الرد عليك خلال أقل من ساعة.
               </p>
             </div>
+
+            {submitError && (
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs sm:text-sm">
+                {submitError}
+              </div>
+            )}
 
             {isSubmitted && (
               <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm flex items-center gap-3 animate-fade-in">

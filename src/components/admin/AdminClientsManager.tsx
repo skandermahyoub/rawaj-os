@@ -36,13 +36,15 @@ export const AdminClientsManager: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'logos' | 'testimonials'>('logos');
   const [testimonialFilter, setTestimonialFilter] = useState<string>('all');
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Logo Form State
   const [editingLogo, setEditingLogo] = useState<ClientLogo | null>(null);
   const [isCreatingLogo, setIsCreatingLogo] = useState(false);
   const [logoForm, setLogoForm] = useState<Omit<ClientLogo, 'id'>>({
     name_ar: '',
-    logo_url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?auto=format&fit=crop&w=300&q=80',
+    logo_url: '',
     industry_ar: 'قطاع الأعمال',
     sort_order: clientLogos.length + 1,
     is_active: true,
@@ -55,7 +57,7 @@ export const AdminClientsManager: React.FC = () => {
     client_name_ar: '',
     client_title_ar: 'المدير العام',
     client_company_ar: '',
-    client_avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    client_avatar_url: '',
     comment_ar: '',
     rating: 5,
     project_type_ar: 'طباعة وتوريد',
@@ -65,29 +67,39 @@ export const AdminClientsManager: React.FC = () => {
   });
 
   // Logo Handlers
-  const handleSaveLogo = (e: React.FormEvent) => {
+  const handleSaveLogo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!logoForm.name_ar.trim()) return;
-    if (editingLogo) {
-      updateClientLogo(editingLogo.id, logoForm);
-    } else {
-      addClientLogo(logoForm);
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (editingLogo) await updateClientLogo(editingLogo.id, logoForm);
+      else await addClientLogo(logoForm);
+      setIsCreatingLogo(false);
+      setEditingLogo(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ شعار العميل.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsCreatingLogo(false);
-    setEditingLogo(null);
   };
 
   // Testimonial Handlers
-  const handleSaveTestimonial = (e: React.FormEvent) => {
+  const handleSaveTestimonial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testForm.client_name_ar.trim() || !testForm.comment_ar.trim()) return;
-    if (editingTest) {
-      updateTestimonial(editingTest.id, testForm);
-    } else {
-      addTestimonial(testForm);
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (editingTest) await updateTestimonial(editingTest.id, testForm);
+      else await addTestimonial(testForm);
+      setIsCreatingTest(false);
+      setEditingTest(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ التقييم.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsCreatingTest(false);
-    setEditingTest(null);
   };
 
   const filteredTestimonials = testimonials.filter((t) => {
@@ -103,6 +115,7 @@ export const AdminClientsManager: React.FC = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       
+      {actionError && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">{actionError}</div>}
       {/* Top Banner & Tab Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F] shadow-xs">
         <div>
@@ -163,7 +176,7 @@ export const AdminClientsManager: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => updateBrandsDisplayMode('colored')}
+                onClick={() => void updateBrandsDisplayMode('colored').catch((error) => setActionError(error?.message || 'تعذر حفظ نمط عرض الشعارات.'))}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   brandsDisplayMode === 'colored'
                     ? 'bg-[#B9142D] text-white shadow-xs'
@@ -173,7 +186,7 @@ export const AdminClientsManager: React.FC = () => {
                 شعار ملون مع الاسم
               </button>
               <button
-                onClick={() => updateBrandsDisplayMode('grayscale')}
+                onClick={() => void updateBrandsDisplayMode('grayscale').catch((error) => setActionError(error?.message || 'تعذر حفظ نمط عرض الشعارات.'))}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   brandsDisplayMode === 'grayscale'
                     ? 'bg-[#B9142D] text-white shadow-xs'
@@ -183,7 +196,7 @@ export const AdminClientsManager: React.FC = () => {
                 أبيض وأسود (Grayscale)
               </button>
               <button
-                onClick={() => updateBrandsDisplayMode('logo_only')}
+                onClick={() => void updateBrandsDisplayMode('logo_only').catch((error) => setActionError(error?.message || 'تعذر حفظ نمط عرض الشعارات.'))}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   brandsDisplayMode === 'logo_only'
                     ? 'bg-[#B9142D] text-white shadow-xs'
@@ -317,7 +330,7 @@ export const AdminClientsManager: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      if (confirm('هل تريد حذف هذا الشعار؟')) deleteClientLogo(logo.id);
+                      if (confirm('هل تريد حذف هذا الشعار؟')) void deleteClientLogo(logo.id).catch((error) => setActionError(error?.message || 'تعذر حذف الشعار.'));
                     }}
                     className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
                   >
@@ -555,7 +568,7 @@ export const AdminClientsManager: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       {isPending && (
                         <button
-                          onClick={() => updateTestimonialStatus(t.id, 'approved')}
+                          onClick={() => void updateTestimonialStatus(t.id, 'approved').catch((error) => setActionError(error?.message || 'تعذر اعتماد التقييم.'))}
                           className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1"
                           title="اعتماد ونشر في الرئيسية"
                         >
@@ -578,7 +591,7 @@ export const AdminClientsManager: React.FC = () => {
 
                       <button
                         onClick={() => {
-                          if (confirm('هل تريد حذف هذا التقييم؟')) deleteTestimonial(t.id);
+                          if (confirm('هل تريد حذف هذا التقييم؟')) void deleteTestimonial(t.id).catch((error) => setActionError(error?.message || 'تعذر حذف التقييم.'));
                         }}
                         className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
                         title="حذف"

@@ -17,6 +17,8 @@ export const AdminFAQManager: React.FC = () => {
   const [editingFaq, setEditingFaq] = useState<GlobalFAQItem | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form fields
   const [category, setCategory] = useState('الطباعة والتصاميم');
@@ -42,31 +44,39 @@ export const AdminFAQManager: React.FC = () => {
     setIsActive(f.is_active);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!question.trim() || !answer.trim()) return;
 
-    if (isCreating) {
-      addFaqItem({
-        category_ar: category,
-        question_ar: question,
-        answer_ar: answer,
-        sort_order: faqItems.length + 1,
-        is_active: isActive,
-      });
-    } else if (editingFaq) {
-      updateFaqItem(editingFaq.id, {
-        category_ar: category,
-        question_ar: question,
-        answer_ar: answer,
-        is_active: isActive,
-      });
-    }
+    setSaveError('');
+    setIsSaving(true);
+    try {
+      if (isCreating) {
+        await addFaqItem({
+          category_ar: category,
+          question_ar: question,
+          answer_ar: answer,
+          sort_order: faqItems.length + 1,
+          is_active: isActive,
+        });
+      } else if (editingFaq) {
+        await updateFaqItem(editingFaq.id, {
+          category_ar: category,
+          question_ar: question,
+          answer_ar: answer,
+          is_active: isActive,
+        });
+      }
 
-    setIsCreating(false);
-    setEditingFaq(null);
-    setSavedNotice(true);
-    setTimeout(() => setSavedNotice(false), 2500);
+      setIsCreating(false);
+      setEditingFaq(null);
+      setSavedNotice(true);
+      setTimeout(() => setSavedNotice(false), 2500);
+    } catch (error: any) {
+      setSaveError(error?.message || 'تعذر حفظ السؤال.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -95,6 +105,10 @@ export const AdminFAQManager: React.FC = () => {
           <span>إضافة سؤال جديد</span>
         </button>
       </div>
+
+      {saveError && (
+        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">{saveError}</div>
+      )}
 
       {savedNotice && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm flex items-center gap-2 animate-fade-in shadow-xs">
@@ -179,6 +193,7 @@ export const AdminFAQManager: React.FC = () => {
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="submit"
+                disabled={isSaving}
               className="px-6 py-2 rounded-xl bg-[#B9142D] hover:bg-[#910E23] text-white font-bold text-xs flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
@@ -225,7 +240,7 @@ export const AdminFAQManager: React.FC = () => {
                 <button
                   onClick={() => {
                     if (confirm('هل أنت متأكد من حذف هذا السؤال؟')) {
-                      deleteFaqItem(f.id);
+                      void deleteFaqItem(f.id).catch((error) => setSaveError(error?.message || 'تعذر حذف السؤال.'));
                     }
                   }}
                   className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"

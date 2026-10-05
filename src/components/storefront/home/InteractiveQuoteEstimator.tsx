@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { SafeImage } from '../../common/SafeImage';
 import { Sliders, ShoppingBag, CheckCircle2, Sparkles, MessageCircle, ArrowLeft } from 'lucide-react';
 
 export const InteractiveQuoteEstimator: React.FC = () => {
-  const { departments, services, addToQuote, navigate } = useApp();
+  const { departments, services, addToQuote, navigate, siteSettings } = useApp();
 
   const [selectedDeptId, setSelectedDeptId] = useState<string>(departments[0]?.id || 'dept-paper');
   const availableServices = services.filter(
@@ -15,6 +15,26 @@ export const InteractiveQuoteEstimator: React.FC = () => {
   const [quantity, setQuantity] = useState<number>(1000);
   const [customNotes, setCustomNotes] = useState<string>('');
   const [addedSuccess, setAddedSuccess] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (departments.length === 0) return;
+    if (!departments.some((dept) => dept.id === selectedDeptId)) {
+      setSelectedDeptId(departments[0].id);
+    }
+  }, [departments, selectedDeptId]);
+
+  useEffect(() => {
+    const matchingServices = services.filter(
+      (service) => service.department_id === selectedDeptId && service.service_status === 'published'
+    );
+    if (matchingServices.length === 0) {
+      setSelectedServiceId('');
+      return;
+    }
+    if (!matchingServices.some((service) => service.id === selectedServiceId)) {
+      setSelectedServiceId(matchingServices[0].id);
+    }
+  }, [services, selectedDeptId, selectedServiceId]);
 
   const currentService = services.find((s) => s.id === selectedServiceId) || availableServices[0];
   const currentDept = departments.find((d) => d.id === selectedDeptId);
@@ -41,7 +61,12 @@ export const InteractiveQuoteEstimator: React.FC = () => {
   const handleWhatsAppSend = () => {
     if (!currentService) return;
     const messageText = `السلام عليكم ورحمة الله، أود طلب عرض سعر وتقييم فني لدى وكالة رواج للطباعة:\n\n📌 الخدمة: ${currentService.name_ar}\n📂 القسم: ${currentDept?.name_ar}\n🔢 الكمية: ${quantity.toLocaleString('ar-EG')} قطعة/وحدة\n📝 الملاحظات والطلبات الخاصة: ${customNotes || 'المواصفة القياسية المعتمدة'}\n\nيرجى التواصل وتزوينا بعرض السعر الفني المعتمد.`;
-    window.open(`https://wa.me/967772110131?text=${encodeURIComponent(messageText)}`, '_blank');
+    const whatsappNumber = (siteSettings.mobile_whatsapp || siteSettings.phone || '').replace(/[^0-9]/g, '');
+    if (!whatsappNumber) {
+      navigate({ view: 'quote-cart' });
+      return;
+    }
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(messageText)}`, '_blank', 'noopener,noreferrer');
   };
 
   return (

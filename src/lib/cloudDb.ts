@@ -59,6 +59,7 @@ const rowToDocument = (table: LogicalTable, row: any): SnapshotDocument => {
         avatar: row.avatar_url || undefined,
         phone: row.phone || undefined,
         createdAt: row.created_at,
+        is_active: row.is_active !== false,
         isOwnerProtected: row.role === 'owner',
       }),
     };

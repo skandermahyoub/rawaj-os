@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Image, Upload, Trash2, Copy, Check, FolderPlus } from 'lucide-react';
+import { Image, Upload, Trash2, Copy, Check } from 'lucide-react';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
-import { VERIFIED_RAWAJ_ASSETS } from '../../data/rawajMediaAssets';
 import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminMediaLibrary: React.FC = () => {
@@ -12,7 +11,7 @@ export const AdminMediaLibrary: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isUploading, setIsUploading] = useState(false);
-  const [showVerifiedPicker, setShowVerifiedPicker] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   // Manual URL Add state
   const [newUrl, setNewUrl] = useState('');
@@ -53,8 +52,8 @@ export const AdminMediaLibrary: React.FC = () => {
           category: newCategory,
           alt_ar: file.name,
         });
-      } catch (err) {
-        console.error('Failed to optimize uploaded media:', err);
+      } catch (err: any) {
+        setActionError(err?.message || 'تعذر رفع الصورة إلى Supabase Storage.');
       } finally {
         setIsUploading(false);
       }
@@ -64,25 +63,20 @@ export const AdminMediaLibrary: React.FC = () => {
   const handleAddDirectUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl.trim() || !newName.trim()) return;
-    await uploadMedia({
-      name: newName,
-      url: newUrl,
-      size_kb: 250,
-      category: newCategory,
-      alt_ar: newName,
-    });
-    setNewUrl('');
-    setNewName('');
-  };
-
-  const handleImportVerifiedAsset = async (asset: typeof VERIFIED_RAWAJ_ASSETS[0]) => {
-    await uploadMedia({
-      name: asset.title,
-      url: asset.url,
-      size_kb: 350,
-      category: asset.category,
-      alt_ar: asset.title,
-    });
+    setActionError('');
+    try {
+      await uploadMedia({
+        name: newName,
+        url: newUrl,
+        size_kb: 0,
+        category: newCategory,
+        alt_ar: newName,
+      });
+      setNewUrl('');
+      setNewName('');
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر إضافة الرابط إلى المكتبة.');
+    }
   };
 
   return (
@@ -100,55 +94,15 @@ export const AdminMediaLibrary: React.FC = () => {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowVerifiedPicker(!showVerifiedPicker)}
-          className="px-3 py-2 rounded-xl text-xs font-bold text-[#D4AF37] hover:bg-[#D4AF37]/10 flex items-center gap-1 border border-[#E7E0D3] dark:border-[#332F2F]"
-          title="استعراض نماذج رواج المعتمدة"
-        >
-          <FolderPlus className="w-3.5 h-3.5" />
-          <span>{showVerifiedPicker ? 'إخفاء النماذج' : 'النماذج المعتمدة'}</span>
-        </button>
+
       </div>
+      {actionError && (
+        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
+          {actionError}
+        </div>
+      )}
+
       <div className="space-y-6">
-          {/* Verified Rawaj Assets Drawer */}
-          {showVerifiedPicker && (
-            <div className="bg-[#FFFDFA] dark:bg-[#1C1A1A] p-4 sm:p-5 rounded-2xl border-2 border-[#D4AF37]/50 shadow-md space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-bold text-[#171616] dark:text-white">
-                  نماذج مطابع رواج المعتمدة فائقة الدقة (انقر لإضافة أي نموذج إلى وسائطك):
-                </div>
-                <span className="text-[11px] text-[#D4AF37] font-bold">
-                  {VERIFIED_RAWAJ_ASSETS.length} نموذج جاهز
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-64 overflow-y-auto pr-1">
-                {VERIFIED_RAWAJ_ASSETS.map((asset) => {
-                  const alreadyAdded = mediaItems.some(m => m.url === asset.url);
-                  return (
-                    <div key={asset.id} className="relative group rounded-xl overflow-hidden border border-[#E7E0D3] dark:border-[#332F2F] aspect-4/3 bg-neutral-100">
-                      <img src={asset.url} alt={asset.title} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col justify-between p-2 transition-opacity">
-                        <p className="text-[10px] text-white font-bold truncate">{asset.title}</p>
-                        <button
-                          type="button"
-                          disabled={alreadyAdded}
-                          onClick={() => handleImportVerifiedAsset(asset)}
-                          className={`w-full py-1 text-[10px] font-bold rounded-lg ${
-                            alreadyAdded ? 'bg-emerald-600 text-white' : 'bg-[#B9142D] text-white'
-                          }`}
-                        >
-                          {alreadyAdded ? 'موجود بالمكتبة' : '+ إضافة للمكتبة'}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Upload Box */}
           <div className="bg-[#FFFDFA] dark:bg-[#1C1A1A] p-4 sm:p-5 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F] space-y-4">
             <h3 className="font-bold text-xs text-[#171616] dark:text-white">
@@ -191,7 +145,7 @@ export const AdminMediaLibrary: React.FC = () => {
                     required
                     value={newUrl}
                     onChange={(e) => setNewUrl(e.target.value)}
-                    placeholder="https://... أو /src/assets/..."
+                    placeholder="https://example.com/image.jpg"
                     className="w-full bg-white dark:bg-[#252222] border border-[#E7E0D3] rounded px-2.5 py-1.5"
                   />
                 </div>
@@ -263,7 +217,10 @@ export const AdminMediaLibrary: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => deleteMedia(item.id)}
+                      onClick={() => {
+                        if (!window.confirm('هل تريد حذف هذا الملف من المكتبة؟')) return;
+                        void deleteMedia(item.id).catch((error) => setActionError(error?.message || 'تعذر حذف الملف.'));
+                      }}
                       className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
                       title="حذف"
                     >

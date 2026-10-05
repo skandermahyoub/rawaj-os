@@ -11,6 +11,7 @@ import {
   BlogPost,
   SiteSettings,
   User,
+  UserRole,
   QuoteRequest,
   QuoteItem,
   MediaItem,
@@ -269,8 +270,21 @@ interface AppContextType {
   deletePortfolioProject: (id: string) => Promise<void>;
 
   // Taxonomy & Settings & Users
+  createDepartment: (data: Omit<Department, 'id'>) => Promise<Department>;
+  updateDepartment: (id: string, data: Partial<Department>) => Promise<void>;
+  deleteDepartment: (id: string) => Promise<void>;
+  createCategory: (data: Omit<Category, 'id'>) => Promise<Category>;
+  updateCategory: (id: string, data: Partial<Category>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  createSubcategory: (data: Omit<Subcategory, 'id'>) => Promise<Subcategory>;
+  updateSubcategory: (id: string, data: Partial<Subcategory>) => Promise<void>;
+  deleteSubcategory: (id: string) => Promise<void>;
+  createIndustrySector: (data: Omit<IndustrySector, 'id'>) => Promise<IndustrySector>;
+  updateIndustrySector: (id: string, data: Partial<IndustrySector>) => Promise<void>;
+  deleteIndustrySector: (id: string) => Promise<void>;
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
+  updateUser: (userId: string, changes: { role?: UserRole; is_active?: boolean; name?: string; phone?: string }) => Promise<User>;
   deleteUser: (userId: string) => Promise<boolean>;
 
   // Search Engine
@@ -314,6 +328,39 @@ const STORAGE_KEYS = {
   CONTACT_MESSAGES: 'rawaj_contact_messages_v2',
   BRANDS_MODE: 'rawaj_brands_mode_v2',
 };
+
+const SUPPORTED_HOME_LAYOUTS: Record<HomeModuleId, string[]> = {
+  header_hero: ['industrial_console', 'split_hero', 'minimal_search'],
+  slider: ['full_cinematic'],
+  marquee: ['crimson_pulse'],
+  calculator: ['interactive_card'],
+  services_catalog: ['carousel_store', 'grid_all', 'most_requested'],
+  sector_packages: ['tabs_slider'],
+  why_us: ['stats_features', 'workflow_steps', 'sourcing_capabilities'],
+  promo_banners: ['dynamic_grid'],
+  about_us: ['executive_story'],
+  portfolio_showcase: ['case_studies', 'proud_showcase'],
+  testimonials: ['carousel_cards'],
+  brands_partners: ['colored_ticker'],
+  blog_hub: ['knowledge_highlights'],
+  faq: ['interactive_accordion'],
+  contact_us: ['full_channels_form'],
+};
+
+const sanitizeHomeModulesConfig = (configs: HomeModuleConfig[]): HomeModuleConfig[] =>
+  configs.map((mod) => {
+    const supported = SUPPORTED_HOME_LAYOUTS[mod.id] || [];
+    const available = (mod.available_layouts || []).filter((layout) => supported.includes(layout.id));
+    const layoutStyle = supported.includes(mod.layout_style || '')
+      ? mod.layout_style
+      : available[0]?.id || supported[0] || mod.layout_style;
+
+    return {
+      ...mod,
+      layout_style: layoutStyle,
+      available_layouts: available,
+    };
+  });
 
 // Synonyms map for rich search expansion
 const SYNONYMS: Record<string, string[]> = {
@@ -376,6 +423,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('[Storage] Unable to save local preference:', error);
     }
   }
+
+  const makeEntityId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 
   // Navigation state
   const [currentRoute, setCurrentRoute] = useState<NavigationTarget>({ view: 'home' });
@@ -532,7 +581,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [footerSettings, setFooterSettings] = useState<FooterSettings>(INITIAL_FOOTER_SETTINGS);
 
-  const [homeModulesConfig, setHomeModulesConfig] = useState<HomeModuleConfig[]>(INITIAL_HOME_MODULES_CONFIG);
+  const [homeModulesConfig, setHomeModulesConfig] = useState<HomeModuleConfig[]>(
+    () => sanitizeHomeModulesConfig(INITIAL_HOME_MODULES_CONFIG)
+  );
 
   const [themeSettings, setThemeSettings] = useState<ThemeCustomizerSettings>(INITIAL_THEME_SETTINGS);
 
@@ -830,7 +881,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (docSnap.id === 'home_modules_order') {
               const cloud = docSnap.data();
               if (cloud && Array.isArray(cloud.configs)) {
-                setHomeModulesConfig(cloud.configs);
+                setHomeModulesConfig(sanitizeHomeModulesConfig(cloud.configs));
               }
             }
             if (docSnap.id === 'theme_customizer') {
@@ -949,8 +1000,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Home Modules Config & Reordering
   const persistHomeModules = async (configs: HomeModuleConfig[]): Promise<void> => {
-    await setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true });
-    setHomeModulesConfig(configs);
+    const sanitized = sanitizeHomeModulesConfig(configs);
+    await setDoc(doc(db, 'settings', 'home_modules_order'), { configs: sanitized }, { merge: true });
+    setHomeModulesConfig(sanitized);
   };
 
   const updateHomeModulesConfig = async (configs: HomeModuleConfig[]): Promise<void> => {
@@ -987,7 +1039,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addPromoBanner = async (banner: Omit<PromoBanner, 'id'>): Promise<void> => {
-    const newBanner: PromoBanner = { ...banner, id: `prm-${Date.now()}` };
+    const newBanner: PromoBanner = { ...banner, id: makeEntityId('prm') };
     await updatePromoSettings({ banners: [...promoSettings.banners, newBanner] });
   };
 
@@ -1003,7 +1055,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // FAQ CRUD
   const addFaqItem = async (item: Omit<GlobalFAQItem, 'id'>): Promise<void> => {
-    const newItem: GlobalFAQItem = { ...item, id: `faq-${Date.now()}` };
+    const newItem: GlobalFAQItem = { ...item, id: makeEntityId('faq') };
     await setDoc(doc(db, 'faq', newItem.id), newItem);
     setFaqItems((prev) => [...prev, newItem]);
   };
@@ -1024,7 +1076,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const newMsg: ContactFormMessage = {
       ...data,
-      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: makeEntityId('msg'),
       created_at: new Date().toISOString(),
       status: 'unread',
     };
@@ -1064,9 +1116,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const newTest: Testimonial = {
       ...data,
-      id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      client_avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      status: 'pending',
+      id: makeEntityId('test'),
+            status: 'pending',
       sort_order: testimonials.length + 1,
       is_active: false,
       created_at: new Date().toISOString(),
@@ -1096,7 +1147,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     const dept = departments.find((d) => d.id === service.department_id);
     const newItem: QuoteItem = {
-      id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: makeEntityId('item'),
       service_id: service.id,
       service_name_ar: service.name_ar,
       department_name_ar: dept ? dept.name_ar : 'خدمات عامة',
@@ -1137,9 +1188,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deadlineDate?: string
   ): Promise<{ success: boolean; referenceNumber: string; whatsappUrl: string }> => {
     const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const referenceNumber = `RWJ-${dateStr}-${randomSuffix}`;
-    const quoteId = `quote-${Date.now()}`;
+    const referenceSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const referenceNumber = `RWJ-${dateStr}-${referenceSuffix}`;
+    const quoteId = makeEntityId('quote');
 
     const newQuote: QuoteRequest = {
       id: quoteId,
@@ -1161,7 +1212,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updated_at: new Date().toISOString(),
       timeline: [
         {
-          id: `tl-${Date.now()}`,
+          id: makeEntityId('tl'),
           timestamp: new Date().toISOString(),
           user_name: customer.name,
           action: 'تم إنشاء وإرسال طلب عرض السعر من العميل عبر المنصة الرقمية',
@@ -1223,9 +1274,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Clear cart after submitting
     clearQuoteCart();
 
-    const cleanPhone = siteSettings.mobile_whatsapp.replace(/[^0-9]/g, '');
+    const cleanPhone = (siteSettings.mobile_whatsapp || siteSettings.phone || '').replace(/[^0-9]/g, '');
     const encodedMsg = encodeURIComponent(waText);
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
+    const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodedMsg}` : '';
 
     return {
       success: true,
@@ -1262,7 +1313,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timeline: [
         ...targetQuote.timeline,
         {
-          id: `tl-${Date.now()}`,
+          id: makeEntityId('tl'),
           timestamp: new Date().toISOString(),
           user_name: currentUser.name,
           action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
@@ -1279,24 +1330,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
     if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
     const salesperson = users.find((user) => user.id === salespersonId);
+    const nextAssignedTo = salespersonId || undefined;
+    const updatedAt = new Date().toISOString();
+    const nextTimeline = [
+      ...targetQuote.timeline,
+      {
+        id: makeEntityId('tl'),
+        timestamp: updatedAt,
+        user_name: currentUser.name,
+        action: `تم إسناد الطلب للمسؤول: ${salesperson ? salesperson.name : 'غير مسند'}`,
+      },
+    ];
 
-    const updatedQuote: QuoteRequest = {
-      ...targetQuote,
-      assigned_to: salespersonId,
-      updated_at: new Date().toISOString(),
-      timeline: [
-        ...targetQuote.timeline,
-        {
-          id: `tl-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          user_name: currentUser.name,
-          action: `تم إسناد الطلب للمسؤول: ${salesperson ? salesperson.name : 'غير محدد'}`,
-        },
-      ],
-    };
+    await setDoc(doc(db, 'quotes', quoteId), {
+      assigned_to: salespersonId || null,
+      updated_at: updatedAt,
+      timeline: nextTimeline,
+    }, { merge: true });
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
+    setQuoteRequests((prev) => prev.map((quote) =>
+      quote.id === quoteId
+        ? { ...quote, assigned_to: nextAssignedTo, updated_at: updatedAt, timeline: nextTimeline }
+        : quote
+    ));
   };
 
   const updateQuoteNotes = async (
@@ -1325,7 +1381,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const now = new Date().toISOString();
     const newService: Service = {
       ...serviceData,
-      id: `srv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: makeEntityId('srv'),
       created_at: now,
       updated_at: now,
     };
@@ -1363,7 +1419,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const duplicateService = async (id: string): Promise<Service> => {
     const original = services.find((service) => service.id === id);
     if (!original) throw new Error('الخدمة غير موجودة.');
-    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
     const duplicated: Service = {
       ...original,
       id: `srv-${suffix}`,
@@ -1385,7 +1441,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<ServiceTemplate> => {
     const newTemplate: ServiceTemplate = {
       ...templateData,
-      id: `tmpl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('tmpl'),
     };
     await setDoc(doc(db, 'templates', newTemplate.id), newTemplate);
     setTemplates((prev) => [...prev, newTemplate]);
@@ -1410,7 +1466,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Media Library
   const uploadMedia = async (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }): Promise<MediaItem> => {
-    const id = `med-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = makeEntityId('med');
     const newMedia: MediaItem = {
       id,
       name: fileData.name,
@@ -1441,7 +1497,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const createPackage = async (pkg: Omit<Package, 'id'>): Promise<void> => {
     const newPackage: Package = {
       ...pkg,
-      id: `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('pkg'),
     };
     await setDoc(doc(db, 'packages', newPackage.id), newPackage);
     setPackages((prev) => [...prev, newPackage]);
@@ -1464,7 +1520,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const createBlogPost = async (post: Omit<BlogPost, 'id'>): Promise<void> => {
     const newPost: BlogPost = {
       ...post,
-      id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('post'),
     };
     await setDoc(doc(db, 'blog', newPost.id), newPost);
     setBlogPosts((prev) => [newPost, ...prev]);
@@ -1489,7 +1545,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const newProject: PortfolioProject = {
       ...project,
-      id: `proj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('proj'),
     };
     await setDoc(doc(db, 'portfolio', newProject.id), newProject);
     setPortfolioProjects((prev) => [newProject, ...prev]);
@@ -1512,6 +1568,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Taxonomy & Settings & Users
+  const makeTaxonomyId = (prefix: string) =>
+    `${prefix}-${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+
+  const createDepartment = async (data: Omit<Department, 'id'>): Promise<Department> => {
+    const entity: Department = { ...data, id: makeTaxonomyId('dept'), is_active: data.is_active ?? true };
+    await setDoc(doc(db, 'departments', entity.id), entity);
+    setDepartments((prev) => [...prev, entity].sort((a, b) => a.sort_order - b.sort_order));
+    return entity;
+  };
+
+  const updateDepartment = async (id: string, data: Partial<Department>): Promise<void> => {
+    await setDoc(doc(db, 'departments', id), data, { merge: true });
+    setDepartments((prev) => prev.map((item) => item.id === id ? { ...item, ...data } : item));
+  };
+
+  const deleteDepartment = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'departments', id));
+    setDepartments((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const createCategory = async (data: Omit<Category, 'id'>): Promise<Category> => {
+    const entity: Category = { ...data, id: makeTaxonomyId('cat'), is_active: data.is_active ?? true };
+    await setDoc(doc(db, 'categories', entity.id), entity);
+    setCategories((prev) => [...prev, entity].sort((a, b) => a.sort_order - b.sort_order));
+    return entity;
+  };
+
+  const updateCategory = async (id: string, data: Partial<Category>): Promise<void> => {
+    await setDoc(doc(db, 'categories', id), data, { merge: true });
+    setCategories((prev) => prev.map((item) => item.id === id ? { ...item, ...data } : item));
+  };
+
+  const deleteCategory = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'categories', id));
+    setCategories((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const createSubcategory = async (data: Omit<Subcategory, 'id'>): Promise<Subcategory> => {
+    const entity: Subcategory = { ...data, id: makeTaxonomyId('subcat'), is_active: data.is_active ?? true };
+    await setDoc(doc(db, 'subcategories', entity.id), entity);
+    setSubcategories((prev) => [...prev, entity].sort((a, b) => a.sort_order - b.sort_order));
+    return entity;
+  };
+
+  const updateSubcategory = async (id: string, data: Partial<Subcategory>): Promise<void> => {
+    await setDoc(doc(db, 'subcategories', id), data, { merge: true });
+    setSubcategories((prev) => prev.map((item) => item.id === id ? { ...item, ...data } : item));
+  };
+
+  const deleteSubcategory = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'subcategories', id));
+    setSubcategories((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const createIndustrySector = async (data: Omit<IndustrySector, 'id'>): Promise<IndustrySector> => {
+    const entity: IndustrySector = { ...data, id: makeTaxonomyId('sector'), is_active: data.is_active ?? true };
+    await setDoc(doc(db, 'industry_sectors', entity.id), entity);
+    setIndustrySectors((prev) => [...prev, entity].sort((a, b) => a.sort_order - b.sort_order));
+    return entity;
+  };
+
+  const updateIndustrySector = async (id: string, data: Partial<IndustrySector>): Promise<void> => {
+    await setDoc(doc(db, 'industry_sectors', id), data, { merge: true });
+    setIndustrySectors((prev) => prev.map((item) => item.id === id ? { ...item, ...data } : item));
+  };
+
+  const deleteIndustrySector = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'industry_sectors', id));
+    setIndustrySectors((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const updateSiteSettings = async (settings: Partial<SiteSettings>): Promise<void> => {
     const updated = { ...siteSettings, ...settings };
     await setDoc(doc(db, 'settings', 'general'), updated, { merge: true });
@@ -1541,6 +1668,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newUser;
   };
 
+  const updateUser = async (
+    userId: string,
+    changes: { role?: UserRole; is_active?: boolean; name?: string; phone?: string }
+  ): Promise<User> => {
+    const target = users.find((u) => u.id === userId);
+    if (!target) throw new Error('المستخدم غير موجود.');
+
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: {
+        action: 'update',
+        userId,
+        role: changes.role || target.role,
+        isActive: changes.is_active ?? target.is_active ?? true,
+        name: changes.name ?? target.name,
+        phone: changes.phone ?? target.phone ?? '',
+      },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    if (!data?.user) throw new Error('تعذر تحديث المستخدم.');
+
+    const updated = data.user as User;
+    setUsers((prev) => prev.map((u) => u.id === userId ? updated : u));
+    return updated;
+  };
+
   const deleteUser = async (userId: string): Promise<boolean> => {
     const target = users.find((u) => u.id === userId);
     if (!target) return false;
@@ -1561,7 +1715,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addHomeSlide = async (slide: Omit<HomeSlide, 'id'>): Promise<void> => {
     const newSlide: HomeSlide = {
       ...slide,
-      id: `slide-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('slide'),
     };
     await setDoc(doc(db, 'home_slides', newSlide.id), newSlide);
     setHomeSlides((prev) => {
@@ -1590,7 +1744,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addMarqueeItem = async (item: Omit<MarqueeTickerItem, 'id'>): Promise<void> => {
     const newItem: MarqueeTickerItem = {
       ...item,
-      id: `mrq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('mrq'),
     };
     await setDoc(doc(db, 'marquee', newItem.id), newItem);
     setMarqueeItems((prev) => [...prev, newItem]);
@@ -1620,7 +1774,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addRawajFeature = async (feat: Omit<RawajFeature, 'id'>): Promise<void> => {
     const newFeature: RawajFeature = {
       ...feat,
-      id: `feat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('feat'),
     };
     await setDoc(doc(db, 'features', newFeature.id), newFeature);
     setRawajFeatures((prev) => [...prev, newFeature]);
@@ -1640,7 +1794,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addClientLogo = async (client: Omit<ClientLogo, 'id'>): Promise<void> => {
     const newClient: ClientLogo = {
       ...client,
-      id: `cli-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('cli'),
     };
     await setDoc(doc(db, 'client_logos', newClient.id), newClient);
     setClientLogos((prev) => [...prev, newClient]);
@@ -1660,7 +1814,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addTestimonial = async (testimonial: Omit<Testimonial, 'id'>): Promise<void> => {
     const newTestimonial: Testimonial = {
       ...testimonial,
-      id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('test'),
     };
     await setDoc(doc(db, 'testimonials', newTestimonial.id), newTestimonial);
     setTestimonials((prev) => [...prev, newTestimonial]);
@@ -1686,7 +1840,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const now = new Date().toISOString();
     const newTask: DesignTask = {
       ...taskData,
-      id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('task'),
       proof_versions: [],
       comments: [],
       created_at: now,
@@ -1717,7 +1871,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!task) throw new Error('مهمة التصميم غير موجودة.');
     const newProof: DesignProofVersion = {
       ...proof,
-      id: `proof-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('proof'),
       created_at: new Date().toISOString(),
     };
     const updatedTask: DesignTask = {
@@ -1738,7 +1892,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!task) throw new Error('مهمة التصميم غير موجودة.');
     const newComment: DesignComment = {
       ...comment,
-      id: `comm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('comm'),
       created_at: new Date().toISOString(),
     };
     const updatedTask: DesignTask = {
@@ -1880,8 +2034,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createPortfolioProject,
         updatePortfolioProject,
         deletePortfolioProject,
+        createDepartment,
+        updateDepartment,
+        deleteDepartment,
+        createCategory,
+        updateCategory,
+        deleteCategory,
+        createSubcategory,
+        updateSubcategory,
+        deleteSubcategory,
+        createIndustrySector,
+        updateIndustrySector,
+        deleteIndustrySector,
         updateSiteSettings,
         addUser,
+        updateUser,
         deleteUser,
         designTasks,
         createDesignTask,

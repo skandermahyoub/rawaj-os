@@ -19,6 +19,8 @@ export const AdminFeaturesManager: React.FC = () => {
   const { rawajFeatures, addRawajFeature, updateRawajFeature, deleteRawajFeature } = useApp();
   const [editingFeat, setEditingFeat] = useState<RawajFeature | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState<Omit<RawajFeature, 'id'>>({
     title_ar: '',
@@ -55,21 +57,30 @@ export const AdminFeaturesManager: React.FC = () => {
     setIsCreating(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title_ar.trim()) return;
 
-    if (editingFeat) {
-      updateRawajFeature(editingFeat.id, formData);
-    } else {
-      addRawajFeature(formData);
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (editingFeat) {
+        await updateRawajFeature(editingFeat.id, formData);
+      } else {
+        await addRawajFeature(formData);
+      }
+      setIsCreating(false);
+      setEditingFeat(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ الميزة.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsCreating(false);
-    setEditingFeat(null);
   };
 
   return (
     <div className="space-y-6">
+      {actionError && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">{actionError}</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F] shadow-xs">
         <div>
@@ -197,6 +208,7 @@ export const AdminFeaturesManager: React.FC = () => {
               </button>
               <button
                 type="submit"
+                disabled={isSaving}
                 className="px-6 py-2 rounded-xl bg-[#B9142D] hover:bg-[#951126] text-white text-sm font-bold shadow-md transition-colors"
               >
                 {editingFeat ? 'حفظ التعديل' : 'إضافة الميزة'}
@@ -245,7 +257,7 @@ export const AdminFeaturesManager: React.FC = () => {
               <button
                 onClick={() => {
                   if (confirm('هل تريد حذف هذه الميزة؟')) {
-                    deleteRawajFeature(feat.id);
+                    void deleteRawajFeature(feat.id).catch((error) => setActionError(error?.message || 'تعذر حذف الميزة.'));
                   }
                 }}
                 className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"

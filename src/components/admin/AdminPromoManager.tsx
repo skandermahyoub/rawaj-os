@@ -33,6 +33,8 @@ export const AdminPromoManager: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
   const [previewSlideIndex, setPreviewSlideIndex] = useState(0);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -76,7 +78,7 @@ export const AdminPromoManager: React.FC = () => {
     setIsActive(b.is_active);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !imageUrl.trim()) return;
 
@@ -85,38 +87,46 @@ export const AdminPromoManager: React.FC = () => {
       .map(s => s.trim())
       .filter(Boolean);
 
-    if (isCreating) {
-      addPromoBanner({
-        title_ar: title,
-        subtitle_ar: subtitle,
-        badge_ar: badge,
-        discount_tag: discountTag,
-        valid_until: validUntil,
-        highlights: highlightsArray,
-        image_url: imageUrl,
-        cta_text_ar: ctaText,
-        link_view: linkView,
-        is_active: isActive,
-        sort_order: promoSettings.banners.length + 1,
-      });
-    } else if (editingBanner) {
-      updatePromoBanner(editingBanner.id, {
-        title_ar: title,
-        subtitle_ar: subtitle,
-        badge_ar: badge,
-        discount_tag: discountTag,
-        valid_until: validUntil,
-        highlights: highlightsArray,
-        image_url: imageUrl,
-        cta_text_ar: ctaText,
-        link_view: linkView,
-        is_active: isActive,
-      });
-    }
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (isCreating) {
+        await addPromoBanner({
+          title_ar: title,
+          subtitle_ar: subtitle,
+          badge_ar: badge,
+          discount_tag: discountTag,
+          valid_until: validUntil,
+          highlights: highlightsArray,
+          image_url: imageUrl,
+          cta_text_ar: ctaText,
+          link_view: linkView,
+          is_active: isActive,
+          sort_order: promoSettings.banners.length + 1,
+        });
+      } else if (editingBanner) {
+        await updatePromoBanner(editingBanner.id, {
+          title_ar: title,
+          subtitle_ar: subtitle,
+          badge_ar: badge,
+          discount_tag: discountTag,
+          valid_until: validUntil,
+          highlights: highlightsArray,
+          image_url: imageUrl,
+          cta_text_ar: ctaText,
+          link_view: linkView,
+          is_active: isActive,
+        });
+      }
 
-    setIsCreating(false);
-    setEditingBanner(null);
-    showNotice();
+      setIsCreating(false);
+      setEditingBanner(null);
+      showNotice();
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ العرض الترويجي.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const showNotice = () => {
@@ -124,8 +134,18 @@ export const AdminPromoManager: React.FC = () => {
     setTimeout(() => setSavedNotice(false), 2500);
   };
 
+  const savePromoSettings = async (settings: Parameters<typeof updatePromoSettings>[0]) => {
+    setActionError('');
+    try {
+      await updatePromoSettings(settings);
+      showNotice();
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ إعدادات العروض.');
+    }
+  };
+
   // Move banner order
-  const handleMoveOrder = (index: number, direction: 'up' | 'down') => {
+  const handleMoveOrder = async (index: number, direction: 'up' | 'down') => {
     const banners = [...promoSettings.banners];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= banners.length) return;
@@ -136,71 +156,7 @@ export const AdminPromoManager: React.FC = () => {
 
     // re-assign sort_orders
     const updated = banners.map((b, idx) => ({ ...b, sort_order: idx + 1 }));
-    updatePromoSettings({ banners: updated });
-    showNotice();
-  };
-
-  // Add a preset quick template
-  const handleAddPreset = (type: 'store_opening' | 'packaging_cafe' | 'exhibition_vip') => {
-    let preset: Omit<PromoBanner, 'id'>;
-    if (type === 'store_opening') {
-      preset = {
-        title_ar: 'باقة تدشين الهوية التجارية والمقرات 2026',
-        subtitle_ar: 'خصم استثنائي 20% يشمل واجهات الكلادينج، الحروف المضيئة، وتجهيزات المكاتب ومطبوعات الاستقبال.',
-        badge_ar: 'عرض تدشين الشركات',
-        discount_tag: 'خصم 20%',
-        valid_until: 'ساري حتى نهاية الشهر الحالي',
-        highlights: [
-          'واجهات كلادينج ألمنيوم مقاومة للمناخ وضمان 5 سنوات',
-          'حروف بارزة 3D إكريليك وزنكور بإضاءة LED موفرة',
-          'مجموعة مطبوعات فاخرة: دفاتر، فولدرات، وبطاقات NFC'
-        ],
-        image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
-        cta_text_ar: 'احجز العرض واستشر مهندسنا',
-        link_view: 'packages',
-        is_active: true,
-        sort_order: promoSettings.banners.length + 1,
-      };
-    } else if (type === 'packaging_cafe') {
-      preset = {
-        title_ar: 'باقة التغليف الفاخر للمطاعم والمقاهي',
-        subtitle_ar: 'أكواب دبل كرافت حرارية، أكياس تسوق ورقية معزولة، وعلب طعام صديقة للبيئة بأسعار الجملة للكميات الكبرى.',
-        badge_ar: 'الأكثر طلباً للضيافة',
-        discount_tag: 'أسعار الجملة للكميات',
-        valid_until: 'تسليم سريع خلال 72 ساعة',
-        highlights: [
-          'أكواب دبل كرافت عازلة للحرارة بطباعة Pantone مخصصة',
-          'أكياس ورقية كرافت متينة بأيدي حبلية أنيقة',
-          'ورق تغليف شحمي مضاد للزيوت معتمد صحياً'
-        ],
-        image_url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
-        cta_text_ar: 'طلب باقة المقاهي المعتمدة',
-        link_view: 'packages',
-        is_active: true,
-        sort_order: promoSettings.banners.length + 1,
-      };
-    } else {
-      preset = {
-        title_ar: 'تجهيز أجنحة المعارض والمؤتمرات السريع',
-        subtitle_ar: 'بوثات هندسية متكاملة، بوب اب ماجنتيك، رول اب فاخر، وبطاقات زوار VIP مع خدمة التركيب والتسليم الميداني.',
-        badge_ar: 'تسليم فوري 48 ساعة',
-        discount_tag: 'تجهيز VIP متكامل',
-        valid_until: 'شامل التركيب الميداني في صنعاء',
-        highlights: [
-          'أنظمة معارض محمولة خفيفة سريعة الفك والتركيب',
-          'طباعة قماشية عالية الدقة مقاومة للتوهج والانعكاس',
-          'إشراف هندسي متكامل ومتابعة ميدانية في المعرض'
-        ],
-        image_url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80',
-        cta_text_ar: 'تسعير بوثات المعارض',
-        link_view: 'packages',
-        is_active: true,
-        sort_order: promoSettings.banners.length + 1,
-      };
-    }
-
-    addPromoBanner(preset);
-    showNotice();
+    await savePromoSettings({ banners: updated });
   };
 
   const activeBanners = promoSettings.banners.filter(b => b.is_active);
@@ -232,6 +188,12 @@ export const AdminPromoManager: React.FC = () => {
         </button>
       </div>
 
+      {actionError && (
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs sm:text-sm font-bold">
+          {actionError}
+        </div>
+      )}
+
       {savedNotice && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm flex items-center gap-2 animate-fade-in shadow-xs">
           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
@@ -255,8 +217,7 @@ export const AdminPromoManager: React.FC = () => {
             <span className="text-xs font-bold text-[#554F48] dark:text-[#C5BCB1]">حالة الموديول:</span>
             <button
               onClick={() => {
-                updatePromoSettings({ enabled: !promoSettings.enabled });
-                showNotice();
+                void savePromoSettings({ enabled: !promoSettings.enabled });
               }}
               className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                 promoSettings.enabled 
@@ -280,8 +241,7 @@ export const AdminPromoManager: React.FC = () => {
             <select
               value={promoSettings.autoplay_speed !== undefined ? promoSettings.autoplay_speed : 5000}
               onChange={(e) => {
-                updatePromoSettings({ autoplay_speed: Number(e.target.value) });
-                showNotice();
+                void savePromoSettings({ autoplay_speed: Number(e.target.value) });
               }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD5C5] dark:border-[#3A3533] bg-[#FCFAF5] dark:bg-[#1A1817] text-xs font-bold focus:outline-hidden focus:border-[#B9142D]"
             >
@@ -301,8 +261,7 @@ export const AdminPromoManager: React.FC = () => {
             <select
               value={promoSettings.bg_shade || 'royal_crimson'}
               onChange={(e) => {
-                updatePromoSettings({ bg_shade: e.target.value as any });
-                showNotice();
+                void savePromoSettings({ bg_shade: e.target.value as any });
               }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD5C5] dark:border-[#3A3533] bg-[#FCFAF5] dark:bg-[#1A1817] text-xs font-bold focus:outline-hidden focus:border-[#B9142D]"
             >
@@ -320,8 +279,7 @@ export const AdminPromoManager: React.FC = () => {
             <input
               type="text"
               value={promoSettings.title_ar || ''}
-              onChange={(e) => updatePromoSettings({ title_ar: e.target.value })}
-              onBlur={showNotice}
+              onChange={(e) => void savePromoSettings({ title_ar: e.target.value })}
               placeholder="العروض الترويجية والحملات الحصرية"
               className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD5C5] dark:border-[#3A3533] bg-[#FCFAF5] dark:bg-[#1A1817] text-xs focus:outline-hidden focus:border-[#B9142D]"
             />
@@ -409,44 +367,7 @@ export const AdminPromoManager: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Quick One-Click Preset Offer Templates */}
-      <div className="p-5 rounded-2xl bg-[#FCFAF7] dark:bg-[#171514] border border-[#EBE4D5] dark:border-[#2A2624] space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-[#554F48] dark:text-[#C5BCB1]">
-            قوالب عروض جاهزة وسريعة للإضافة الفورية:
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          <button
-            type="button"
-            onClick={() => handleAddPreset('store_opening')}
-            className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#201D1C] border border-[#E0D7C5] dark:border-[#352F2D] hover:border-[#B9142D] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#B9142D]" />
-            <span>عرض تدشين الشركات والمقرات</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAddPreset('packaging_cafe')}
-            className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#201D1C] border border-[#E0D7C5] dark:border-[#352F2D] hover:border-[#B9142D] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#B9142D]" />
-            <span>عرض تغليف المقاهي والضيافة</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAddPreset('exhibition_vip')}
-            className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#201D1C] border border-[#E0D7C5] dark:border-[#352F2D] hover:border-[#B9142D] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#B9142D]" />
-            <span>عرض أجنحة المعارض السريعة</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 4. Form (Create or Edit Banner) */}
+      {/* Create or Edit Banner */}
       {(isCreating || editingBanner) && (
         <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-white dark:bg-[#1E1B1A] border-2 border-[#B9142D]/40 shadow-xl space-y-4 animate-fade-in">
           <div className="flex items-center justify-between border-b border-[#F0EBE0] dark:border-[#2E2A28] pb-3">
@@ -659,7 +580,7 @@ export const AdminPromoManager: React.FC = () => {
                   <button
                     type="button"
                     disabled={index === 0}
-                    onClick={() => handleMoveOrder(index, 'up')}
+                    onClick={() => void handleMoveOrder(index, 'up')}
                     className="p-1 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-[#B9142D] hover:text-white disabled:opacity-30 disabled:pointer-events-none text-xs transition-colors cursor-pointer"
                     title="تحريك لأعلى"
                   >
@@ -668,7 +589,7 @@ export const AdminPromoManager: React.FC = () => {
                   <button
                     type="button"
                     disabled={index === promoSettings.banners.length - 1}
-                    onClick={() => handleMoveOrder(index, 'down')}
+                    onClick={() => void handleMoveOrder(index, 'down')}
                     className="p-1 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-[#B9142D] hover:text-white disabled:opacity-30 disabled:pointer-events-none text-xs transition-colors cursor-pointer"
                     title="تحريك لأسفل"
                   >
@@ -705,8 +626,9 @@ export const AdminPromoManager: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    updatePromoBanner(banner.id, { is_active: !banner.is_active });
-                    showNotice();
+                    void updatePromoBanner(banner.id, { is_active: !banner.is_active })
+                      .then(showNotice)
+                      .catch((error) => setActionError(error?.message || 'تعذر تحديث حالة العرض.'));
                   }}
                   className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                     banner.is_active 
@@ -731,8 +653,9 @@ export const AdminPromoManager: React.FC = () => {
                     type="button"
                     onClick={() => {
                       if (confirm(`هل أنت متأكد من حذف العرض "${banner.title_ar}"؟`)) {
-                        deletePromoBanner(banner.id);
-                        showNotice();
+                        void deletePromoBanner(banner.id)
+                          .then(showNotice)
+                          .catch((error) => setActionError(error?.message || 'تعذر حذف العرض.'));
                       }
                     }}
                     className="p-2 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"

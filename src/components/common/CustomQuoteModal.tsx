@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Sparkles, X, Send, HelpCircle, FileText, Upload, CheckCircle2 } from 'lucide-react';
+import { Sparkles, X, Send, HelpCircle, FileText, CheckCircle2 } from 'lucide-react';
 import { Service } from '../../types';
 
 interface CustomQuoteModalProps {
@@ -19,8 +19,13 @@ export const CustomQuoteModal: React.FC<CustomQuoteModalProps> = ({ isOpen, onCl
   const [quantity, setQuantity] = useState<number>(100);
   const [notes, setNotes] = useState('');
   const [artworkStatus, setArtworkStatus] = useState<'ready' | 'needs_review' | 'needs_design' | 'no_artwork'>('ready');
-  const [referenceFileName, setReferenceFileName] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (departments.length > 0 && !departments.some((dept) => dept.id === departmentId)) {
+      setDepartmentId(departments[0].id);
+    }
+  }, [departments, departmentId]);
 
   if (!isOpen) return null;
 
@@ -32,15 +37,15 @@ export const CustomQuoteModal: React.FC<CustomQuoteModalProps> = ({ isOpen, onCl
 
     // Create a virtual custom service representation
     const customService: Service = {
-      id: `custom-srv-${Date.now()}`,
+      id: `custom-srv-${crypto.randomUUID()}`,
       name_ar: `طلب مخصص: ${title}`,
       name_en: `Custom Request: ${title}`,
-      slug: `custom-${Date.now()}`,
+      slug: `custom-${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`,
       department_id: departmentId,
       category_id: 'cat-custom',
       short_description_ar: notes || 'مواصفات وتوريد مخصص حسب طلب العميل',
       full_description_ar: notes || 'مواصفات وتوريد مخصص حسب طلب العميل',
-      hero_image: chosenDept ? chosenDept.hero_image : 'https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=800&q=80',
+      hero_image: chosenDept?.hero_image || '',
       gallery: [],
       badge: 'طلب مخصص',
       service_status: 'published',
@@ -73,8 +78,7 @@ export const CustomQuoteModal: React.FC<CustomQuoteModalProps> = ({ isOpen, onCl
       },
       specSummary,
       notes,
-      artworkStatus,
-      referenceFileName
+      artworkStatus
     );
 
     setSubmitted(true);
@@ -83,13 +87,6 @@ export const CustomQuoteModal: React.FC<CustomQuoteModalProps> = ({ isOpen, onCl
       onClose();
       navigate({ view: 'quote-cart' });
     }, 1200);
-  };
-
-  const handleFileUploadSim = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setReferenceFileName(file.name);
-    }
   };
 
   return (
@@ -257,28 +254,9 @@ export const CustomQuoteModal: React.FC<CustomQuoteModalProps> = ({ isOpen, onCl
               </div>
             </div>
 
-            {/* Reference Upload */}
-            <div className="space-y-1.5">
-              <label className="font-bold text-[#171616] dark:text-[#F5F3EF] flex items-center justify-between">
-                <span>ملف أو صورة مرجعية (اختياري)</span>
-                {referenceFileName && (
-                  <span className="text-[10px] text-emerald-600 font-bold truncate max-w-[150px]">
-                    تم اختيار: {referenceFileName}
-                  </span>
-                )}
-              </label>
-              <label className="border border-dashed border-[#D4CDC0] dark:border-[#3F3B3B] hover:border-brand-primary rounded-lg p-3 text-center cursor-pointer flex flex-col items-center justify-center gap-1 bg-[#FAF7F2] dark:bg-[#221F1F]">
-                <Upload className="w-4 h-4 text-[#78716C]" />
-                <span className="text-[11px] text-[#78716C] dark:text-[#A8A29E]">
-                  انقر هنا لاختيار صورة نموذج، مخطط، أو ملف PDF
-                </span>
-                <input
-                  type="file"
-                  onChange={handleFileUploadSim}
-                  className="hidden"
-                  accept="image/*,.pdf,.ai,.psd"
-                />
-              </label>
+            <div className="rounded-lg border border-[#E7E0D3] dark:border-[#332F2F] bg-[#FAF7F2] dark:bg-[#221F1F] p-3 text-[11px] text-[#78716C] dark:text-[#A8A29E]">
+              <strong className="text-[#171616] dark:text-[#F5F3EF]">الملفات المرجعية:</strong>{' '}
+              حفاظاً على خصوصية ملفاتك، يطلب فريق رواج الصور والمخططات بعد تسجيل طلب عرض السعر عبر قناة التسليم المعتمدة.
             </div>
 
             {/* Notes */}

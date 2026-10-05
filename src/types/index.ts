@@ -68,6 +68,7 @@ export interface User {
   avatar?: string;
   phone?: string;
   createdAt: string;
+  is_active?: boolean;
   isOwnerProtected?: boolean;
 }
 
@@ -80,6 +81,7 @@ export interface Department {
   description_ar: string;
   hero_image: string;
   sort_order: number;
+  is_active?: boolean;
 }
 
 export interface Category {
@@ -90,6 +92,7 @@ export interface Category {
   slug: string;
   description_ar?: string;
   sort_order: number;
+  is_active?: boolean;
 }
 
 export interface Subcategory {
@@ -99,6 +102,7 @@ export interface Subcategory {
   name_en: string;
   slug: string;
   sort_order: number;
+  is_active?: boolean;
 }
 
 export type FieldType = 
@@ -199,6 +203,7 @@ export interface IndustrySector {
   service_ids: string[];
   package_ids?: string[];
   sort_order: number;
+  is_active?: boolean;
 }
 
 export interface Service {

@@ -17,16 +17,12 @@ import {
   Eye, 
   Layers, 
   Grid, 
-  Flame,
   ShieldCheck,
   Zap,
-  SlidersHorizontal,
-  Square
 } from 'lucide-react';
 import { 
   ThemeCustomizerSettings, 
   ThemeMode, 
-  CardSurfaceStyle, 
   BackgroundPattern, 
   ArabicFontFamily,
   ColorPreset 
@@ -42,6 +38,8 @@ export const AdminStyleCustomizer: React.FC = () => {
   }));
   const [savedToast, setSavedToast] = useState(false);
   const [resetToast, setResetToast] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sync draft when global settings change
   useEffect(() => {
@@ -89,14 +87,22 @@ export const AdminStyleCustomizer: React.FC = () => {
     applyLivePreview(updated);
   };
 
-  const handleSave = () => {
-    updateThemeSettings(draft);
-    applyLivePreview(draft);
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 2500);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await updateThemeSettings(draft);
+      applyLivePreview(draft);
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+    } catch (error: any) {
+      setSaveError(error?.message || 'تعذر حفظ إعدادات الهوية في Supabase.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleResetToDefault = () => {
+  const handleResetToDefault = async () => {
     const defaultPreset = COLOR_PRESETS[0];
     const defaultSettings: ThemeCustomizerSettings = {
       theme_mode: 'light',
@@ -113,10 +119,18 @@ export const AdminStyleCustomizer: React.FC = () => {
       header_style: 'collapsible_hero',
     };
     setDraft(defaultSettings);
-    updateThemeSettings(defaultSettings);
-    applyLivePreview(defaultSettings);
-    setResetToast(true);
-    setTimeout(() => setResetToast(false), 2500);
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await updateThemeSettings(defaultSettings);
+      applyLivePreview(defaultSettings);
+      setResetToast(true);
+      setTimeout(() => setResetToast(false), 2500);
+    } catch (error: any) {
+      setSaveError(error?.message || 'تعذر استعادة الإعدادات الافتراضية.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const fontOptions: { id: ArabicFontFamily; name: string; sample: string }[] = [
@@ -125,13 +139,6 @@ export const AdminStyleCustomizer: React.FC = () => {
     { id: 'noto_sans', name: 'أندرويد / جوجل (Noto Sans)', sample: 'رواج للطباعة الفاخرة' },
     { id: 'noto_kufi', name: 'كوفي عربي (Noto Kufi)', sample: 'رواج للطباعة الفاخرة' },
     { id: 'almarai', name: 'خط المراعي (Almarai)', sample: 'رواج للطباعة الفاخرة' },
-  ];
-
-  const surfaceStyles: { id: CardSurfaceStyle; label: string; desc: string }[] = [
-    { id: 'solid', label: 'كربون مصمت (Solid)', desc: 'مظهر صلب عالي التباين' },
-    { id: 'glass', label: 'زجاجي شفاف (Glass)', desc: 'تأثير زجاجي مع ضبابية' },
-    { id: 'neon', label: 'حدود نيون (Neon)', desc: 'حواف مضيئة بتوهج بارز' },
-    { id: 'gradient', label: 'تدرج ضوئي (Gradient)', desc: 'تدرج ناعم فاخر' },
   ];
 
   const patternOptions: { id: BackgroundPattern; label: string; desc: string }[] = [
@@ -155,14 +162,15 @@ export const AdminStyleCustomizer: React.FC = () => {
             الاستايل والمظهر وتخصيص هوية رواج
           </h1>
           <p className="text-xs sm:text-sm text-[#70695F] dark:text-[#A8A196] max-w-2xl">
-            تخصيص كامل للألوان الرئيسية والفرعية، نمط أسطح البطاقات، أنماط الخلفيات، والخطوط العربية في كامل التطبيق.
+            تخصيص الإضاءة والألوان الأساسية والخلفيات والخط العربي. لا تُعرض هنا أي خيارات لا يطبقها محرك الواجهة فعلياً.
           </p>
         </div>
 
         {/* Global Action Buttons */}
         <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
           <button
-            onClick={handleResetToDefault}
+            onClick={() => void handleResetToDefault()}
+            disabled={isSaving}
             className="px-4 py-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#1A1816] hover:bg-[#F3EFEA] dark:hover:bg-[#252220] text-[#70695F] dark:text-[#A8A196] border border-[#E8E2D5] dark:border-[#2D2A26] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
             title="استعادة إعدادات رواج الافتراضية"
           >
@@ -171,7 +179,8 @@ export const AdminStyleCustomizer: React.FC = () => {
           </button>
 
           <button
-            onClick={handleSave}
+            onClick={() => void handleSave()}
+            disabled={isSaving}
             className="px-6 py-2.5 rounded-xl bg-[#B9142D] hover:bg-[#A01026] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer border border-[#E03A53]/30 hover:scale-102"
           >
             <Save className="w-4 h-4" />
@@ -179,6 +188,12 @@ export const AdminStyleCustomizer: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {saveError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-700 dark:text-red-300 text-xs font-bold text-center">
+          لم يتم الحفظ: {saveError}
+        </div>
+      )}
 
       {savedToast && (
         <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-700 dark:text-emerald-300 text-xs font-bold text-center flex items-center justify-center gap-2 animate-in fade-in duration-200">
@@ -345,42 +360,6 @@ export const AdminStyleCustomizer: React.FC = () => {
             </div>
           </div>
 
-          {/* D. نمط أسطح البطاقات والكروت (Card Surface Style) */}
-          <div className="bg-white dark:bg-[#141211] p-5 sm:p-6 rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D5]/70 dark:border-[#262320] pb-3">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#B9142D]" />
-                <h3 className="font-heading font-black text-sm sm:text-base text-[#171616] dark:text-[#F7F5F0]">
-                  نمط أسطح البطاقات والكروت (Card Surface Style)
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {surfaceStyles.map((s) => {
-                const isSelected = draft.card_surface_style === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => {
-                      const updated = { ...draft, card_surface_style: s.id };
-                      setDraft(updated);
-                      applyLivePreview(updated);
-                    }}
-                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                      isSelected
-                        ? 'bg-[#B9142D] text-white border-[#E03A53] shadow-sm'
-                        : 'bg-[#FAF8F5] dark:bg-[#1A1816] text-[#70695F] dark:text-[#A8A196] border-[#E8E2D5] dark:border-[#2D2A26] hover:border-[#B9142D]/40'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* E. نمط النقوش والأشكال بالخلفية (Pattern Overlays) */}
           <div className="bg-white dark:bg-[#141211] p-5 sm:p-6 rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-[#E8E2D5]/70 dark:border-[#262320] pb-3">
@@ -414,42 +393,6 @@ export const AdminStyleCustomizer: React.FC = () => {
                   </button>
                 );
               })}
-            </div>
-          </div>
-
-          {/* F. شدة السطوع والوهج الضوئي (Glow Intensity) */}
-          <div className="bg-white dark:bg-[#141211] p-5 sm:p-6 rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D5]/70 dark:border-[#262320] pb-3">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-rose-500" />
-                <h3 className="font-heading font-black text-sm sm:text-base text-[#171616] dark:text-[#F7F5F0]">
-                  شدة السطوع والوهج الضوئي (Glow Intensity)
-                </h3>
-              </div>
-              <span className="font-mono font-bold text-xs text-[#B9142D] dark:text-[#E03A53]">
-                {draft.glow_intensity}%
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={draft.glow_intensity ?? 70}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  const updated = { ...draft, glow_intensity: val };
-                  setDraft(updated);
-                  applyLivePreview(updated);
-                }}
-                className="w-full accent-[#B9142D] cursor-pointer"
-              />
-              <div className="flex items-center justify-between text-[11px] text-[#867F75] font-semibold">
-                <span>خافت (0%)</span>
-                <span>متوازن (50%)</span>
-                <span>وهج قوي (100%)</span>
-              </div>
             </div>
           </div>
 
@@ -488,48 +431,6 @@ export const AdminStyleCustomizer: React.FC = () => {
             </div>
           </div>
 
-          {/* H. درجة استدارة الحواف والزوايا (Border Radius) */}
-          <div className="bg-white dark:bg-[#141211] p-5 sm:p-6 rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D5]/70 dark:border-[#262320] pb-3">
-              <div className="flex items-center gap-2">
-                <Square className="w-4 h-4 text-[#B9142D]" />
-                <h3 className="font-heading font-black text-sm sm:text-base text-[#171616] dark:text-[#F7F5F0]">
-                  درجة استدارة الحواف والزوايا (Border Radius)
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                { id: 'rounded-xl', label: 'كلاسيكي (12px - Sharp)', desc: 'انحناء ناعم متزن' },
-                { id: 'rounded-2xl', label: 'عصري (16px - Default)', desc: 'المعيار المؤسسي لرواج' },
-                { id: 'rounded-3xl', label: 'دائري فائق (24px - Fluid)', desc: 'انسيابية فائقة النعومة' },
-              ].map((r) => {
-                const isSelected = draft.border_radius === r.id;
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => {
-                      const updated = { ...draft, border_radius: r.id as any };
-                      setDraft(updated);
-                      applyLivePreview(updated);
-                    }}
-                    className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
-                      isSelected
-                        ? 'bg-[#B9142D] text-white border-[#E03A53] shadow-sm'
-                        : 'bg-[#FAF8F5] dark:bg-[#1A1816] text-[#171616] dark:text-[#F7F5F0] border-[#E8E2D5] dark:border-[#2D2A26] hover:border-[#B9142D]/40'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">{r.label}</span>
-                    <span className={`text-[11px] opacity-80 ${isSelected ? 'text-white/90' : 'text-[#70695F] dark:text-[#A8A196]'}`}>
-                      {r.desc}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
         </div>
 
@@ -597,6 +498,7 @@ export const AdminStyleCustomizer: React.FC = () => {
             {/* Save Button below sticky preview */}
             <button
               onClick={handleSave}
+              disabled={isSaving}
               className="w-full py-3 rounded-xl bg-[#B9142D] hover:bg-[#A01026] text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#E03A53]/30"
             >
               <Save className="w-4 h-4" />

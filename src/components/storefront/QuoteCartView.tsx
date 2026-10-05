@@ -45,12 +45,14 @@ export const QuoteCartView: React.FC = () => {
   // Submit states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<{ referenceNumber: string; whatsappUrl: string } | null>(null);
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (quoteItems.length === 0) return;
     if (!customerName.trim() || !mobile.trim()) return;
 
+    setSubmitError('');
     setIsSubmitting(true);
     try {
       const res = await submitQuoteRequest(
@@ -71,8 +73,8 @@ export const QuoteCartView: React.FC = () => {
         referenceNumber: res.referenceNumber,
         whatsappUrl: res.whatsappUrl,
       });
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setSubmitError(err?.message || 'تعذر إرسال طلب عرض السعر. لم يتم تسجيل الطلب، حاول مرة أخرى.');
     } finally {
       setIsSubmitting(false);
     }
@@ -313,6 +315,12 @@ export const QuoteCartView: React.FC = () => {
                 سيقوم فريق مبيعات رواج بالتواصل معكم مباشرة لتأكيد التسعير وموعد التوريد.
               </p>
             </div>
+
+            {submitError && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
+                {submitError}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-3 text-xs">
               

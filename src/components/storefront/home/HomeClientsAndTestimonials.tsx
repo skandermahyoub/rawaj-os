@@ -25,7 +25,9 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
   const { clientLogos, testimonials, brandsDisplayMode, submitPublicTestimonial } = useApp();
   
   const activeLogos = clientLogos.filter((l) => l.is_active).sort((a, b) => a.sort_order - b.sort_order);
-  const approvedTestimonials = testimonials.filter((t) => t.is_active || t.status === 'approved').sort((a, b) => a.sort_order - b.sort_order);
+  const approvedTestimonials = testimonials
+    .filter((t) => t.is_active && t.status === 'approved')
+    .sort((a, b) => a.sort_order - b.sort_order);
 
   const showBrands = (mode === 'all' || mode === 'brands_only') && activeLogos.length > 0;
   const showTestimonials = (mode === 'all' || mode === 'testimonials_only') && approvedTestimonials.length > 0;
@@ -44,6 +46,8 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
   const [comment, setComment] = useState('');
   const [rating, setRating] = useState(5);
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   // Auto slide for brands carousel when not paused
   useEffect(() => {
@@ -74,28 +78,36 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
     }
   };
 
-  const handleTestimonialSubmit = (e: React.FormEvent) => {
+  const handleTestimonialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !comment.trim()) return;
 
-    submitPublicTestimonial({
-      client_name_ar: name,
-      client_title_ar: title || 'عميل معتمد',
-      client_company_ar: company || 'مؤسسة تجارية',
-      comment_ar: comment,
-      rating,
-    });
+    setSubmitError('');
+    setIsSubmittingReview(true);
+    try {
+      await submitPublicTestimonial({
+        client_name_ar: name,
+        client_title_ar: title || 'عميل معتمد',
+        client_company_ar: company || 'مؤسسة تجارية',
+        comment_ar: comment,
+        rating,
+      });
 
-    setSubmittedSuccess(true);
-    setName('');
-    setTitle('');
-    setCompany('');
-    setComment('');
-    setRating(5);
-    setTimeout(() => {
-      setSubmittedSuccess(false);
-      setShowReviewForm(false);
-    }, 4000);
+      setSubmittedSuccess(true);
+      setName('');
+      setTitle('');
+      setCompany('');
+      setComment('');
+      setRating(5);
+      setTimeout(() => {
+        setSubmittedSuccess(false);
+        setShowReviewForm(false);
+      }, 4000);
+    } catch (error: any) {
+      setSubmitError(error?.message || 'تعذر إرسال التقييم. حاول مرة أخرى.');
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   // Distinct titles according to the mode
@@ -302,6 +314,12 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
                 </button>
               </div>
 
+              {submitError && (
+                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs">
+                  {submitError}
+                </div>
+              )}
+
               {submittedSuccess ? (
                 <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -377,10 +395,11 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
 
                   <button
                     type="submit"
+                    disabled={isSubmittingReview}
                     className="px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>إرسال الشهادة للاعتماد والنشر</span>
+                    <span>{isSubmittingReview ? 'جارٍ الإرسال...' : 'إرسال الشهادة للاعتماد والنشر'}</span>
                   </button>
                 </form>
               )}
