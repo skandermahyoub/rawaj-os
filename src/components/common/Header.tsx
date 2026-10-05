@@ -312,28 +312,34 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCustomQuote }) => {
               </div>
 
               {/* Drawer Footer Contact Bar */}
-              <div className="p-6 border-t border-[#E8E2D5] dark:border-[#262320] bg-white dark:bg-[#151312] space-y-3">
-                <div className="flex items-center justify-between text-xs text-[#70695F] dark:text-[#A8A196]">
-                  <span className="font-semibold">خدمة العملاء بصنعاء:</span>
-                  <a 
-                    href={`tel:${siteSettings.phone || '01234567'}`}
-                    className="flex items-center gap-1 font-bold text-[#171616] dark:text-[#F7F5F0] hover:text-brand-primary"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-brand-primary" />
-                    <span dir="ltr">{siteSettings.phone || '+967 1 234567'}</span>
-                  </a>
-                </div>
+              {(siteSettings.phone || siteSettings.mobile_whatsapp) && (
+                <div className="p-6 border-t border-[#E8E2D5] dark:border-[#262320] bg-white dark:bg-[#151312] space-y-3">
+                  {siteSettings.phone && (
+                    <div className="flex items-center justify-between text-xs text-[#70695F] dark:text-[#A8A196]">
+                      <span className="font-semibold">خدمة العملاء:</span>
+                      <a 
+                        href={`tel:${siteSettings.phone}`}
+                        className="flex items-center gap-1 font-bold text-[#171616] dark:text-[#F7F5F0] hover:text-brand-primary"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-brand-primary" />
+                        <span dir="ltr">{siteSettings.phone}</span>
+                      </a>
+                    </div>
+                  )}
 
-                <a 
-                  href={`https://wa.me/${(siteSettings.mobile_whatsapp || '967777000000').replace(/[^0-9]/g, '')}`}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs shadow-xs transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>محادثة فورية عبر واتساب</span>
-                </a>
-              </div>
+                  {siteSettings.mobile_whatsapp && (
+                    <a 
+                      href={`https://wa.me/${siteSettings.mobile_whatsapp.replace(/[^0-9]/g, '')}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs shadow-xs transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>محادثة فورية عبر واتساب</span>
+                    </a>
+                  )}
+                </div>
+              )}
 
             </div>
           </div>
