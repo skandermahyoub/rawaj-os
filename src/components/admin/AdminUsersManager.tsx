@@ -58,6 +58,8 @@ export const AdminUsersManager: React.FC = () => {
         return <span className="bg-[#FAF7F2] dark:bg-[#252222] text-[#171616] dark:text-white text-[10px] font-bold px-2 py-0.5 rounded border border-[#E7E0D3] dark:border-[#332F2F]">محرر الكتالوج</span>;
       case 'sales':
         return <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/20">مسؤول عروض الأسعار</span>;
+      case 'designer':
+        return <span className="bg-violet-500/10 text-violet-600 dark:text-violet-300 text-[10px] font-bold px-2 py-0.5 rounded border border-violet-500/20">مصمم</span>;
     }
   };
 
@@ -206,8 +208,9 @@ export const AdminUsersManager: React.FC = () => {
                 className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded px-2.5 py-1.5 font-bold"
               >
                 <option value="sales">مسؤول عروض الأسعار (Sales - استقبال وتحديث عروض السعر)</option>
+                <option value="designer">مصمم (Designer - المهام والبروفات المسندة إليه)</option>
                 <option value="editor">محرر الكتالوج (Editor - إضافة وتعديل الخدمات والمواصفات)</option>
-                <option value="admin">مدير العمليات (Admin - صلاحيات كاملة ما عدا حذف المالك)</option>
+                <option value="admin">مدير العمليات (Admin - صلاحيات تشغيلية وإدارية)</option>
                 <option value="owner">مالك / مدير عام (Owner - صلاحيات كاملة)</option>
               </select>
             </div>
