@@ -4,7 +4,7 @@ import { Users, Plus, Trash2, Shield, UserCheck, UserPlus, AlertCircle } from 'l
 import { UserRole } from '../../types';
 
 export const AdminUsersManager: React.FC = () => {
-  const { users, currentUser, addUser, deleteUser } = useApp();
+  const { users, currentUser, addUser, updateUser, deleteUser } = useApp();
 
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -12,6 +12,7 @@ export const AdminUsersManager: React.FC = () => {
   const [newUserRole, setNewUserRole] = useState<UserRole>('sales');
   const [showAddModal, setShowAddModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [busyUserId, setBusyUserId] = useState<string | null>(null);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +46,30 @@ export const AdminUsersManager: React.FC = () => {
       }
     } catch (error: any) {
       setErrorMsg(error?.message || 'تعذر حذف المستخدم.');
+    }
+  };
+
+  const handleRoleChange = async (userId: string, role: UserRole) => {
+    setErrorMsg('');
+    setBusyUserId(userId);
+    try {
+      await updateUser(userId, { role });
+    } catch (error: any) {
+      setErrorMsg(error?.message || 'تعذر تحديث دور المستخدم.');
+    } finally {
+      setBusyUserId(null);
+    }
+  };
+
+  const handleToggleActive = async (userId: string, isActive: boolean) => {
+    setErrorMsg('');
+    setBusyUserId(userId);
+    try {
+      await updateUser(userId, { is_active: !isActive });
+    } catch (error: any) {
+      setErrorMsg(error?.message || 'تعذر تحديث حالة المستخدم.');
+    } finally {
+      setBusyUserId(null);
     }
   };
 
@@ -128,23 +153,49 @@ export const AdminUsersManager: React.FC = () => {
 
                   <td className="p-3 text-[#57534E] dark:text-[#D6D3D1] font-mono">{u.email}</td>
                   <td className="p-3 text-[#57534E] dark:text-[#D6D3D1] font-mono">{u.phone || '—'}</td>
-                  <td className="p-3">{getRoleBadge(u.role)}</td>
+                  <td className="p-3">
+                    <div className="space-y-2">
+                      {getRoleBadge(u.role)}
+                      <select
+                        value={u.role}
+                        disabled={busyUserId === u.id}
+                        onChange={(e) => void handleRoleChange(u.id, e.target.value as UserRole)}
+                        className="w-full min-w-[150px] bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#332F2F] rounded-lg px-2 py-1 text-[11px] font-bold disabled:opacity-50"
+                      >
+                        <option value="owner">مالك / مدير عام</option>
+                        <option value="admin">مدير العمليات</option>
+                        <option value="editor">محرر الكتالوج</option>
+                        <option value="sales">مسؤول المبيعات</option>
+                        <option value="designer">مصمم</option>
+                      </select>
+                    </div>
+                  </td>
 
                   <td className="p-3 text-center">
-                    {u.isOwnerProtected ? (
-                      <span className="text-[10px] text-[#78716C] font-semibold flex items-center justify-center gap-1">
-                        <Shield className="w-3 h-3 text-[#B9142D]" />
-                        محمي (المالك)
-                      </span>
-                    ) : (
+                    <div className="flex items-center justify-center gap-1.5">
                       <button
-                        onClick={() => handleDelete(u.id)}
-                        className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950"
-                        title="حذف المستخدم"
+                        type="button"
+                        disabled={busyUserId === u.id || u.id === currentUser.id}
+                        onClick={() => void handleToggleActive(u.id, u.is_active !== false)}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold border disabled:opacity-40 ${
+                          u.is_active !== false
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-stone-100 text-stone-600 border-stone-200'
+                        }`}
+                        title={u.is_active !== false ? 'تعطيل الحساب الإداري' : 'تفعيل الحساب الإداري'}
+                      >
+                        {u.is_active !== false ? 'نشط' : 'معطل'}
+                      </button>
+
+                      <button
+                        onClick={() => void handleDelete(u.id)}
+                        disabled={u.id === currentUser.id || busyUserId === u.id}
+                        className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 disabled:opacity-30"
+                        title={u.isOwnerProtected ? 'يمكن حذف المالك فقط إذا بقي مالك نشط آخر' : 'حذف المستخدم'}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
