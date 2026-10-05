@@ -6,6 +6,8 @@ import { ImageUploadPicker } from '../common/ImageUploadPicker';
 export const AdminPortfolioManager: React.FC = () => {
   const { portfolioProjects, services, createPortfolioProject, updatePortfolioProject, deletePortfolioProject } = useApp();
   const [editingProj, setEditingProj] = useState<any>(null);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleAddNew = () => {
     setEditingProj({
@@ -18,23 +20,33 @@ export const AdminPortfolioManager: React.FC = () => {
       challenge_ar: 'التحدي الفني في الموقع...',
       solution_ar: 'الحل التنفيذي من رواج...',
       services_used_ids: services.slice(0, 2).map((s) => s.id),
-      images: ['/src/assets/images/rawaj_hero_storefront_1790822521342.jpg'],
+      images: [],
       featured: true,
     });
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingProj.id) {
-      updatePortfolioProject(editingProj.id, editingProj);
-    } else {
-      createPortfolioProject(editingProj);
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (editingProj.id) await updatePortfolioProject(editingProj.id, editingProj);
+      else await createPortfolioProject(editingProj);
+      setEditingProj(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ المشروع.');
+    } finally {
+      setIsSaving(false);
     }
-    setEditingProj(null);
   };
 
   return (
     <div className="space-y-6 text-right pb-16">
+      {actionError && (
+        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
+          {actionError}
+        </div>
+      )}
       <div className="flex items-center justify-between bg-[#FFFDFA] dark:bg-[#1C1A1A] p-4 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F]">
         <div>
           <h1 className="font-heading font-extrabold text-base sm:text-lg text-[#171616] dark:text-white flex items-center gap-2">
@@ -73,7 +85,11 @@ export const AdminPortfolioManager: React.FC = () => {
 
             <div className="pt-2 border-t border-[#F5F1E9] dark:border-[#252222] flex items-center justify-between">
               <button
-                onClick={() => deletePortfolioProject(proj.id)}
+                onClick={() => {
+                  if (window.confirm('هل تريد حذف هذا المشروع؟')) {
+                    void deletePortfolioProject(proj.id).catch((error) => setActionError(error?.message || 'تعذر حذف المشروع.'));
+                  }
+                }}
                 className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -187,6 +203,7 @@ export const AdminPortfolioManager: React.FC = () => {
               </button>
               <button
                 type="submit"
+                disabled={isSaving}
                 className="bg-[#B9142D] text-white font-bold px-4 py-1.5 rounded-lg"
               >
                 حفظ المشروع
