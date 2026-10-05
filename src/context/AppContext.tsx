@@ -1327,24 +1327,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
     if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
     const salesperson = users.find((user) => user.id === salespersonId);
+    const nextAssignedTo = salespersonId || undefined;
+    const updatedAt = new Date().toISOString();
+    const nextTimeline = [
+      ...targetQuote.timeline,
+      {
+        id: `tl-${Date.now()}`,
+        timestamp: updatedAt,
+        user_name: currentUser.name,
+        action: `تم إسناد الطلب للمسؤول: ${salesperson ? salesperson.name : 'غير مسند'}`,
+      },
+    ];
 
-    const updatedQuote: QuoteRequest = {
-      ...targetQuote,
-      assigned_to: salespersonId,
-      updated_at: new Date().toISOString(),
-      timeline: [
-        ...targetQuote.timeline,
-        {
-          id: `tl-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          user_name: currentUser.name,
-          action: `تم إسناد الطلب للمسؤول: ${salesperson ? salesperson.name : 'غير محدد'}`,
-        },
-      ],
-    };
+    await setDoc(doc(db, 'quotes', quoteId), {
+      assigned_to: salespersonId || null,
+      updated_at: updatedAt,
+      timeline: nextTimeline,
+    }, { merge: true });
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
+    setQuoteRequests((prev) => prev.map((quote) =>
+      quote.id === quoteId
+        ? { ...quote, assigned_to: nextAssignedTo, updated_at: updatedAt, timeline: nextTimeline }
+        : quote
+    ));
   };
 
   const updateQuoteNotes = async (
