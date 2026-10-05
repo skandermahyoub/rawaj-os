@@ -176,7 +176,7 @@ export const AdminClientsManager: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => updateBrandsDisplayMode('colored')}
+                onClick={() => void updateBrandsDisplayMode('colored').catch((error) => setActionError(error?.message || 'تعذر حفظ نمط عرض الشعارات.'))}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   brandsDisplayMode === 'colored'
                     ? 'bg-[#B9142D] text-white shadow-xs'
@@ -186,7 +186,7 @@ export const AdminClientsManager: React.FC = () => {
                 شعار ملون مع الاسم
               </button>
               <button
-                onClick={() => updateBrandsDisplayMode('grayscale')}
+                onClick={() => void updateBrandsDisplayMode('grayscale').catch((error) => setActionError(error?.message || 'تعذر حفظ نمط عرض الشعارات.'))}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   brandsDisplayMode === 'grayscale'
                     ? 'bg-[#B9142D] text-white shadow-xs'
@@ -196,7 +196,7 @@ export const AdminClientsManager: React.FC = () => {
                 أبيض وأسود (Grayscale)
               </button>
               <button
-                onClick={() => updateBrandsDisplayMode('logo_only')}
+                onClick={() => void updateBrandsDisplayMode('logo_only').catch((error) => setActionError(error?.message || 'تعذر حفظ نمط عرض الشعارات.'))}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   brandsDisplayMode === 'logo_only'
                     ? 'bg-[#B9142D] text-white shadow-xs'
