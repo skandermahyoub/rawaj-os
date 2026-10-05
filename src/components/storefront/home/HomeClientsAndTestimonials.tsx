@@ -25,7 +25,9 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
   const { clientLogos, testimonials, brandsDisplayMode, submitPublicTestimonial } = useApp();
   
   const activeLogos = clientLogos.filter((l) => l.is_active).sort((a, b) => a.sort_order - b.sort_order);
-  const approvedTestimonials = testimonials.filter((t) => t.is_active || t.status === 'approved').sort((a, b) => a.sort_order - b.sort_order);
+  const approvedTestimonials = testimonials
+    .filter((t) => t.is_active && t.status === 'approved')
+    .sort((a, b) => a.sort_order - b.sort_order);
 
   const showBrands = (mode === 'all' || mode === 'brands_only') && activeLogos.length > 0;
   const showTestimonials = (mode === 'all' || mode === 'testimonials_only') && approvedTestimonials.length > 0;
