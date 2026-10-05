@@ -2682,8 +2682,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'full_cinematic',
     available_layouts: [
       { id: 'full_cinematic', name_ar: 'سلايدر سينمائي بملء الشاشة', description_ar: 'عرض بانورامي ممتد للشرائح مع أزرار التنقل' },
-      { id: 'cards_carousel', name_ar: 'بطاقات عائمة ثلاثية الأبعاد', description_ar: 'شرائح متجاورة مع تمييز الشريحة المركزية' },
-      { id: 'compact_banner', name_ar: 'بانر شرائحي مقتضب', description_ar: 'ارتفاع هادئ متوازن مع أزرار ملاحة سفلية' }
     ]
   },
   {
@@ -2696,8 +2694,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'crimson_pulse',
     available_layouts: [
       { id: 'crimson_pulse', name_ar: 'شريط قرمزي نبضي عريض', description_ar: 'أحمر داكن مع هوية رواج وعناصر مضيئة' },
-      { id: 'gold_luxury', name_ar: 'شريط ذهبي ملكي نخبوي', description_ar: 'شريط ذهبي عالي الفخامة للشركاء والمناسبات' },
-      { id: 'glass_minimal', name_ar: 'شريط زجاجي عائم شفاف', description_ar: 'مظهر شفاف هادئ فوق المحتوى' }
     ]
   },
   {
@@ -2710,8 +2706,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'interactive_card',
     available_layouts: [
       { id: 'interactive_card', name_ar: 'بطاقة حاسبة تفاعلية متكاملة', description_ar: 'اختيار المنتج، الكمية، والتشطيب مع تسعير تقديري فوري' },
-      { id: 'compact_bar', name_ar: 'شريط حسابي سريع ومدمج', description_ar: 'مدخلات أفقية سريعة مع زر إرسال مباشر للواتساب' },
-      { id: 'wizard_steps', name_ar: 'معالج تسعير خطوة بخطوة', description_ar: 'خطوات استرشادية واضحة للعملاء غير المتخصصين' }
     ]
   },
   {
@@ -2738,8 +2732,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'tabs_slider',
     available_layouts: [
       { id: 'tabs_slider', name_ar: 'سلايدر الباقات مع تبويبات القطاعات', description_ar: 'باقات تأسيس مطاعم، مكاتب، ومعارض مع تبديل سلس' },
-      { id: 'comparison_grid', name_ar: 'شبكة مقارنة الباقات مع الأكثر طلباً', description_ar: 'مقارنة المكونات والأسعار وضمانات التنفيذ' },
-      { id: 'compact_list', name_ar: 'قائمة باقات أفقية عريضة', description_ar: 'كروت عريضة بتفاصيل بنود الباقة وزر طلب مباشر' }
     ]
   },
   {
@@ -2766,8 +2758,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'dynamic_grid',
     available_layouts: [
       { id: 'dynamic_grid', name_ar: 'شبكة العروض الديناميكية الذكية', description_ar: 'تخطيط مرن بحسب عدد البانرات المفعلة في لوحة العروض' },
-      { id: 'countdown_card', name_ar: 'بطاقة العرض الحصري مع مؤقت تنازلي', description_ar: 'تركيز على عرض رئيسي مؤقت مع كود الخصم الفوري' },
-      { id: 'split_showcase', name_ar: 'بطاقات عروض ثنائية متوازنة', description_ar: 'عرضان ترويجيان متجاوران بتنسيق متوازن وأنيق' }
     ]
   },
   {
@@ -2780,8 +2770,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'executive_story',
     available_layouts: [
       { id: 'executive_story', name_ar: 'كلمة الإدارة التنفيذية وميثاق الجودة', description_ar: 'بطاقة نسيجية فاخرة مع الرؤية والرسالة وتحميل ملف الشركة' },
-      { id: 'split_metrics', name_ar: 'تخطيط منقسم مع مؤشرات الخبرة', description_ar: 'نصف لنبذة رواج ونصف لبيانات المصنع والشهادات' },
-      { id: 'mission_values', name_ar: 'بطاقات قيم وركائز رواج الثلاث', description_ar: 'السرعة، دقة الألوان، وضمان الجودة الشامل' }
     ]
   },
   {
@@ -2795,7 +2783,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     available_layouts: [
       { id: 'case_studies', name_ar: 'معرض دراسات الحالة مع فلاتر التصنيف', description_ar: 'عرض المشاريع الحقيقية مع العميل والمدينة والخامات المنفذة' },
       { id: 'proud_showcase', name_ar: 'كونسول المشاريع الميدانية الفاخرة', description_ar: 'معرض شاشات سينمائي للمشاريع الكبرى' },
-      { id: 'masonry_compact', name_ar: 'شبكة ماسونري مدمجة وسريعة', description_ar: 'عرض كروت متدرجة لأحدث الأعمال المنفذة' }
     ]
   },
   {
@@ -2808,8 +2795,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'carousel_cards',
     available_layouts: [
       { id: 'carousel_cards', name_ar: 'كاروسيل آراء العملاء بالنجوم', description_ar: 'بطاقات تقييم مع اقتباسات العملاء وخاصية التقييم الجديد' },
-      { id: 'masonry_grid', name_ar: 'شبكة تقييمات العملاء المعتمدة', description_ar: 'مصفوفة شهادات معتمدة مع أسماء الشركات' },
-      { id: 'vip_quote', name_ar: 'بطاقة شهادة عميل استراتيجي VIP', description_ar: 'تسليط الضوء على تقييم جهة حكومية أو كبرى الشركات' }
     ]
   },
   {
@@ -2822,8 +2807,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'colored_ticker',
     available_layouts: [
       { id: 'colored_ticker', name_ar: 'شريط شعارات متحرك بالألوان الأصلية', description_ar: 'حركة لا نهائية سلسة لشعارات الشركاء' },
-      { id: 'monochrome_luxury', name_ar: 'شعارات ذهبية/أحادية اللون نخبوية', description_ar: 'مظهر موحد فاخر متناسق مع هوية رواج' },
-      { id: 'grid_showcase', name_ar: 'شبكة شعارات الشركاء المنظمة', description_ar: 'مصفوفة كروت ثابتة لشركاء النجاح مع عداد المشاريع' }
     ]
   },
   {
@@ -2836,8 +2819,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'knowledge_highlights',
     available_layouts: [
       { id: 'knowledge_highlights', name_ar: 'دليل الخامات والمقالات الموصى بها', description_ar: 'بطاقات فنية مرجعية للعملاء مع زر قراءة الدليل كاملاً' },
-      { id: 'magazine_grid', name_ar: 'شبكة مجلة رواج المتخصصة', description_ar: 'تخطيط مجلة بصرية مع تصنيفات الطباعة والتصميم' },
-      { id: 'compact_guides', name_ar: 'إرشادات سريعة لاختيار الورق والألوان', description_ar: 'بطاقات مختصرة لقرارات الشراء السريعة' }
     ]
   },
   {
@@ -2850,8 +2831,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'interactive_accordion',
     available_layouts: [
       { id: 'interactive_accordion', name_ar: 'أوكرديون تفاعلي مقسم فئات', description_ar: 'تصنيفات للأسئلة الشائعة مع إمكانية فتح وإغلاق الإجابة' },
-      { id: 'two_column_cards', name_ar: 'بطاقات أسئلة عمودين متوازيين', description_ar: 'قراءة أسرع لكافة الإجابات الفنية' },
-      { id: 'support_dock', name_ar: 'بطاقات الأسئلة مع استفسار واتساب فوري', description_ar: 'إمكانية إرسال سؤال غير مدرج مباشرة للإدارة' }
     ]
   },
   {
@@ -2864,8 +2843,6 @@ export const INITIAL_HOME_MODULES_CONFIG: HomeModuleConfig[] = [
     layout_style: 'full_channels_form',
     available_layouts: [
       { id: 'full_channels_form', name_ar: 'قنوات الاتصال المباشرة + نموذج المراسلة', description_ar: 'نموذج إرسال سريع + أزرار واتساب وهاتف وموقع المقر' },
-      { id: 'fast_action_cards', name_ar: 'بطاقات الاتصال السريعة الفورية', description_ar: 'قنوات مباشرة للمبيعات، الإدارة، والدعم الفني' },
-      { id: 'compact_location', name_ar: 'موقع المقر الميداني وساعات العمل', description_ar: 'خريطة الوصول وأوقات الدوام الرسمي لزيارة المعرض' }
     ]
   },
 ];
