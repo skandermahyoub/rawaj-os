@@ -269,6 +269,18 @@ interface AppContextType {
   deletePortfolioProject: (id: string) => Promise<void>;
 
   // Taxonomy & Settings & Users
+  createDepartment: (data: Omit<Department, 'id'>) => Promise<Department>;
+  updateDepartment: (id: string, data: Partial<Department>) => Promise<void>;
+  deleteDepartment: (id: string) => Promise<void>;
+  createCategory: (data: Omit<Category, 'id'>) => Promise<Category>;
+  updateCategory: (id: string, data: Partial<Category>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  createSubcategory: (data: Omit<Subcategory, 'id'>) => Promise<Subcategory>;
+  updateSubcategory: (id: string, data: Partial<Subcategory>) => Promise<void>;
+  deleteSubcategory: (id: string) => Promise<void>;
+  createIndustrySector: (data: Omit<IndustrySector, 'id'>) => Promise<IndustrySector>;
+  updateIndustrySector: (id: string, data: Partial<IndustrySector>) => Promise<void>;
+  deleteIndustrySector: (id: string) => Promise<void>;
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
   deleteUser: (userId: string) => Promise<boolean>;
@@ -1512,6 +1524,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Taxonomy & Settings & Users
+  const makeTaxonomyId = (prefix: string) =>
+    `${prefix}-${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+
+  const createDepartment = async (data: Omit<Department, 'id'>): Promise<Department> => {
+    const entity: Department = { ...data, id: makeTaxonomyId('dept'), is_active: data.is_active ?? true };
+    await setDoc(doc(db, 'departments', entity.id), entity);
+    setDepartments((prev) => [...prev, entity].sort((a, b) => a.sort_order - b.sort_order));
+    return entity;
+  };
+
+  const updateDepartment = async (id: string, data: Partial<Department>): Promise<void> => {
+    await setDoc(doc(db, 'departments', id), data, { merge: true });
+    setDepartments((prev) => prev.map((item) => item.id === id ? { ...item, ...data } : item));
+  };
+
+  const deleteDepartment = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'departments', id));
+    setDepartments((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const createCategory = async (data: Omit<Category, 'id'>): Promise<Category> => {
+    const entity: Category = { ...data, id: makeTaxonomyId('cat'), is_active: data.is_active ?? true };
+    await setDoc(doc(db, 'categories', entity.id), entity);
+    setCategories((prev) => [...prev, entity].sort((a, b) => a.sort_order - b.sort_order));
+    return entity;
+  };
+
+  const updateCategory = async (id: string, data: Partial<Category>): Promise<void> => {
+    await setDoc(doc(db, 'categories', id), data, { merge: true });
+    setCategories((prev) => prev.map((item) => item.id === id ? { ...item, ...data } : item));
+  };
+
+  const deleteCategory = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'categories', id));
+    setCategories((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const createSubcategory = async (data: Omit<Subcategory, 'id'>): Promise<Subcategory> => {
+    const entity: Subcategory = { ...data, id: makeTaxonomyId('subcat'), is_active: data.is_active ?? true };
+    await setDoc(doc(db, 'subcategories', entity.id), entity);
+    setSubcategories((prev) => [...prev, entity].sort((a, b) => a.sort_order - b.sort_order));
+    return entity;
+  };
+
+  const updateSubcategory = async (id: string, data: Partial<Subcategory>): Promise<void> => {
+    await setDoc(doc(db, 'subcategories', id), data, { merge: true });
+    setSubcategories((prev) => prev.map((item) => item.id === id ? { ...item, ...data } : item));
+  };
+
+  const deleteSubcategory = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'subcategories', id));
+    setSubcategories((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const createIndustrySector = async (data: Omit<IndustrySector, 'id'>): Promise<IndustrySector> => {
+    const entity: IndustrySector = { ...data, id: makeTaxonomyId('sector'), is_active: data.is_active ?? true };
+    await setDoc(doc(db, 'industry_sectors', entity.id), entity);
+    setIndustrySectors((prev) => [...prev, entity].sort((a, b) => a.sort_order - b.sort_order));
+    return entity;
+  };
+
+  const updateIndustrySector = async (id: string, data: Partial<IndustrySector>): Promise<void> => {
+    await setDoc(doc(db, 'industry_sectors', id), data, { merge: true });
+    setIndustrySectors((prev) => prev.map((item) => item.id === id ? { ...item, ...data } : item));
+  };
+
+  const deleteIndustrySector = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'industry_sectors', id));
+    setIndustrySectors((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const updateSiteSettings = async (settings: Partial<SiteSettings>): Promise<void> => {
     const updated = { ...siteSettings, ...settings };
     await setDoc(doc(db, 'settings', 'general'), updated, { merge: true });
@@ -1880,6 +1963,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createPortfolioProject,
         updatePortfolioProject,
         deletePortfolioProject,
+        createDepartment,
+        updateDepartment,
+        deleteDepartment,
+        createCategory,
+        updateCategory,
+        deleteCategory,
+        createSubcategory,
+        updateSubcategory,
+        deleteSubcategory,
+        createIndustrySector,
+        updateIndustrySector,
+        deleteIndustrySector,
         updateSiteSettings,
         addUser,
         deleteUser,
