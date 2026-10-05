@@ -33,6 +33,8 @@ export const AdminPromoManager: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
   const [previewSlideIndex, setPreviewSlideIndex] = useState(0);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -76,7 +78,7 @@ export const AdminPromoManager: React.FC = () => {
     setIsActive(b.is_active);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !imageUrl.trim()) return;
 
@@ -85,38 +87,46 @@ export const AdminPromoManager: React.FC = () => {
       .map(s => s.trim())
       .filter(Boolean);
 
-    if (isCreating) {
-      addPromoBanner({
-        title_ar: title,
-        subtitle_ar: subtitle,
-        badge_ar: badge,
-        discount_tag: discountTag,
-        valid_until: validUntil,
-        highlights: highlightsArray,
-        image_url: imageUrl,
-        cta_text_ar: ctaText,
-        link_view: linkView,
-        is_active: isActive,
-        sort_order: promoSettings.banners.length + 1,
-      });
-    } else if (editingBanner) {
-      updatePromoBanner(editingBanner.id, {
-        title_ar: title,
-        subtitle_ar: subtitle,
-        badge_ar: badge,
-        discount_tag: discountTag,
-        valid_until: validUntil,
-        highlights: highlightsArray,
-        image_url: imageUrl,
-        cta_text_ar: ctaText,
-        link_view: linkView,
-        is_active: isActive,
-      });
-    }
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (isCreating) {
+        await addPromoBanner({
+          title_ar: title,
+          subtitle_ar: subtitle,
+          badge_ar: badge,
+          discount_tag: discountTag,
+          valid_until: validUntil,
+          highlights: highlightsArray,
+          image_url: imageUrl,
+          cta_text_ar: ctaText,
+          link_view: linkView,
+          is_active: isActive,
+          sort_order: promoSettings.banners.length + 1,
+        });
+      } else if (editingBanner) {
+        await updatePromoBanner(editingBanner.id, {
+          title_ar: title,
+          subtitle_ar: subtitle,
+          badge_ar: badge,
+          discount_tag: discountTag,
+          valid_until: validUntil,
+          highlights: highlightsArray,
+          image_url: imageUrl,
+          cta_text_ar: ctaText,
+          link_view: linkView,
+          is_active: isActive,
+        });
+      }
 
-    setIsCreating(false);
-    setEditingBanner(null);
-    showNotice();
+      setIsCreating(false);
+      setEditingBanner(null);
+      showNotice();
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ العرض الترويجي.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const showNotice = () => {
@@ -124,8 +134,18 @@ export const AdminPromoManager: React.FC = () => {
     setTimeout(() => setSavedNotice(false), 2500);
   };
 
+  const savePromoSettings = async (settings: Parameters<typeof updatePromoSettings>[0]) => {
+    setActionError('');
+    try {
+      await updatePromoSettings(settings);
+      showNotice();
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ إعدادات العروض.');
+    }
+  };
+
   // Move banner order
-  const handleMoveOrder = (index: number, direction: 'up' | 'down') => {
+  const handleMoveOrder = async (index: number, direction: 'up' | 'down') => {
     const banners = [...promoSettings.banners];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= banners.length) return;
@@ -136,8 +156,7 @@ export const AdminPromoManager: React.FC = () => {
 
     // re-assign sort_orders
     const updated = banners.map((b, idx) => ({ ...b, sort_order: idx + 1 }));
-    updatePromoSettings({ banners: updated });
-    showNotice();
+    await savePromoSettings({ banners: updated });
   };
 
   // Add a preset quick template
@@ -199,8 +218,9 @@ export const AdminPromoManager: React.FC = () => {
       };
     }
 
-    addPromoBanner(preset);
-    showNotice();
+    void addPromoBanner(preset)
+      .then(showNotice)
+      .catch((error) => setActionError(error?.message || 'تعذر إضافة القالب الجاهز.'));
   };
 
   const activeBanners = promoSettings.banners.filter(b => b.is_active);
@@ -232,6 +252,12 @@ export const AdminPromoManager: React.FC = () => {
         </button>
       </div>
 
+      {actionError && (
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs sm:text-sm font-bold">
+          {actionError}
+        </div>
+      )}
+
       {savedNotice && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm flex items-center gap-2 animate-fade-in shadow-xs">
           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
@@ -255,8 +281,7 @@ export const AdminPromoManager: React.FC = () => {
             <span className="text-xs font-bold text-[#554F48] dark:text-[#C5BCB1]">حالة الموديول:</span>
             <button
               onClick={() => {
-                updatePromoSettings({ enabled: !promoSettings.enabled });
-                showNotice();
+                void savePromoSettings({ enabled: !promoSettings.enabled });
               }}
               className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                 promoSettings.enabled 
@@ -280,8 +305,7 @@ export const AdminPromoManager: React.FC = () => {
             <select
               value={promoSettings.autoplay_speed !== undefined ? promoSettings.autoplay_speed : 5000}
               onChange={(e) => {
-                updatePromoSettings({ autoplay_speed: Number(e.target.value) });
-                showNotice();
+                void savePromoSettings({ autoplay_speed: Number(e.target.value) });
               }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD5C5] dark:border-[#3A3533] bg-[#FCFAF5] dark:bg-[#1A1817] text-xs font-bold focus:outline-hidden focus:border-[#B9142D]"
             >
@@ -301,8 +325,7 @@ export const AdminPromoManager: React.FC = () => {
             <select
               value={promoSettings.bg_shade || 'royal_crimson'}
               onChange={(e) => {
-                updatePromoSettings({ bg_shade: e.target.value as any });
-                showNotice();
+                void savePromoSettings({ bg_shade: e.target.value as any });
               }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD5C5] dark:border-[#3A3533] bg-[#FCFAF5] dark:bg-[#1A1817] text-xs font-bold focus:outline-hidden focus:border-[#B9142D]"
             >
@@ -320,8 +343,7 @@ export const AdminPromoManager: React.FC = () => {
             <input
               type="text"
               value={promoSettings.title_ar || ''}
-              onChange={(e) => updatePromoSettings({ title_ar: e.target.value })}
-              onBlur={showNotice}
+              onChange={(e) => void savePromoSettings({ title_ar: e.target.value })}
               placeholder="العروض الترويجية والحملات الحصرية"
               className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD5C5] dark:border-[#3A3533] bg-[#FCFAF5] dark:bg-[#1A1817] text-xs focus:outline-hidden focus:border-[#B9142D]"
             />
@@ -659,7 +681,7 @@ export const AdminPromoManager: React.FC = () => {
                   <button
                     type="button"
                     disabled={index === 0}
-                    onClick={() => handleMoveOrder(index, 'up')}
+                    onClick={() => void handleMoveOrder(index, 'up')}
                     className="p-1 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-[#B9142D] hover:text-white disabled:opacity-30 disabled:pointer-events-none text-xs transition-colors cursor-pointer"
                     title="تحريك لأعلى"
                   >
@@ -668,7 +690,7 @@ export const AdminPromoManager: React.FC = () => {
                   <button
                     type="button"
                     disabled={index === promoSettings.banners.length - 1}
-                    onClick={() => handleMoveOrder(index, 'down')}
+                    onClick={() => void handleMoveOrder(index, 'down')}
                     className="p-1 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-[#B9142D] hover:text-white disabled:opacity-30 disabled:pointer-events-none text-xs transition-colors cursor-pointer"
                     title="تحريك لأسفل"
                   >
@@ -705,8 +727,9 @@ export const AdminPromoManager: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    updatePromoBanner(banner.id, { is_active: !banner.is_active });
-                    showNotice();
+                    void updatePromoBanner(banner.id, { is_active: !banner.is_active })
+                      .then(showNotice)
+                      .catch((error) => setActionError(error?.message || 'تعذر تحديث حالة العرض.'));
                   }}
                   className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                     banner.is_active 
@@ -731,8 +754,9 @@ export const AdminPromoManager: React.FC = () => {
                     type="button"
                     onClick={() => {
                       if (confirm(`هل أنت متأكد من حذف العرض "${banner.title_ar}"؟`)) {
-                        deletePromoBanner(banner.id);
-                        showNotice();
+                        void deletePromoBanner(banner.id)
+                          .then(showNotice)
+                          .catch((error) => setActionError(error?.message || 'تعذر حذف العرض.'));
                       }
                     }}
                     className="p-2 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
