@@ -16,6 +16,8 @@ export const AdminMarqueeManager: React.FC = () => {
   const { marqueeItems, addMarqueeItem, updateMarqueeItem, deleteMarqueeItem } = useApp();
   const [editingItem, setEditingItem] = useState<MarqueeTickerItem | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState<Omit<MarqueeTickerItem, 'id'>>({
     text_ar: '',
@@ -52,21 +54,30 @@ export const AdminMarqueeManager: React.FC = () => {
     setIsCreating(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.text_ar.trim()) return;
 
-    if (editingItem) {
-      updateMarqueeItem(editingItem.id, formData);
-    } else {
-      addMarqueeItem(formData);
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (editingItem) {
+        await updateMarqueeItem(editingItem.id, formData);
+      } else {
+        await addMarqueeItem(formData);
+      }
+      setIsCreating(false);
+      setEditingItem(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ عنصر الشريط.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsCreating(false);
-    setEditingItem(null);
   };
 
   return (
     <div className="space-y-6">
+      {actionError && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">{actionError}</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F] shadow-xs">
         <div>
@@ -192,6 +203,7 @@ export const AdminMarqueeManager: React.FC = () => {
               </button>
               <button
                 type="submit"
+                disabled={isSaving}
                 className="px-6 py-2 rounded-xl bg-[#B9142D] hover:bg-[#951126] text-white text-sm font-bold shadow-md transition-colors"
               >
                 {editingItem ? 'حفظ التعديل' : 'إضافة للشريط'}
@@ -221,7 +233,7 @@ export const AdminMarqueeManager: React.FC = () => {
 
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={() => updateMarqueeItem(item.id, { is_active: !item.is_active })}
+                onClick={() => void updateMarqueeItem(item.id, { is_active: !item.is_active }).catch((error) => setActionError(error?.message || 'تعذر تحديث الحالة.'))}
                 className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#F5F1E9] dark:bg-[#252222] hover:bg-[#E7E0D3] dark:hover:bg-[#2E2A2A] text-[#171616] dark:text-white transition-colors"
               >
                 {item.is_active ? 'تعطيل' : 'تفعيل'}
@@ -238,7 +250,7 @@ export const AdminMarqueeManager: React.FC = () => {
               <button
                 onClick={() => {
                   if (confirm('هل تريد حذف هذا الإعلان من الشريط؟')) {
-                    deleteMarqueeItem(item.id);
+                    void deleteMarqueeItem(item.id).catch((error) => setActionError(error?.message || 'تعذر حذف العنصر.'));
                   }
                 }}
                 className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
