@@ -27,6 +27,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { DesignTask, DesignTaskStatus, User } from '../../types';
+import { uploadFileToRawajStorage } from '../../lib/storage';
 
 export const AdminDesignTasksManager: React.FC = () => {
   const { 
@@ -65,11 +66,11 @@ export const AdminDesignTasksManager: React.FC = () => {
 
   // Proof Upload Form State (inside Active Task Workspace)
   const [newProofData, setNewProofData] = useState({
-    preview_url: '',
-    file_name: '',
-    file_size: '',
     notes_ar: '',
   });
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   // Comment Form State
   const [commentText, setCommentText] = useState('');
@@ -137,88 +138,118 @@ export const AdminDesignTasksManager: React.FC = () => {
     }
   };
 
-  const handleCreateTaskSubmit = (e: React.FormEvent) => {
+  const handleCreateTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskData.title_ar || !newTaskData.client_name) {
-      alert('يرجى كتابة عنوان المشروح واسم العميل');
+      setActionError('يرجى كتابة عنوان المشروع واسم العميل.');
       return;
     }
 
     const assignedDesigner = designers.find((d) => d.id === newTaskData.designer_id);
+    setActionError('');
 
-    createDesignTask({
-      title_ar: newTaskData.title_ar,
-      client_name: newTaskData.client_name,
-      client_phone: newTaskData.client_phone,
-      department_id: newTaskData.department_id || undefined,
-      service_id: newTaskData.service_id || undefined,
-      designer_id: newTaskData.designer_id || undefined,
-      designer_name: assignedDesigner ? assignedDesigner.name : undefined,
-      priority: newTaskData.priority,
-      deadline: newTaskData.deadline || undefined,
-      status: newTaskData.designer_id ? 'assigned' : 'new',
-      description_ar: newTaskData.description_ar,
-      dimensions_notes: newTaskData.dimensions_notes,
-      required_format: newTaskData.required_format,
-    });
+    try {
+      await createDesignTask({
+        title_ar: newTaskData.title_ar,
+        client_name: newTaskData.client_name,
+        client_phone: newTaskData.client_phone,
+        department_id: newTaskData.department_id || undefined,
+        service_id: newTaskData.service_id || undefined,
+        designer_id: newTaskData.designer_id || undefined,
+        designer_name: assignedDesigner ? assignedDesigner.name : undefined,
+        priority: newTaskData.priority,
+        deadline: newTaskData.deadline || undefined,
+        status: newTaskData.designer_id ? 'assigned' : 'new',
+        description_ar: newTaskData.description_ar,
+        dimensions_notes: newTaskData.dimensions_notes,
+        required_format: newTaskData.required_format,
+      });
 
-    setIsCreateModalOpen(false);
-    setNewTaskData({
-      title_ar: '',
-      client_name: '',
-      client_phone: '',
-      department_id: '',
-      service_id: '',
-      designer_id: '',
-      priority: 'normal',
-      deadline: '',
-      description_ar: '',
-      dimensions_notes: '',
-      required_format: 'Adobe Illustrator Vector (AI + PDF Print CMYK 300DPI)',
-    });
+      setIsCreateModalOpen(false);
+      setNewTaskData({
+        title_ar: '',
+        client_name: '',
+        client_phone: '',
+        department_id: '',
+        service_id: '',
+        designer_id: '',
+        priority: 'normal',
+        deadline: '',
+        description_ar: '',
+        dimensions_notes: '',
+        required_format: 'Adobe Illustrator Vector (AI + PDF Print CMYK 300DPI)',
+      });
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر إنشاء مهمة التصميم.');
+    }
   };
 
-  const handleUploadProofSubmit = (e: React.FormEvent) => {
+  const handleUploadProofSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeTaskId || !newProofData.preview_url || !newProofData.file_name) {
-      alert('يرجى إضافة رابط صورة المعاينة واسم الملف');
+    if (!activeTaskId || !proofFile) {
+      setActionError('اختر ملف البروفة أولاً.');
       return;
     }
 
     const nextVersion = (activeTask?.proof_versions.length || 0) + 1;
+    setActionError('');
+    setIsUploadingProof(true);
 
-    addDesignProof(activeTaskId, {
-      version_number: nextVersion,
-      preview_url: newProofData.preview_url,
-      file_name: newProofData.file_name,
-      file_size: newProofData.file_size || '3.5 MB',
-      uploaded_by_id: currentUser.id,
-      uploaded_by_name: currentUser.name,
-      notes_ar: newProofData.notes_ar,
-    });
+    try {
+      const stored = await uploadFileToRawajStorage(proofFile, {
+        folder: `design-proofs/${activeTaskId}`,
+        fileName: proofFile.name,
+      });
 
-    setNewProofData({ preview_url: '', file_name: '', file_size: '', notes_ar: '' });
+      await addDesignProof(activeTaskId, {
+        version_number: nextVersion,
+        preview_url: stored.publicUrl,
+        file_name: proofFile.name,
+        file_size: `${stored.sizeKb} KB`,
+        uploaded_by_id: currentUser.id,
+        uploaded_by_name: currentUser.name,
+        notes_ar: newProofData.notes_ar,
+      });
+
+      setProofFile(null);
+      setNewProofData({ notes_ar: '' });
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر رفع البروفة إلى Supabase Storage.');
+    } finally {
+      setIsUploadingProof(false);
+    }
   };
 
-  const handleAddCommentSubmit = (e: React.FormEvent) => {
+  const handleAddCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeTaskId || !commentText.trim()) return;
 
-    addDesignComment(activeTaskId, {
-      author_id: currentUser.id,
-      author_name: currentUser.name,
-      author_role: currentUser.role,
-      text: commentText.trim(),
-      status_change: commentStatusChange || undefined,
-    });
+    setActionError('');
+    try {
+      await addDesignComment(activeTaskId, {
+        author_id: currentUser.id,
+        author_name: currentUser.name,
+        author_role: currentUser.role,
+        text: commentText.trim(),
+        status_change: commentStatusChange || undefined,
+      });
 
-    setCommentText('');
-    setCommentStatusChange('');
+      setCommentText('');
+      setCommentStatusChange('');
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ التعليق.');
+    }
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       
+      {actionError && (
+        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
+          {actionError}
+        </div>
+      )}
+
       {/* 1. Header Banner & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-[#141211] border border-[#E8E2D5] dark:border-[#262320] shadow-xs">
         <div className="space-y-1">
@@ -493,11 +524,19 @@ export const AdminDesignTasksManager: React.FC = () => {
                     value={activeTask.designer_id || ''}
                     onChange={(e) => {
                       const selectedDes = designers.find((d) => d.id === e.target.value);
-                      updateDesignTask(activeTask.id, {
-                        designer_id: e.target.value || undefined,
-                        designer_name: selectedDes ? selectedDes.name : undefined,
-                        status: e.target.value ? 'assigned' : 'new',
-                      });
+                      const nextDesignerId = e.target.value;
+                      void (async () => {
+                        try {
+                          setActionError('');
+                          await updateDesignTask(activeTask.id, {
+                            designer_id: nextDesignerId || undefined,
+                            designer_name: selectedDes ? selectedDes.name : undefined,
+                            status: nextDesignerId ? 'assigned' : 'new',
+                          });
+                        } catch (error: any) {
+                          setActionError(error?.message || 'تعذر تحديث المصمم المسؤول.');
+                        }
+                      })();
                     }}
                     className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#201D1C] border border-[#E8E2D5] dark:border-[#2D2A26] text-xs font-semibold text-[#171616] dark:text-[#F7F5F0]"
                   >
@@ -570,30 +609,20 @@ export const AdminDesignTasksManager: React.FC = () => {
                       رفع بروفة جديدة (للمصمم):
                     </span>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#867F75] mb-1">اسم الملف البرمجي/البروفة</label>
-                        <input
-                          type="text"
-                          required
-                          value={newProofData.file_name}
-                          onChange={(e) => setNewProofData({ ...newProofData, file_name: e.target.value })}
-                          placeholder="مثال: Box_Design_Proof_v2.pdf"
-                          className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#201D1C] border border-[#E8E2D5] dark:border-[#2D2A26] text-[#171616] dark:text-[#F7F5F0]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#867F75] mb-1">رابط صورة/ملف البروفة</label>
-                        <input
-                          type="text"
-                          required
-                          value={newProofData.preview_url}
-                          onChange={(e) => setNewProofData({ ...newProofData, preview_url: e.target.value })}
-                          placeholder="https://... أو /src/assets/..."
-                          className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#201D1C] border border-[#E8E2D5] dark:border-[#2D2A26] text-[#171616] dark:text-[#F7F5F0]"
-                        />
-                      </div>
+                    <div className="space-y-2 text-xs">
+                      <label className="block text-[11px] font-bold text-[#867F75]">ملف البروفة الفعلي</label>
+                      <input
+                        type="file"
+                        required
+                        accept="image/*,.pdf,.ai,.eps,.svg,.zip"
+                        onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                        className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#201D1C] border border-[#E8E2D5] dark:border-[#2D2A26] text-[#171616] dark:text-[#F7F5F0]"
+                      />
+                      {proofFile && (
+                        <div className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                          سيتم رفع: {proofFile.name} — {Math.max(1, Math.round(proofFile.size / 1024))} KB
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -608,9 +637,10 @@ export const AdminDesignTasksManager: React.FC = () => {
 
                     <button
                       type="submit"
-                      className="w-full py-2.5 rounded-xl bg-[#171616] dark:bg-[#F7F5F0] text-white dark:text-[#171616] font-bold text-xs hover:bg-[#B9142D] dark:hover:bg-[#B9142D] dark:hover:text-white transition-colors cursor-pointer"
+                      disabled={isUploadingProof}
+                      className="w-full py-2.5 rounded-xl bg-[#171616] dark:bg-[#F7F5F0] text-white dark:text-[#171616] font-bold text-xs hover:bg-[#B9142D] dark:hover:bg-[#B9142D] dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      تسليم ورفع البروفة الآن
+                      {isUploadingProof ? 'جارٍ الرفع إلى Supabase...' : 'تسليم ورفع البروفة الآن'}
                     </button>
                   </form>
                 </div>
