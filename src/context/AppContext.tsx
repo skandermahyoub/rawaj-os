@@ -424,6 +424,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
+  const makeEntityId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+
   // Navigation state
   const [currentRoute, setCurrentRoute] = useState<NavigationTarget>({ view: 'home' });
   const navigate = (target: NavigationTarget) => {
@@ -1037,7 +1039,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addPromoBanner = async (banner: Omit<PromoBanner, 'id'>): Promise<void> => {
-    const newBanner: PromoBanner = { ...banner, id: `prm-${Date.now()}` };
+    const newBanner: PromoBanner = { ...banner, id: makeEntityId('prm') };
     await updatePromoSettings({ banners: [...promoSettings.banners, newBanner] });
   };
 
@@ -1053,7 +1055,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // FAQ CRUD
   const addFaqItem = async (item: Omit<GlobalFAQItem, 'id'>): Promise<void> => {
-    const newItem: GlobalFAQItem = { ...item, id: `faq-${Date.now()}` };
+    const newItem: GlobalFAQItem = { ...item, id: makeEntityId('faq') };
     await setDoc(doc(db, 'faq', newItem.id), newItem);
     setFaqItems((prev) => [...prev, newItem]);
   };
@@ -1074,7 +1076,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const newMsg: ContactFormMessage = {
       ...data,
-      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: makeEntityId('msg'),
       created_at: new Date().toISOString(),
       status: 'unread',
     };
@@ -1114,9 +1116,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const newTest: Testimonial = {
       ...data,
-      id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      client_avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      status: 'pending',
+      id: makeEntityId('test'),
+            status: 'pending',
       sort_order: testimonials.length + 1,
       is_active: false,
       created_at: new Date().toISOString(),
@@ -1146,7 +1147,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     const dept = departments.find((d) => d.id === service.department_id);
     const newItem: QuoteItem = {
-      id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: makeEntityId('item'),
       service_id: service.id,
       service_name_ar: service.name_ar,
       department_name_ar: dept ? dept.name_ar : 'خدمات عامة',
@@ -1187,9 +1188,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deadlineDate?: string
   ): Promise<{ success: boolean; referenceNumber: string; whatsappUrl: string }> => {
     const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const referenceNumber = `RWJ-${dateStr}-${randomSuffix}`;
-    const quoteId = `quote-${Date.now()}`;
+    const referenceSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const referenceNumber = `RWJ-${dateStr}-${referenceSuffix}`;
+    const quoteId = makeEntityId('quote');
 
     const newQuote: QuoteRequest = {
       id: quoteId,
@@ -1211,7 +1212,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updated_at: new Date().toISOString(),
       timeline: [
         {
-          id: `tl-${Date.now()}`,
+          id: makeEntityId('tl'),
           timestamp: new Date().toISOString(),
           user_name: customer.name,
           action: 'تم إنشاء وإرسال طلب عرض السعر من العميل عبر المنصة الرقمية',
@@ -1273,9 +1274,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Clear cart after submitting
     clearQuoteCart();
 
-    const cleanPhone = siteSettings.mobile_whatsapp.replace(/[^0-9]/g, '');
+    const cleanPhone = (siteSettings.mobile_whatsapp || siteSettings.phone || '').replace(/[^0-9]/g, '');
     const encodedMsg = encodeURIComponent(waText);
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
+    const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodedMsg}` : '';
 
     return {
       success: true,
@@ -1312,7 +1313,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timeline: [
         ...targetQuote.timeline,
         {
-          id: `tl-${Date.now()}`,
+          id: makeEntityId('tl'),
           timestamp: new Date().toISOString(),
           user_name: currentUser.name,
           action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
@@ -1334,7 +1335,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const nextTimeline = [
       ...targetQuote.timeline,
       {
-        id: `tl-${Date.now()}`,
+        id: makeEntityId('tl'),
         timestamp: updatedAt,
         user_name: currentUser.name,
         action: `تم إسناد الطلب للمسؤول: ${salesperson ? salesperson.name : 'غير مسند'}`,
@@ -1380,7 +1381,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const now = new Date().toISOString();
     const newService: Service = {
       ...serviceData,
-      id: `srv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: makeEntityId('srv'),
       created_at: now,
       updated_at: now,
     };
@@ -1418,7 +1419,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const duplicateService = async (id: string): Promise<Service> => {
     const original = services.find((service) => service.id === id);
     if (!original) throw new Error('الخدمة غير موجودة.');
-    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
     const duplicated: Service = {
       ...original,
       id: `srv-${suffix}`,
@@ -1440,7 +1441,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<ServiceTemplate> => {
     const newTemplate: ServiceTemplate = {
       ...templateData,
-      id: `tmpl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('tmpl'),
     };
     await setDoc(doc(db, 'templates', newTemplate.id), newTemplate);
     setTemplates((prev) => [...prev, newTemplate]);
@@ -1465,7 +1466,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Media Library
   const uploadMedia = async (fileData: { name: string; url: string; storage_path?: string; mime_type?: string; size_kb: number; category?: string; alt_ar?: string }): Promise<MediaItem> => {
-    const id = `med-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = makeEntityId('med');
     const newMedia: MediaItem = {
       id,
       name: fileData.name,
@@ -1496,7 +1497,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const createPackage = async (pkg: Omit<Package, 'id'>): Promise<void> => {
     const newPackage: Package = {
       ...pkg,
-      id: `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('pkg'),
     };
     await setDoc(doc(db, 'packages', newPackage.id), newPackage);
     setPackages((prev) => [...prev, newPackage]);
@@ -1519,7 +1520,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const createBlogPost = async (post: Omit<BlogPost, 'id'>): Promise<void> => {
     const newPost: BlogPost = {
       ...post,
-      id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('post'),
     };
     await setDoc(doc(db, 'blog', newPost.id), newPost);
     setBlogPosts((prev) => [newPost, ...prev]);
@@ -1544,7 +1545,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const newProject: PortfolioProject = {
       ...project,
-      id: `proj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('proj'),
     };
     await setDoc(doc(db, 'portfolio', newProject.id), newProject);
     setPortfolioProjects((prev) => [newProject, ...prev]);
@@ -1714,7 +1715,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addHomeSlide = async (slide: Omit<HomeSlide, 'id'>): Promise<void> => {
     const newSlide: HomeSlide = {
       ...slide,
-      id: `slide-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('slide'),
     };
     await setDoc(doc(db, 'home_slides', newSlide.id), newSlide);
     setHomeSlides((prev) => {
@@ -1743,7 +1744,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addMarqueeItem = async (item: Omit<MarqueeTickerItem, 'id'>): Promise<void> => {
     const newItem: MarqueeTickerItem = {
       ...item,
-      id: `mrq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('mrq'),
     };
     await setDoc(doc(db, 'marquee', newItem.id), newItem);
     setMarqueeItems((prev) => [...prev, newItem]);
@@ -1773,7 +1774,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addRawajFeature = async (feat: Omit<RawajFeature, 'id'>): Promise<void> => {
     const newFeature: RawajFeature = {
       ...feat,
-      id: `feat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('feat'),
     };
     await setDoc(doc(db, 'features', newFeature.id), newFeature);
     setRawajFeatures((prev) => [...prev, newFeature]);
@@ -1793,7 +1794,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addClientLogo = async (client: Omit<ClientLogo, 'id'>): Promise<void> => {
     const newClient: ClientLogo = {
       ...client,
-      id: `cli-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('cli'),
     };
     await setDoc(doc(db, 'client_logos', newClient.id), newClient);
     setClientLogos((prev) => [...prev, newClient]);
@@ -1813,7 +1814,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addTestimonial = async (testimonial: Omit<Testimonial, 'id'>): Promise<void> => {
     const newTestimonial: Testimonial = {
       ...testimonial,
-      id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('test'),
     };
     await setDoc(doc(db, 'testimonials', newTestimonial.id), newTestimonial);
     setTestimonials((prev) => [...prev, newTestimonial]);
@@ -1839,7 +1840,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const now = new Date().toISOString();
     const newTask: DesignTask = {
       ...taskData,
-      id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('task'),
       proof_versions: [],
       comments: [],
       created_at: now,
@@ -1870,7 +1871,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!task) throw new Error('مهمة التصميم غير موجودة.');
     const newProof: DesignProofVersion = {
       ...proof,
-      id: `proof-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('proof'),
       created_at: new Date().toISOString(),
     };
     const updatedTask: DesignTask = {
@@ -1891,7 +1892,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!task) throw new Error('مهمة التصميم غير موجودة.');
     const newComment: DesignComment = {
       ...comment,
-      id: `comm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: makeEntityId('comm'),
       created_at: new Date().toISOString(),
     };
     const updatedTask: DesignTask = {
