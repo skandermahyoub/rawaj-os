@@ -13,7 +13,6 @@ import {
   Building2, 
   Eye, 
   Copy, 
-  RefreshCw,
   ExternalLink,
   SlidersHorizontal,
   X,
@@ -21,16 +20,14 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { ImageUploadPicker } from '../common/ImageUploadPicker';
-import { SECTOR_PACKAGES_DATA } from '../../data/sectorPackagesData';
-import { db, doc, setDoc } from '../../lib/cloudDb';
 
 export const AdminPackagesManager: React.FC = () => {
-  const { packages, services, createPackage, updatePackage, deletePackage, navigate, isCloudSynced } = useApp();
+  const { packages, services, createPackage, updatePackage, deletePackage, navigate } = useApp();
   const [editingPkg, setEditingPkg] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSector, setSelectedSector] = useState<string>('all');
-  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
-  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const SECTOR_OPTIONS = [
     { key: 'all', label: 'كافة القطاعات', icon: '✨' },
@@ -68,7 +65,7 @@ export const AdminPackagesManager: React.FC = () => {
       slug: `custom-package-${Date.now()}`,
       tagline_ar: 'حلول متكاملة تشمل المطبوعات والهوية واللوحات والتغليف.',
       description_ar: 'تفاصيل شمولية الباقة والخدمات المشمولة فيها لإدارات الشركات والمشتريات...',
-      hero_image: '/src/assets/images/luxury_packaging_showcase_1790822533141.jpg',
+      hero_image: '',
       badge: 'باقة قطاعية متكاملة',
       featured: true,
       sector_key: 'corporate',
@@ -89,32 +86,19 @@ export const AdminPackagesManager: React.FC = () => {
     });
   };
 
-  const handleSyncSectorPackagesToCloud = async () => {
-    setIsSyncingCloud(true);
-    setSyncFeedback(null);
-    try {
-      let count = 0;
-      for (const pkg of SECTOR_PACKAGES_DATA) {
-        await setDoc(doc(db, 'packages', pkg.id), pkg, { merge: true });
-        count++;
-      }
-      setSyncFeedback(`تمت مزامنة ورفع ${count} باقات قطاعية بنجاح إلى سحابة Supabase!`);
-      setTimeout(() => setSyncFeedback(null), 5000);
-    } catch (err: any) {
-      setSyncFeedback(`حدث خطأ أثناء المزامنة: ${err.message}`);
-    } finally {
-      setIsSyncingCloud(false);
-    }
-  };
-
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingPkg.id) {
-      updatePackage(editingPkg.id, editingPkg);
-    } else {
-      createPackage(editingPkg);
+    setActionError('');
+    setIsSaving(true);
+    try {
+      if (editingPkg.id) await updatePackage(editingPkg.id, editingPkg);
+      else await createPackage(editingPkg);
+      setEditingPkg(null);
+    } catch (error: any) {
+      setActionError(error?.message || 'تعذر حفظ الباقة.');
+    } finally {
+      setIsSaving(false);
     }
-    setEditingPkg(null);
   };
 
   return (
@@ -139,15 +123,7 @@ export const AdminPackagesManager: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-          <button
-            onClick={handleSyncSectorPackagesToCloud}
-            disabled={isSyncingCloud}
-            className="flex-1 md:flex-initial bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all"
-            title="رفع وتحديث كافة باقات القطاعات الذهبية إلى Supabase"
-          >
-            <RefreshCw className={`w-4 h-4 ${isSyncingCloud ? 'animate-spin' : ''}`} />
-            <span>{isSyncingCloud ? 'جار المزامنة السحابية...' : 'مزامنة الباقات السحابية'}</span>
-          </button>
+
 
           <button
             onClick={handleAddNew}
@@ -159,10 +135,11 @@ export const AdminPackagesManager: React.FC = () => {
         </div>
       </div>
 
-      {syncFeedback && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>{syncFeedback}</span>
+
+
+      {actionError && (
+        <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
+          {actionError}
         </div>
       )}
 
@@ -270,7 +247,7 @@ export const AdminPackagesManager: React.FC = () => {
                 <button
                   onClick={() => {
                     if (window.confirm(`هل أنت متأكد من حذف باقة "${pkg.title_ar}"؟`)) {
-                      deletePackage(pkg.id);
+                      void deletePackage(pkg.id).catch((error) => setActionError(error?.message || 'تعذر حذف الباقة.'));
                     }
                   }}
                   className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/30"
@@ -482,6 +459,7 @@ export const AdminPackagesManager: React.FC = () => {
               </button>
               <button
                 type="submit"
+                disabled={isSaving}
                 className="bg-[#B9142D] hover:bg-[#930F23] text-white font-bold px-6 py-2 rounded-xl shadow-sm transition-all"
               >
                 حفظ الباقة السحابية
