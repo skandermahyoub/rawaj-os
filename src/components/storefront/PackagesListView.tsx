@@ -27,6 +27,7 @@ export const PackagesListView: React.FC = () => {
   const [selectedSector, setSelectedSector] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const whatsappNumber = (siteSettings?.mobile_whatsapp || '').replace(/\D/g, '');
+  const whatsappNumber = (siteSettings?.mobile_whatsapp || '').replace(/\D/g, '');
 
   const SECTOR_FILTERS = [
     { key: 'all', label: 'كافة القطاعات', icon: '✨' },
@@ -297,6 +298,7 @@ export const PackagesListView: React.FC = () => {
 export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }) => {
   const { packages, services, addToQuote, navigate, siteSettings } = useApp();
   const [isAddedToQuote, setIsAddedToQuote] = useState(false);
+  const whatsappNumber = (siteSettings?.mobile_whatsapp || '').replace(/\D/g, '');
   const whatsappNumber = (siteSettings?.mobile_whatsapp || '').replace(/\D/g, '');
 
   const pkg = packages.find((p) => p.id === packageId);
