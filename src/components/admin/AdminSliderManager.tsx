@@ -28,7 +28,7 @@ export const AdminSliderManager: React.FC = () => {
     title_ar: '',
     subtitle_ar: '',
     badge_ar: '',
-    image_url: 'https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=1200&q=80',
+    image_url: '',
     button_text_ar: 'استكشف التفاصيل',
     secondary_button_text_ar: 'طلب تسعير',
     target_view: 'services',
@@ -42,7 +42,7 @@ export const AdminSliderManager: React.FC = () => {
       title_ar: '',
       subtitle_ar: '',
       badge_ar: 'عرض خاص',
-      image_url: 'https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=1200&q=80',
+      image_url: '',
       button_text_ar: 'استكشف الآن',
       secondary_button_text_ar: 'طلب عرض سعر',
       target_view: 'services',
@@ -73,7 +73,10 @@ export const AdminSliderManager: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title_ar.trim()) return;
+    if (!formData.title_ar.trim() || !formData.image_url.trim()) {
+      setActionError('عنوان الشريحة وصورتها مطلوبان قبل الحفظ.');
+      return;
+    }
 
     setActionError('');
     setIsSaving(true);
