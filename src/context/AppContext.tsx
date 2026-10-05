@@ -327,6 +327,39 @@ const STORAGE_KEYS = {
   BRANDS_MODE: 'rawaj_brands_mode_v2',
 };
 
+const SUPPORTED_HOME_LAYOUTS: Record<HomeModuleId, string[]> = {
+  header_hero: ['industrial_console', 'split_hero', 'minimal_search'],
+  slider: ['full_cinematic'],
+  marquee: ['crimson_pulse'],
+  calculator: ['interactive_card'],
+  services_catalog: ['carousel_store', 'grid_all', 'most_requested'],
+  sector_packages: ['tabs_slider'],
+  why_us: ['stats_features', 'workflow_steps', 'sourcing_capabilities'],
+  promo_banners: ['dynamic_grid'],
+  about_us: ['executive_story'],
+  portfolio_showcase: ['case_studies', 'proud_showcase'],
+  testimonials: ['carousel_cards'],
+  brands_partners: ['colored_ticker'],
+  blog_hub: ['knowledge_highlights'],
+  faq: ['interactive_accordion'],
+  contact_us: ['full_channels_form'],
+};
+
+const sanitizeHomeModulesConfig = (configs: HomeModuleConfig[]): HomeModuleConfig[] =>
+  configs.map((mod) => {
+    const supported = SUPPORTED_HOME_LAYOUTS[mod.id] || [];
+    const available = (mod.available_layouts || []).filter((layout) => supported.includes(layout.id));
+    const layoutStyle = supported.includes(mod.layout_style || '')
+      ? mod.layout_style
+      : available[0]?.id || supported[0] || mod.layout_style;
+
+    return {
+      ...mod,
+      layout_style: layoutStyle,
+      available_layouts: available,
+    };
+  });
+
 // Synonyms map for rich search expansion
 const SYNONYMS: Record<string, string[]> = {
   'استيكر': ['ملصق', 'ليبل', 'رول', 'ستيكر', 'sticker', 'label', 'vinyl'],
@@ -544,7 +577,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [footerSettings, setFooterSettings] = useState<FooterSettings>(INITIAL_FOOTER_SETTINGS);
 
-  const [homeModulesConfig, setHomeModulesConfig] = useState<HomeModuleConfig[]>(INITIAL_HOME_MODULES_CONFIG);
+  const [homeModulesConfig, setHomeModulesConfig] = useState<HomeModuleConfig[]>(
+    () => sanitizeHomeModulesConfig(INITIAL_HOME_MODULES_CONFIG)
+  );
 
   const [themeSettings, setThemeSettings] = useState<ThemeCustomizerSettings>(INITIAL_THEME_SETTINGS);
 
@@ -842,7 +877,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (docSnap.id === 'home_modules_order') {
               const cloud = docSnap.data();
               if (cloud && Array.isArray(cloud.configs)) {
-                setHomeModulesConfig(cloud.configs);
+                setHomeModulesConfig(sanitizeHomeModulesConfig(cloud.configs));
               }
             }
             if (docSnap.id === 'theme_customizer') {
@@ -961,8 +996,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Home Modules Config & Reordering
   const persistHomeModules = async (configs: HomeModuleConfig[]): Promise<void> => {
-    await setDoc(doc(db, 'settings', 'home_modules_order'), { configs }, { merge: true });
-    setHomeModulesConfig(configs);
+    const sanitized = sanitizeHomeModulesConfig(configs);
+    await setDoc(doc(db, 'settings', 'home_modules_order'), { configs: sanitized }, { merge: true });
+    setHomeModulesConfig(sanitized);
   };
 
   const updateHomeModulesConfig = async (configs: HomeModuleConfig[]): Promise<void> => {
