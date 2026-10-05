@@ -10,6 +10,13 @@ const sanitizeSegment = (value: string) =>
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'asset';
 
+const sanitizeFolderPath = (value: string) =>
+  value
+    .split('/')
+    .map((segment) => sanitizeSegment(segment))
+    .filter(Boolean)
+    .join('/') || 'uploads';
+
 const extensionFromMime = (mimeType: string) => {
   if (mimeType === 'image/webp') return 'webp';
   if (mimeType === 'image/jpeg') return 'jpg';
@@ -45,7 +52,7 @@ export const uploadDataUrlToRawajStorage = async (
   options?: { folder?: string; fileName?: string }
 ): Promise<{ path: string; publicUrl: string; mimeType: string; sizeKb: number }> => {
   const { blob, mimeType } = dataUrlToBlob(dataUrl);
-  const folder = sanitizeSegment(options?.folder || 'uploads');
+  const folder = sanitizeFolderPath(options?.folder || 'uploads');
   const baseName = sanitizeSegment((options?.fileName || 'image').replace(/\.[^.]+$/, ''));
   const extension = extensionFromMime(mimeType);
   const path = `${folder}/${Date.now()}-${crypto.randomUUID()}-${baseName}.${extension}`;
@@ -75,7 +82,7 @@ export const uploadFileToRawajStorage = async (
 ): Promise<{ path: string; publicUrl: string; mimeType: string; sizeKb: number }> => {
   if (!file || file.size <= 0) throw new Error('الملف فارغ أو غير صالح.');
 
-  const folder = sanitizeSegment(options?.folder || 'uploads');
+  const folder = sanitizeFolderPath(options?.folder || 'uploads');
   const originalName = options?.fileName || file.name || 'file';
   const dotIndex = originalName.lastIndexOf('.');
   const extension = dotIndex > -1
