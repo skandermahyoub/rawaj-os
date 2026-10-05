@@ -21,7 +21,8 @@ import {
 import { QuoteRequest, QuoteStatus } from '../../types';
 
 export const AdminQuotesList: React.FC = () => {
-  const { quoteRequests, updateQuoteStatus, assignQuoteSalesperson, updateQuoteNotes, users, siteSettings } = useApp();
+  const { quoteRequests, updateQuoteStatus, assignQuoteSalesperson, updateQuoteNotes, users, siteSettings, currentUser } = useApp();
+  const canEditQuotes = ['owner', 'admin', 'sales'].includes(currentUser.role);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -50,7 +51,7 @@ export const AdminQuotesList: React.FC = () => {
   };
 
   const handleSaveNotes = async () => {
-    if (!selectedQuote) return;
+    if (!selectedQuote || !canEditQuotes) return;
     setActionError('');
     setIsSaving(true);
     try {
@@ -236,6 +237,7 @@ export const AdminQuotesList: React.FC = () => {
                 <label className="font-bold">تغيير حالة الطلب:</label>
                 <select
                   value={selectedQuote.status}
+                  disabled={!canEditQuotes}
                   onChange={(e) => {
                     const newSt = e.target.value as QuoteStatus;
                     void (async () => {
@@ -266,6 +268,7 @@ export const AdminQuotesList: React.FC = () => {
                 <label className="font-bold">إسناد لمسؤول مبيعات:</label>
                 <select
                   value={selectedQuote.assigned_to || ''}
+                  disabled={!canEditQuotes}
                   onChange={(e) => {
                     const nextAssignee = e.target.value;
                     void (async () => {
@@ -359,6 +362,7 @@ export const AdminQuotesList: React.FC = () => {
                 <textarea
                   rows={2}
                   value={internalNotesInput}
+                  readOnly={!canEditQuotes}
                   onChange={(e) => setInternalNotesInput(e.target.value)}
                   placeholder="ملاحظات سرية للإدارة والمبيعات..."
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded p-2"
@@ -370,6 +374,7 @@ export const AdminQuotesList: React.FC = () => {
                 <textarea
                   rows={2}
                   value={supplierNotesInput}
+                  readOnly={!canEditQuotes}
                   onChange={(e) => setSupplierNotesInput(e.target.value)}
                   placeholder="اسم المورد، تكلفة الخامات، الشحن..."
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded p-2"
@@ -379,14 +384,18 @@ export const AdminQuotesList: React.FC = () => {
 
             {/* Save notes & WhatsApp Action */}
             <div className="flex items-center justify-between pt-3 border-t border-[#E7E0D3] dark:border-[#332F2F]">
-              <button
-                type="button"
-                onClick={() => void handleSaveNotes()}
-                disabled={isSaving}
-                className="bg-[#171616] dark:bg-white text-white dark:text-[#171616] text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-50"
-              >
-                {isSaving ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
-              </button>
+              {canEditQuotes ? (
+                <button
+                  type="button"
+                  onClick={() => void handleSaveNotes()}
+                  disabled={isSaving}
+                  className="bg-[#171616] dark:bg-white text-white dark:text-[#171616] text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {isSaving ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
+                </button>
+              ) : (
+                <span className="text-[11px] text-[#78716C]">عرض فقط — التعديل متاح للمبيعات والإدارة.</span>
+              )}
 
               <a
                 href={`https://wa.me/${selectedQuote.customer.whatsapp.replace(/[^0-9]/g, '')}`}
