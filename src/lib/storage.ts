@@ -69,6 +69,40 @@ export const uploadDataUrlToRawajStorage = async (
   };
 };
 
+export const uploadFileToRawajStorage = async (
+  file: File,
+  options?: { folder?: string; fileName?: string }
+): Promise<{ path: string; publicUrl: string; mimeType: string; sizeKb: number }> => {
+  if (!file || file.size <= 0) throw new Error('الملف فارغ أو غير صالح.');
+
+  const folder = sanitizeSegment(options?.folder || 'uploads');
+  const originalName = options?.fileName || file.name || 'file';
+  const dotIndex = originalName.lastIndexOf('.');
+  const extension = dotIndex > -1
+    ? sanitizeSegment(originalName.slice(dotIndex + 1)).replace(/^\.+/, '')
+    : extensionFromMime(file.type || 'application/octet-stream');
+  const baseName = sanitizeSegment(dotIndex > -1 ? originalName.slice(0, dotIndex) : originalName);
+  const path = `${folder}/${Date.now()}-${crypto.randomUUID()}-${baseName}.${extension || 'bin'}`;
+
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    contentType: file.type || 'application/octet-stream',
+    cacheControl: '31536000',
+    upsert: false,
+  });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  if (!data.publicUrl) throw new Error('تعذر إنشاء رابط الملف بعد الرفع.');
+
+  return {
+    path,
+    publicUrl: data.publicUrl,
+    mimeType: file.type || 'application/octet-stream',
+    sizeKb: Math.max(1, Math.round(file.size / 1024)),
+  };
+};
+
 export const removeRawajStorageObject = async (path?: string | null): Promise<void> => {
   if (!path) return;
   const { error } = await supabase.storage.from(BUCKET).remove([path]);
