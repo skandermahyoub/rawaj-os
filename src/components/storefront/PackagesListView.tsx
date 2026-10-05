@@ -26,6 +26,7 @@ export const PackagesListView: React.FC = () => {
   const { packages, navigate, siteSettings } = useApp();
   const [selectedSector, setSelectedSector] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const whatsappNumber = (siteSettings?.mobile_whatsapp || '').replace(/\D/g, '');
 
   const SECTOR_FILTERS = [
     { key: 'all', label: 'كافة القطاعات', icon: '✨' },
@@ -268,15 +269,17 @@ export const PackagesListView: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <a
-            href={`https://wa.me/${siteSettings?.mobile_whatsapp?.replace(/\D/g, '') || '967770000000'}?text=${encodeURIComponent('السلام عليكم، أرغب في استشارة فنية وطلب عرض سعر مخصص لباقة توريد للشركات.')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3 px-5 rounded-xl flex items-center gap-2 shadow-sm transition-all"
-          >
-            <PhoneCall className="w-4 h-4" />
-            <span>استشارة فورية عبر واتساب</span>
-          </a>
+          {whatsappNumber && (
+            <a
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('السلام عليكم، أرغب في استشارة فنية وطلب عرض سعر مخصص لباقة توريد للشركات.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3 px-5 rounded-xl flex items-center gap-2 shadow-sm transition-all"
+            >
+              <PhoneCall className="w-4 h-4" />
+              <span>استشارة فورية عبر واتساب</span>
+            </a>
+          )}
           <button
             onClick={() => navigate({ view: 'custom-quote' })}
             className="bg-[#171616] dark:bg-[#332F2F] hover:bg-black text-white text-xs font-bold py-3 px-5 rounded-xl flex items-center gap-2 transition-all"
@@ -294,6 +297,7 @@ export const PackagesListView: React.FC = () => {
 export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }) => {
   const { packages, services, addToQuote, navigate, siteSettings } = useApp();
   const [isAddedToQuote, setIsAddedToQuote] = useState(false);
+  const whatsappNumber = (siteSettings?.mobile_whatsapp || '').replace(/\D/g, '');
 
   const pkg = packages.find((p) => p.id === packageId);
 
@@ -441,15 +445,17 @@ export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }
                 <span>{isAddedToQuote ? 'تمت إضافة جميع بنود الباقة!' : 'طلب عرض سعر متكامل لجميع بنود الباقة'}</span>
               </button>
 
-              <a
-                href={`https://wa.me/${siteSettings?.mobile_whatsapp?.replace(/\D/g, '') || '967770000000'}?text=${encodeURIComponent(`السلام عليكم، أرغب في استشارة وتخصيص بنود: ${pkg.title_ar}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all"
-              >
-                <PhoneCall className="w-4 h-4" />
-                <span>استشارة واتساب</span>
-              </a>
+              {whatsappNumber && (
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`السلام عليكم، أرغب في استشارة وتخصيص بنود: ${pkg.title_ar}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all"
+                >
+                  <PhoneCall className="w-4 h-4" />
+                  <span>استشارة واتساب</span>
+                </a>
+              )}
             </div>
 
           </div>
