@@ -20,13 +20,10 @@ import {
   Flame,
   ShieldCheck,
   Zap,
-  SlidersHorizontal,
-  Square
 } from 'lucide-react';
 import { 
   ThemeCustomizerSettings, 
   ThemeMode, 
-  CardSurfaceStyle, 
   BackgroundPattern, 
   ArabicFontFamily,
   ColorPreset 
@@ -145,13 +142,6 @@ export const AdminStyleCustomizer: React.FC = () => {
     { id: 'almarai', name: 'خط المراعي (Almarai)', sample: 'رواج للطباعة الفاخرة' },
   ];
 
-  const surfaceStyles: { id: CardSurfaceStyle; label: string; desc: string }[] = [
-    { id: 'solid', label: 'كربون مصمت (Solid)', desc: 'مظهر صلب عالي التباين' },
-    { id: 'glass', label: 'زجاجي شفاف (Glass)', desc: 'تأثير زجاجي مع ضبابية' },
-    { id: 'neon', label: 'حدود نيون (Neon)', desc: 'حواف مضيئة بتوهج بارز' },
-    { id: 'gradient', label: 'تدرج ضوئي (Gradient)', desc: 'تدرج ناعم فاخر' },
-  ];
-
   const patternOptions: { id: BackgroundPattern; label: string; desc: string }[] = [
     { id: 'grid', label: 'شبكة رقمية (Grid)', desc: 'نقاط شبكية هندسية' },
     { id: 'dots', label: 'نقاط ناعمة (Dots)', desc: 'نقاط متباعدة أنيقة' },
@@ -173,7 +163,7 @@ export const AdminStyleCustomizer: React.FC = () => {
             الاستايل والمظهر وتخصيص هوية رواج
           </h1>
           <p className="text-xs sm:text-sm text-[#70695F] dark:text-[#A8A196] max-w-2xl">
-            تخصيص كامل للألوان الرئيسية والفرعية، نمط أسطح البطاقات، أنماط الخلفيات، والخطوط العربية في كامل التطبيق.
+            تخصيص الإضاءة والألوان الأساسية والخلفيات والخط العربي. لا تُعرض هنا أي خيارات لا يطبقها محرك الواجهة فعلياً.
           </p>
         </div>
 
@@ -371,42 +361,6 @@ export const AdminStyleCustomizer: React.FC = () => {
             </div>
           </div>
 
-          {/* D. نمط أسطح البطاقات والكروت (Card Surface Style) */}
-          <div className="bg-white dark:bg-[#141211] p-5 sm:p-6 rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D5]/70 dark:border-[#262320] pb-3">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#B9142D]" />
-                <h3 className="font-heading font-black text-sm sm:text-base text-[#171616] dark:text-[#F7F5F0]">
-                  نمط أسطح البطاقات والكروت (Card Surface Style)
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {surfaceStyles.map((s) => {
-                const isSelected = draft.card_surface_style === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => {
-                      const updated = { ...draft, card_surface_style: s.id };
-                      setDraft(updated);
-                      applyLivePreview(updated);
-                    }}
-                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                      isSelected
-                        ? 'bg-[#B9142D] text-white border-[#E03A53] shadow-sm'
-                        : 'bg-[#FAF8F5] dark:bg-[#1A1816] text-[#70695F] dark:text-[#A8A196] border-[#E8E2D5] dark:border-[#2D2A26] hover:border-[#B9142D]/40'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* E. نمط النقوش والأشكال بالخلفية (Pattern Overlays) */}
           <div className="bg-white dark:bg-[#141211] p-5 sm:p-6 rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-[#E8E2D5]/70 dark:border-[#262320] pb-3">
@@ -514,48 +468,6 @@ export const AdminStyleCustomizer: React.FC = () => {
             </div>
           </div>
 
-          {/* H. درجة استدارة الحواف والزوايا (Border Radius) */}
-          <div className="bg-white dark:bg-[#141211] p-5 sm:p-6 rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D5]/70 dark:border-[#262320] pb-3">
-              <div className="flex items-center gap-2">
-                <Square className="w-4 h-4 text-[#B9142D]" />
-                <h3 className="font-heading font-black text-sm sm:text-base text-[#171616] dark:text-[#F7F5F0]">
-                  درجة استدارة الحواف والزوايا (Border Radius)
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                { id: 'rounded-xl', label: 'كلاسيكي (12px - Sharp)', desc: 'انحناء ناعم متزن' },
-                { id: 'rounded-2xl', label: 'عصري (16px - Default)', desc: 'المعيار المؤسسي لرواج' },
-                { id: 'rounded-3xl', label: 'دائري فائق (24px - Fluid)', desc: 'انسيابية فائقة النعومة' },
-              ].map((r) => {
-                const isSelected = draft.border_radius === r.id;
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => {
-                      const updated = { ...draft, border_radius: r.id as any };
-                      setDraft(updated);
-                      applyLivePreview(updated);
-                    }}
-                    className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
-                      isSelected
-                        ? 'bg-[#B9142D] text-white border-[#E03A53] shadow-sm'
-                        : 'bg-[#FAF8F5] dark:bg-[#1A1816] text-[#171616] dark:text-[#F7F5F0] border-[#E8E2D5] dark:border-[#2D2A26] hover:border-[#B9142D]/40'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">{r.label}</span>
-                    <span className={`text-[11px] opacity-80 ${isSelected ? 'text-white/90' : 'text-[#70695F] dark:text-[#A8A196]'}`}>
-                      {r.desc}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
         </div>
 
