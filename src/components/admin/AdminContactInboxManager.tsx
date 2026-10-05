@@ -15,6 +15,7 @@ import {
 export const AdminContactInboxManager: React.FC = () => {
   const { contactMessages, markContactMessageStatus, deleteContactMessage } = useApp();
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [actionError, setActionError] = useState('');
 
   const filteredMessages = contactMessages.filter((m) => {
     if (filterStatus === 'all') return true;
@@ -25,6 +26,11 @@ export const AdminContactInboxManager: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+      {actionError && (
+        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
+          {actionError}
+        </div>
+      )}
       
       {/* Top Banner */}
       <div className="p-6 rounded-3xl bg-gradient-to-r from-[#171616] via-[#241F1E] to-[#171616] text-white border border-[#3E3836] shadow-xl flex items-center justify-between">
@@ -159,14 +165,14 @@ export const AdminContactInboxManager: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {isUnread ? (
                       <button
-                        onClick={() => markContactMessageStatus(msg.id, 'read')}
+                        onClick={() => void markContactMessageStatus(msg.id, 'read').catch((error) => setActionError(error?.message || 'تعذر تحديث حالة الرسالة.'))}
                         className="text-xs text-[#746E67] hover:text-[#171616] font-bold"
                       >
                         تحديد كمقروء
                       </button>
                     ) : (
                       <button
-                        onClick={() => markContactMessageStatus(msg.id, 'unread')}
+                        onClick={() => void markContactMessageStatus(msg.id, 'unread').catch((error) => setActionError(error?.message || 'تعذر تحديث حالة الرسالة.'))}
                         className="text-xs text-[#746E67] hover:text-[#B9142D] font-bold"
                       >
                         تحديد كغير مقروء
@@ -176,7 +182,7 @@ export const AdminContactInboxManager: React.FC = () => {
                     <button
                       onClick={() => {
                         if (confirm('هل أنت متأكد من حذف هذه الرسالة؟')) {
-                          deleteContactMessage(msg.id);
+                          void deleteContactMessage(msg.id).catch((error) => setActionError(error?.message || 'تعذر حذف الرسالة.'));
                         }
                       }}
                       className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
