@@ -17,7 +17,6 @@ import {
   Eye, 
   Layers, 
   Grid, 
-  Flame,
   ShieldCheck,
   Zap,
 } from 'lucide-react';
@@ -394,42 +393,6 @@ export const AdminStyleCustomizer: React.FC = () => {
                   </button>
                 );
               })}
-            </div>
-          </div>
-
-          {/* F. شدة السطوع والوهج الضوئي (Glow Intensity) */}
-          <div className="bg-white dark:bg-[#141211] p-5 sm:p-6 rounded-3xl border border-[#E8E2D5] dark:border-[#262320] shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E2D5]/70 dark:border-[#262320] pb-3">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-rose-500" />
-                <h3 className="font-heading font-black text-sm sm:text-base text-[#171616] dark:text-[#F7F5F0]">
-                  شدة السطوع والوهج الضوئي (Glow Intensity)
-                </h3>
-              </div>
-              <span className="font-mono font-bold text-xs text-[#B9142D] dark:text-[#E03A53]">
-                {draft.glow_intensity}%
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={draft.glow_intensity ?? 70}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  const updated = { ...draft, glow_intensity: val };
-                  setDraft(updated);
-                  applyLivePreview(updated);
-                }}
-                className="w-full accent-[#B9142D] cursor-pointer"
-              />
-              <div className="flex items-center justify-between text-[11px] text-[#867F75] font-semibold">
-                <span>خافت (0%)</span>
-                <span>متوازن (50%)</span>
-                <span>وهج قوي (100%)</span>
-              </div>
             </div>
           </div>
 
