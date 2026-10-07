@@ -390,11 +390,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
-  const initialHydrationRef = useRef({ services: false, homeSlides: false, settings: false });
-  const markInitialHydration = (key: 'services' | 'homeSlides' | 'settings') => {
+  type PublicHydrationKey =
+    | 'departments'
+    | 'categories'
+    | 'subcategories'
+    | 'industrySectors'
+    | 'services'
+    | 'templates'
+    | 'packages'
+    | 'portfolio'
+    | 'blog'
+    | 'media'
+    | 'homeSlides'
+    | 'marquee'
+    | 'features'
+    | 'clientLogos'
+    | 'testimonials'
+    | 'faq'
+    | 'settings';
+
+  const initialHydrationRef = useRef<Record<PublicHydrationKey, boolean>>({
+    departments: false,
+    categories: false,
+    subcategories: false,
+    industrySectors: false,
+    services: false,
+    templates: false,
+    packages: false,
+    portfolio: false,
+    blog: false,
+    media: false,
+    homeSlides: false,
+    marquee: false,
+    features: false,
+    clientLogos: false,
+    testimonials: false,
+    faq: false,
+    settings: false,
+  });
+
+  const markInitialHydration = (key: PublicHydrationKey) => {
     initialHydrationRef.current[key] = true;
-    const state = initialHydrationRef.current;
-    if (state.services && state.homeSlides && state.settings) {
+    if (Object.values(initialHydrationRef.current).every(Boolean)) {
       setIsCloudSynced(true);
     }
   };
@@ -669,6 +706,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         snapshot.forEach((docSnap) => list.push(docSnap.data() as Department));
         list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         setDepartments(list);
+        markInitialHydration('departments');
       }, (err) => console.warn('Supabase departments listener:', err.message));
 
       unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
@@ -676,6 +714,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         snapshot.forEach((docSnap) => list.push(docSnap.data() as Category));
         list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         setCategories(list);
+        markInitialHydration('categories');
       }, (err) => console.warn('Supabase categories listener:', err.message));
 
       unsubSubcategories = onSnapshot(collection(db, 'subcategories'), (snapshot) => {
@@ -683,6 +722,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         snapshot.forEach((docSnap) => list.push(docSnap.data() as Subcategory));
         list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         setSubcategories(list);
+        markInitialHydration('subcategories');
       }, (err) => console.warn('Supabase subcategories listener:', err.message));
 
       unsubIndustrySectors = onSnapshot(collection(db, 'industry_sectors'), (snapshot) => {
@@ -690,6 +730,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         snapshot.forEach((docSnap) => list.push(docSnap.data() as IndustrySector));
         list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         setIndustrySectors(list);
+        markInitialHydration('industrySectors');
       }, (err) => console.warn('Supabase industry sectors listener:', err.message));
 
       if (currentUser.id !== 'anonymous') {
@@ -729,6 +770,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             list.push(docSnap.data() as ServiceTemplate);
           });
           setTemplates(list);
+          markInitialHydration('templates');
         }
       }, (err) => console.warn('Supabase templates listener:', err.message));
 
@@ -740,6 +782,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             list.push(docSnap.data() as Package);
           });
           setPackages(list);
+          markInitialHydration('packages');
         }
       }, (err) => console.warn('Supabase packages listener:', err.message));
 
@@ -751,6 +794,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             list.push(docSnap.data() as PortfolioProject);
           });
           setPortfolioProjects(list);
+          markInitialHydration('portfolio');
         }
       }, (err) => console.warn('Supabase portfolio listener:', err.message));
 
@@ -762,6 +806,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             list.push(docSnap.data() as BlogPost);
           });
           setBlogPosts(list);
+          markInitialHydration('blog');
         }
       }, (err) => console.warn('Supabase blog listener:', err.message));
 
@@ -773,6 +818,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             list.push(docSnap.data() as MediaItem);
           });
           setMediaItems(list);
+          markInitialHydration('media');
         }
       }, (err) => console.warn('Supabase media listener:', err.message));
 
@@ -798,6 +844,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setMarqueeItems(list);
+          markInitialHydration('marquee');
         }
       }, (err) => console.warn('Supabase marquee listener:', err.message));
 
@@ -810,6 +857,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setRawajFeatures(list);
+          markInitialHydration('features');
         }
       }, (err) => console.warn('Supabase features listener:', err.message));
 
@@ -822,6 +870,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setClientLogos(list);
+          markInitialHydration('clientLogos');
         }
       }, (err) => console.warn('Supabase client_logos listener:', err.message));
 
@@ -834,6 +883,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setTestimonials(list);
+          markInitialHydration('testimonials');
         }
       }, (err) => console.warn('Supabase testimonials listener:', err.message));
 
@@ -846,6 +896,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setFaqItems(list);
+          markInitialHydration('faq');
         }
       }, (err) => console.warn('Supabase faq listener:', err.message));
 
