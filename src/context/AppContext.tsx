@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { applyThemeToDocument } from '../utils/themeEngine';
 import {
   Department,
@@ -390,6 +390,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
+  const initialHydrationRef = useRef({ services: false, homeSlides: false, settings: false });
+  const markInitialHydration = (key: 'services' | 'homeSlides' | 'settings') => {
+    initialHydrationRef.current[key] = true;
+    const state = initialHydrationRef.current;
+    if (state.services && state.homeSlides && state.settings) {
+      setIsCloudSynced(true);
+    }
+  };
   const [authRevision, setAuthRevision] = useState(0);
 
   useEffect(() => {
@@ -709,7 +717,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setServices(list);
-          setIsCloudSynced(true);
+          markInitialHydration('services');
         }
       }, (err) => console.warn('Supabase services listener:', err.message));
 
@@ -777,6 +785,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
           setHomeSlides(list);
+          markInitialHydration('homeSlides');
         }
       }, (err) => console.warn('Supabase home_slides listener:', err.message));
 
@@ -922,6 +931,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               }
             }
           });
+          markInitialHydration('settings');
         }
       }, (err) => console.warn('Supabase settings listener:', err.message));
 
