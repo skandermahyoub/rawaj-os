@@ -48,10 +48,26 @@ import { AdminFooterManager } from './components/admin/AdminFooterManager';
 import { canAccessAdminView } from './lib/adminAccess';
 
 const AppContent: React.FC = () => {
-  const { currentRoute, navigate, currentUser } = useApp();
+  const { currentRoute, navigate, currentUser, isCloudSynced } = useApp();
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [customQuoteModalOpen, setCustomQuoteModalOpen] = useState(false);
+
+  // Do not render bundled/default CMS content before Supabase finishes its first hydration.
+  // This prevents old logos, slider images, and legacy settings from flashing on refresh.
+  if (!isCloudSynced) {
+    return (
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-[#FAF8F5] dark:bg-[#0E0D0C] text-[#171616] dark:text-[#F7F5F0]">
+        <div className="flex flex-col items-center gap-4 px-6 text-center">
+          <div className="w-10 h-10 rounded-full border-4 border-[#E8E2D5] dark:border-[#332F2F] border-t-[#B9142D] animate-spin" />
+          <div>
+            <p className="font-bold text-sm">جاري تحميل بيانات رواج المعتمدة…</p>
+            <p className="text-xs text-[#867F75] dark:text-[#9E978C] mt-1">يتم جلب آخر نسخة محفوظة من قاعدة البيانات.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // If in Admin view
   if (currentRoute.view === 'admin') {
