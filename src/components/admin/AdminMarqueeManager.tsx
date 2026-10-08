@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Sparkles, 
@@ -18,6 +18,13 @@ export const AdminMarqueeManager: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [actionError, setActionError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const revealEditor = () => {
+    window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const [formData, setFormData] = useState<Omit<MarqueeTickerItem, 'id'>>({
     text_ar: '',
@@ -39,6 +46,7 @@ export const AdminMarqueeManager: React.FC = () => {
     });
     setEditingItem(null);
     setIsCreating(true);
+    revealEditor();
   };
 
   const handleStartEdit = (item: MarqueeTickerItem) => {
@@ -52,6 +60,7 @@ export const AdminMarqueeManager: React.FC = () => {
       sort_order: item.sort_order,
     });
     setIsCreating(true);
+    revealEditor();
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -106,7 +115,7 @@ export const AdminMarqueeManager: React.FC = () => {
 
       {/* Create / Edit Form */}
       {isCreating && (
-        <div className="bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
+        <div ref={editorRef} className="scroll-mt-6 bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#E7E0D3] dark:border-[#332F2F]">
             <h3 className="text-base font-bold text-[#171616] dark:text-white flex items-center gap-2">
               <Zap className="w-4 h-4 text-[#B9142D]" />
@@ -215,7 +224,7 @@ export const AdminMarqueeManager: React.FC = () => {
 
       {/* Marquee Items List */}
       <div className="space-y-3">
-        {marqueeItems.sort((a, b) => a.sort_order - b.sort_order).map((item) => (
+        {[...marqueeItems].sort((a, b) => a.sort_order - b.sort_order).map((item) => (
           <div
             key={item.id}
             className={`p-4 rounded-xl bg-white dark:bg-[#1C1A1A] border flex items-center justify-between gap-4 shadow-xs ${
