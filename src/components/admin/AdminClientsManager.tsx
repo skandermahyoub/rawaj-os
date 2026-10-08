@@ -81,10 +81,6 @@ export const AdminClientsManager: React.FC = () => {
       setActionError('أدخل اسم العميل أو العلامة التجارية.');
       return;
     }
-    if (!logoForm.logo_url?.trim()) {
-      setActionError('اختر شعار العميل قبل الحفظ.');
-      return;
-    }
     setActionError('');
     setIsSaving(true);
     try {
@@ -289,8 +285,8 @@ export const AdminClientsManager: React.FC = () => {
 
                 <div className="md:col-span-2 p-3 rounded-xl bg-white dark:bg-[#1E1C1B] border border-[#E7E0D3] dark:border-[#332F2F]">
                   <ImageUploadPicker
-                    label="صورة أو أيقونة شعار العميل *"
-                    helperText="رفع صورة الشعار من جهازك، إدراج رابط، أو اختيار من مكتبة رواج"
+                    label="شعار العميل — اختياري"
+                    helperText="يفضل رفع ملف مربع 1200 × 1200 بكسل بصيغة PNG أو SVG أو WebP. إذا لم ترفعه سيظهر قالب رواج الافتراضي بالمقاس المطلوب."
                     value={logoForm.logo_url}
                     onChange={(url) => setLogoForm({ ...logoForm, logo_url: url })}
                     aspectRatio="1:1"
