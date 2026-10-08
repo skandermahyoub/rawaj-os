@@ -78,6 +78,13 @@ jobs:
             await page.evaluate(() => window.scrollTo(0, 0));
             await page.waitForTimeout(600);
 
+            // Close the optional install prompt before exercising navigation.
+            const installClose = page.getByRole('button', { name: 'إغلاق النافذة' });
+            if (await installClose.isVisible().catch(() => false)) {
+              await installClose.click();
+              await page.waitForTimeout(150);
+            }
+
             // Exercise every primary storefront route through the same UI navigation
             // a real visitor uses. This catches route-only rendering errors and broken assets.
             await page.setViewportSize({ width: 1440, height: 1000 });
