@@ -32,9 +32,10 @@ export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId 
   const [activeImage, setActiveImage] = useState<string>('');
   const [selectedSpecs, setSelectedSpecs] = useState<Record<string, any>>({});
   const [recommendations, setRecommendations] = useState<Record<string, boolean>>({});
-  const [quantity, setQuantity] = useState<number>(100);
+  const [quantity, setQuantity] = useState<number>(0);
+  const [quantityError, setQuantityError] = useState<boolean>(false);
   const [customNotes, setCustomNotes] = useState<string>('');
-  const [artworkStatus, setArtworkStatus] = useState<ArtworkStatus>('ready');
+  const [artworkStatus, setArtworkStatus] = useState<ArtworkStatus>('no_artwork');
   const [addedToast, setAddedToast] = useState<boolean>(false);
   const [openFaq, setOpenFaq] = useState<Record<string, boolean>>({});
 
@@ -48,9 +49,9 @@ export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId 
             initialVals[field.id] = field.default_value;
           } else if (field.options && field.options.length > 0) {
             const defOpt = field.options.find((o) => o.is_default);
-            initialVals[field.id] = defOpt ? defOpt.value : field.options[0].value;
+            initialVals[field.id] = defOpt ? defOpt.value : (field.type === 'multi_select' ? [] : '');
           } else if (field.type === 'number') {
-            initialVals[field.id] = 1;
+            initialVals[field.id] = '';
           } else if (field.type === 'multi_select') {
             initialVals[field.id] = [];
           } else {
@@ -155,6 +156,11 @@ export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId 
   };
 
   const handleAddToCart = () => {
+    if (quantity <= 0) {
+      setQuantityError(true);
+      return;
+    }
+    setQuantityError(false);
     const specSummary = generateSpecSummary();
     addToQuote(
       service,
@@ -170,6 +176,11 @@ export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId 
   };
 
   const handleWhatsAppQuote = () => {
+    if (quantity <= 0) {
+      setQuantityError(true);
+      return;
+    }
+    setQuantityError(false);
     const specSummary = generateSpecSummary();
     let specsText = specSummary.map(s => `• ${s.label}: ${s.value}`).join('\n');
     if (!specsText) specsText = 'المواصفات القياسية المعتمدة لدى رواج';
@@ -186,7 +197,7 @@ export const ServiceDetailView: React.FC<ServiceDetailViewProps> = ({ serviceId 
 
 📌 الخدمة: ${service.name_ar}
 🏷️ القسم: ${dept?.name_ar || ''}
-🔢 الكمية المطلوبة: ${quantity.toLocaleString('ar-EG')} قطعة/وحدة
+🔢 الكمية المطلوبة: ${quantity.toLocaleString('ar-EG')} ${service.quantity_unit || 'وحدة'}
 
 📋 المواصفات الفنية والتشطيبات المختارة:
 ${specsText}
@@ -305,12 +316,19 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
 
             <div className="flex items-center gap-3">
               <span className="inline-block bg-brand-primary-10 text-brand-primary font-bold text-xs px-3.5 py-1 rounded-lg border border-brand-primary-30 shadow-2xs">
-                السعر: طلب عرض سعر فني
+                دليل اختيار + طلب عرض سعر
               </span>
               <span className="text-xs text-[#7A736C] dark:text-[#9E978F]">
-                (يعتمد على المقاس، الخامة، الكمية، والتشطيب)
+                شاهد البدائل واختر ما يعجبك — أو اترك القرار الفني لرواج
               </span>
             </div>
+
+            {service.customer_goal_ar && (
+              <div className="rounded-2xl bg-[#171616] dark:bg-[#201D1B] text-white p-4 border border-white/10">
+                <div className="text-[10px] font-bold text-[#F3C64F] mb-1">هل هذا ما تقصده؟</div>
+                <p className="text-xs sm:text-sm leading-6 text-white/90">{service.customer_goal_ar}</p>
+              </div>
+            )}
 
             <p className="text-xs sm:text-sm text-[#57524E] dark:text-[#B5AFA8] leading-relaxed pt-1">
               {service.full_description_ar || service.short_description_ar}
@@ -344,11 +362,11 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4.5 h-4.5 text-brand-primary" />
                 <h3 className="font-heading font-bold text-sm sm:text-base text-[#181616] dark:text-[#F7F5F2]">
-                  تخصيص المواصفات الفنية للخدمة
+                  اختر ما يعجبك — خطوة بخطوة
                 </h3>
               </div>
               <span className="text-[11px] text-[#7A736C] dark:text-[#9E978F]">
-                اختر مواصفاتك أو اطلب توصية رواج
+                لا تحتاج لمعرفة المصطلحات مسبقاً
               </span>
             </div>
 
@@ -385,7 +403,7 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
                                   : 'bg-[#F4EFEA] dark:bg-[#201D1D] text-[#7A736C] hover:text-brand-primary border border-[#E6DFD5] dark:border-[#2D2828]'
                               }`}
                             >
-                              {isRecommended ? '✓ تم اختيار توصية رواج' : 'لا أعرف — أحتاج توصية رواج'}
+                              {isRecommended ? '✓ تم اختيار توصية رواج' : 'لا أعرف — دع رواج تقترح الأنسب'}
                             </button>
                           )}
                         </div>
@@ -405,29 +423,47 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
                           <>
                             {/* Select / Radio Options */}
                             {field.type === 'select' && field.options && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                                 {field.options.map((opt) => (
                                   <label
                                     key={opt.id}
-                                    className={`p-3 rounded-xl border cursor-pointer flex items-start gap-2.5 transition-all ${
+                                    className={`relative rounded-2xl border cursor-pointer overflow-hidden transition-all ${
                                       currentValue === opt.value
-                                        ? 'border-brand-primary bg-brand-primary-10 text-[#181616] dark:text-white font-semibold shadow-2xs'
-                                        : 'border-[#E6DFD5] dark:border-[#282424] bg-[#FAF8F5] dark:bg-[#1C1919] text-[#57524E] dark:text-[#C4BEB7] hover:bg-[#F4EFEA]'
+                                        ? 'border-brand-primary ring-2 ring-brand-primary/20 bg-brand-primary-10 shadow-sm'
+                                        : 'border-[#E6DFD5] dark:border-[#282424] bg-[#FAF8F5] dark:bg-[#1C1919] hover:border-brand-primary/40'
                                     }`}
                                   >
-                                    <input
-                                      type="radio"
-                                      name={field.id}
-                                      value={opt.value}
-                                      checked={currentValue === opt.value}
-                                      onChange={() => handleFieldChange(field.id, opt.value)}
-                                      className="mt-0.5"
-                                    />
-                                    <div className="space-y-0.5">
-                                      <div className="text-xs leading-snug">{opt.label_ar}</div>
-                                      {opt.description && (
-                                        <div className="text-[10px] text-[#7A736C] dark:text-[#9E978F]">{opt.description}</div>
-                                      )}
+                                    {opt.image_url && (
+                                      <div className="aspect-[16/9] overflow-hidden bg-[#EEE8DF] dark:bg-[#23201E]">
+                                        <SafeImage
+                                          src={opt.image_url}
+                                          alt={opt.label_ar}
+                                          className="w-full h-full object-cover"
+                                          fallbackCategory={service.name_ar}
+                                        />
+                                      </div>
+                                    )}
+                                    <div className="p-3 flex items-start gap-2.5">
+                                      <input
+                                        type="radio"
+                                        name={field.id}
+                                        value={opt.value}
+                                        checked={currentValue === opt.value}
+                                        onChange={() => handleFieldChange(field.id, opt.value)}
+                                        className="mt-0.5 accent-[#B9142D]"
+                                      />
+                                      <div className="space-y-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <div className="text-xs font-bold text-[#181616] dark:text-white leading-snug">{opt.label_ar}</div>
+                                          {opt.badge && <span className="text-[9px] rounded-full bg-[#B9142D] text-white px-2 py-0.5 font-bold">{opt.badge}</span>}
+                                        </div>
+                                        {opt.description && (
+                                          <div className="text-[10px] leading-5 text-[#7A736C] dark:text-[#9E978F]">{opt.description}</div>
+                                        )}
+                                        {opt.recommended_for_ar && (
+                                          <div className="text-[9px] font-bold text-[#B9142D]">مناسب لـ: {opt.recommended_for_ar}</div>
+                                        )}
+                                      </div>
                                     </div>
                                   </label>
                                 ))}
@@ -436,31 +472,49 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
 
                             {/* Multi-Select Options */}
                             {field.type === 'multi_select' && field.options && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                                 {field.options.map((opt) => {
                                   const currentArr: string[] = Array.isArray(currentValue) ? currentValue : [];
                                   const isChecked = currentArr.includes(opt.value);
                                   return (
                                     <label
                                       key={opt.id}
-                                      className={`p-3 rounded-xl border cursor-pointer flex items-start gap-2.5 transition-all ${
+                                      className={`relative rounded-2xl border cursor-pointer overflow-hidden transition-all ${
                                         isChecked
-                                          ? 'border-brand-primary bg-brand-primary-10 text-[#181616] dark:text-white font-semibold shadow-2xs'
-                                          : 'border-[#E6DFD5] dark:border-[#282424] bg-[#FAF8F5] dark:bg-[#1C1919] text-[#57524E] dark:text-[#C4BEB7] hover:bg-[#F4EFEA]'
+                                          ? 'border-brand-primary ring-2 ring-brand-primary/20 bg-brand-primary-10 shadow-sm'
+                                          : 'border-[#E6DFD5] dark:border-[#282424] bg-[#FAF8F5] dark:bg-[#1C1919] hover:border-brand-primary/40'
                                       }`}
                                     >
-                                      <input
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={() => {
-                                          const next = isChecked
-                                            ? currentArr.filter((v) => v !== opt.value)
-                                            : [...currentArr, opt.value];
-                                          handleFieldChange(field.id, next);
-                                        }}
-                                        className="mt-0.5"
-                                      />
-                                      <div className="text-xs leading-snug">{opt.label_ar}</div>
+                                      {opt.image_url && (
+                                        <div className="aspect-[16/9] overflow-hidden bg-[#EEE8DF] dark:bg-[#23201E]">
+                                          <SafeImage
+                                            src={opt.image_url}
+                                            alt={opt.label_ar}
+                                            className="w-full h-full object-cover"
+                                            fallbackCategory={service.name_ar}
+                                          />
+                                        </div>
+                                      )}
+                                      <div className="p-3 flex items-start gap-2.5">
+                                        <input
+                                          type="checkbox"
+                                          checked={isChecked}
+                                          onChange={() => {
+                                            const next = isChecked
+                                              ? currentArr.filter((v) => v !== opt.value)
+                                              : [...currentArr, opt.value];
+                                            handleFieldChange(field.id, next);
+                                          }}
+                                          className="mt-0.5 accent-[#B9142D]"
+                                        />
+                                        <div className="space-y-1 min-w-0">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <div className="text-xs font-bold text-[#181616] dark:text-white leading-snug">{opt.label_ar}</div>
+                                            {opt.badge && <span className="text-[9px] rounded-full bg-[#B9142D] text-white px-2 py-0.5 font-bold">{opt.badge}</span>}
+                                          </div>
+                                          {opt.description && <div className="text-[10px] leading-5 text-[#7A736C] dark:text-[#9E978F]">{opt.description}</div>}
+                                        </div>
+                                      </div>
                                     </label>
                                   );
                                 })}
@@ -527,7 +581,10 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
                   <div className="flex items-center">
                     <button
                       type="button"
-                      onClick={() => setQuantity((prev) => Math.max(1, prev - 10))}
+                      onClick={() => {
+                        setQuantity((prev) => Math.max(0, prev - 1));
+                        setQuantityError(false);
+                      }}
                       className="w-10 h-10 bg-[#F4EFEA] dark:bg-[#1E1B1B] border border-[#E6DFD5] dark:border-[#2D2828] rounded-r-xl font-bold text-sm text-[#181616] dark:text-white hover:bg-[#ECE5DC] transition-colors"
                     >
                       <Minus className="w-3.5 h-3.5 mx-auto" />
@@ -535,18 +592,31 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
                     <input
                       type="number"
                       min={1}
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      value={quantity || ''}
+                      placeholder="أدخل الكمية"
+                      onChange={(e) => {
+                        setQuantity(Math.max(0, parseInt(e.target.value) || 0));
+                        setQuantityError(false);
+                      }}
                       className="w-full h-10 text-center bg-[#FAF8F5] dark:bg-[#1C1919] border-y border-[#E6DFD5] dark:border-[#2D2828] text-xs font-bold text-[#181616] dark:text-white focus:outline-hidden"
                     />
                     <button
                       type="button"
-                      onClick={() => setQuantity((prev) => prev + 10)}
+                      onClick={() => {
+                        setQuantity((prev) => prev + 1);
+                        setQuantityError(false);
+                      }}
                       className="w-10 h-10 bg-[#F4EFEA] dark:bg-[#1E1B1B] border border-[#E6DFD5] dark:border-[#2D2828] rounded-l-xl font-bold text-sm text-[#181616] dark:text-white hover:bg-[#ECE5DC] transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5 mx-auto" />
                     </button>
                   </div>
+                  <div className="text-[10px] text-[#7A736C] dark:text-[#9E978F]">
+                    الوحدة: {service.quantity_unit || 'وحدة'} — الكمية مطلوبة حتى يفهم فريق رواج حجم الطلب.
+                  </div>
+                  {quantityError && (
+                    <div className="text-[10px] font-bold text-red-600">أدخل الكمية المطلوبة أولاً.</div>
+                  )}
                 </div>
 
                 {/* Prepress Status */}
@@ -604,13 +674,13 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
                     className="w-full bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-98 cursor-pointer"
                   >
                     <ShoppingBag className="w-4.5 h-4.5" />
-                    <span>أضف لسلة عروض الأسعار</span>
+                    <span>أضف إلى احتياجات المشروع</span>
                   </button>
                 </div>
 
                 {addedToast && (
                   <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold text-center animate-in fade-in">
-                    ✓ تمت إضافة الخدمة ومواصفاتها بنجاح إلى طلب عرض السعر!
+                    ✓ تمت إضافة الخدمة إلى احتياجات المشروع.
                   </div>
                 )}
               </div>
