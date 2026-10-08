@@ -46,9 +46,10 @@ import { AdminFAQManager } from './components/admin/AdminFAQManager';
 import { AdminContactInboxManager } from './components/admin/AdminContactInboxManager';
 import { AdminFooterManager } from './components/admin/AdminFooterManager';
 import { canAccessAdminView } from './lib/adminAccess';
+import { BrandLogo } from './components/common/BrandLogo';
 
 const AppContent: React.FC = () => {
-  const { currentRoute, navigate, currentUser, isCloudSynced } = useApp();
+  const { currentRoute, navigate, currentUser, isCloudSynced, siteSettings } = useApp();
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [customQuoteModalOpen, setCustomQuoteModalOpen] = useState(false);
@@ -67,32 +68,61 @@ const AppContent: React.FC = () => {
   // This prevents old logos, slider images, and legacy settings from flashing on refresh.
   if (!isCloudSynced) {
     return (
-      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-[#FAF8F5] dark:bg-[#0E0D0C] text-[#171616] dark:text-[#F7F5F0]">
-        <div className="flex flex-col items-center gap-4 px-6 text-center max-w-md">
+      <div
+        dir="rtl"
+        className="rawaj-intro fixed inset-0 z-[9999] flex min-h-screen items-center justify-center overflow-hidden bg-[#FAF8F5] text-[#171616] dark:bg-[#0E0D0C] dark:text-[#F7F5F0]"
+        aria-label="رواج"
+        role="status"
+      >
+        <div className="rawaj-intro__orb rawaj-intro__orb--one" aria-hidden="true" />
+        <div className="rawaj-intro__orb rawaj-intro__orb--two" aria-hidden="true" />
+        <div className="rawaj-intro__grain" aria-hidden="true" />
+
+        <div className="relative z-10 flex w-full max-w-sm flex-col items-center px-8 text-center">
+          <div className="rawaj-intro__logo-wrap">
+            <div className="rawaj-intro__halo" aria-hidden="true" />
+            <div className="rawaj-intro__logo">
+              <BrandLogo
+                src={siteSettings.logo_url}
+                alt={siteSettings.company_name_ar || 'رواج'}
+                className="h-full w-full object-contain"
+                fallbackClassName="h-full w-full object-contain"
+              />
+            </div>
+          </div>
+
+          <div className="rawaj-intro__wordmark mt-7">
+            <div className="text-[clamp(1.35rem,5vw,1.7rem)] font-black tracking-tight">
+              رواج
+            </div>
+            <div className="mt-1 text-[10px] font-bold tracking-[0.18em] text-[#867F75] dark:text-[#A8A196]">
+              للطباعة والإعلان والديكور
+            </div>
+          </div>
+
           {!cloudSyncTimedOut ? (
-            <>
-              <div className="w-10 h-10 rounded-full border-4 border-[#E8E2D5] dark:border-[#332F2F] border-t-[#B9142D] animate-spin" />
-              <div>
-                <p className="font-bold text-sm">جاري تحميل بيانات رواج المعتمدة…</p>
-                <p className="text-xs text-[#867F75] dark:text-[#9E978C] mt-1">يتم جلب آخر نسخة محفوظة من قاعدة البيانات.</p>
-              </div>
-            </>
+            <div className="mt-9 flex items-center gap-2 text-[10px] font-semibold text-[#9A9287] dark:text-[#817A72]">
+              <span className="rawaj-intro__pulse-dot" aria-hidden="true" />
+              <span>من الفكرة إلى أثرها</span>
+            </div>
           ) : (
-            <div className="space-y-3">
-              <p className="font-bold text-sm">تعذر تحميل بيانات رواج من قاعدة البيانات.</p>
-              <p className="text-xs text-[#867F75] dark:text-[#9E978C]">
-                لن يتم عرض نسخة قديمة أو بيانات افتراضية. أعد المحاولة للاتصال بآخر نسخة محفوظة.
+            <div className="mt-9 space-y-3 rounded-2xl border border-[#E4DDD0] bg-white/70 px-5 py-4 shadow-sm backdrop-blur-md dark:border-[#302B28] dark:bg-[#181614]/70">
+              <p className="text-xs font-bold">لم نتمكن من فتح رواج الآن</p>
+              <p className="text-[10px] leading-relaxed text-[#867F75] dark:text-[#A8A196]">
+                تحقق من الاتصال ثم أعد المحاولة.
               </p>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 rounded-xl bg-[#B9142D] text-white text-xs font-bold"
+                className="rounded-xl bg-[#B9142D] px-4 py-2 text-[11px] font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 إعادة المحاولة
               </button>
             </div>
           )}
         </div>
+
+        <div className="rawaj-intro__line" aria-hidden="true" />
       </div>
     );
   }
