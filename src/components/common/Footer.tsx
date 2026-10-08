@@ -1,7 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { BrandLogo } from './BrandLogo';
-import { RawajLogo } from './RawajLogo';
 import { 
   MapPin, 
   Phone, 
@@ -31,15 +30,12 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-4 space-y-4 text-right">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-[#231F1D] border border-[#3E3835] p-2 flex items-center justify-center shadow-lg">
-                {siteSettings.logo_url ? (
-                  <img
-                    src={siteSettings.logo_url}
-                    alt={footerSettings.company_name_ar}
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <RawajLogo className="h-8 w-auto text-white" />
-                )}
+                <BrandLogo
+                  src={siteSettings.logo_url}
+                  alt={footerSettings.company_name_ar || siteSettings.company_name_ar || 'رواج'}
+                  className="w-full h-full object-contain"
+                  fallbackClassName="w-full h-full object-contain text-white"
+                />
               </div>
               <div>
                 <h3 className="font-heading font-black text-white text-base sm:text-lg">
