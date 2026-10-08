@@ -110,8 +110,35 @@ export const uploadFileToRawajStorage = async (
   };
 };
 
+export const rawajStoragePathFromPublicUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    const marker = `/storage/v1/object/public/${BUCKET}/`;
+    const markerIndex = parsed.pathname.indexOf(marker);
+    if (markerIndex < 0) return null;
+
+    const encodedPath = parsed.pathname.slice(markerIndex + marker.length);
+    if (!encodedPath) return null;
+
+    return encodedPath
+      .split('/')
+      .map((segment) => decodeURIComponent(segment))
+      .join('/');
+  } catch {
+    return null;
+  }
+};
+
 export const removeRawajStorageObject = async (path?: string | null): Promise<void> => {
   if (!path) return;
   const { error } = await supabase.storage.from(BUCKET).remove([path]);
   if (error) throw error;
+};
+
+export const removeRawajStorageUrl = async (url?: string | null): Promise<void> => {
+  const path = rawajStoragePathFromPublicUrl(url);
+  if (!path) return;
+  await removeRawajStorageObject(path);
 };
