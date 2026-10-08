@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { ArrowLeft, ChevronRight, ChevronLeft, MapPin, Calendar, Briefcase, Eye, Sparkles, Image as ImageIcon } from 'lucide-react';
 
 export const HomePortfolio: React.FC = () => {
@@ -86,10 +87,11 @@ export const HomePortfolio: React.FC = () => {
         <div className="relative rounded-3xl overflow-hidden border border-[#EBE4D5] dark:border-[#332E2C] bg-[#141212] shadow-2xl min-h-[320px] sm:min-h-[420px] md:min-h-[460px] flex flex-col justify-end group">
           
           {/* Main Photo Background */}
-          <img
-            src={currentProject.images?.[0] || 'https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&w=1200&q=80'}
+          <SafeImage
+            src={currentProject.images?.[0]}
             alt={currentProject.title_ar}
             className="absolute inset-0 w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 ease-out"
+            fallbackCategory="معرض الأعمال"
           />
 
           {/* Vignette Gradients */}
