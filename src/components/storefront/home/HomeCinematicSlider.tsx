@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { ChevronRight, ChevronLeft, ArrowLeft, Sparkles, Pause, Play, Eye } from 'lucide-react';
 
 const SLIDE_DURATION_MS = 5500;
@@ -139,13 +140,14 @@ export const HomeCinematicSlider: React.FC = () => {
                 isActive ? 'opacity-100 scale-100 z-0' : 'opacity-0 scale-105 pointer-events-none -z-10'
               }`}
             >
-              <img
+              <SafeImage
                 src={slide.image_url}
                 alt={slide.title_ar}
                 className={`w-full h-full object-cover object-center transform transition-transform duration-10000 ease-out ${
                   isActive ? 'scale-110' : 'scale-100'
                 }`}
                 loading={index === 0 ? 'eager' : 'lazy'}
+                fallbackCategory="السلايدر"
               />
               
               {/* Vignette & Gradients */}
