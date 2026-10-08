@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, ArrowLeft, Sparkles, X, ChevronLeft } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 
 interface UniversalSearchProps {
   onOpenFullSearchModal: () => void;
@@ -127,10 +128,11 @@ export const UniversalSearch: React.FC<UniversalSearchProps> = ({ onOpenFullSear
                     className="w-full flex items-center justify-between p-2 rounded-[12px] hover:bg-[#F5F1E9] dark:hover:bg-[#25211F] text-right transition-colors group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <img
+                      <SafeImage
                         src={service.hero_image}
                         alt={service.name_ar}
                         className="w-10 h-10 rounded-[8px] object-cover shrink-0"
+                        fallbackCategory={service.name_ar}
                       />
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-[#171616] dark:text-[#F5F1EA] group-hover:text-[#B9142D] transition-colors truncate">
