@@ -309,6 +309,13 @@ export interface PackageItemBreakdown {
   icon?: string;
 }
 
+export interface PackageTier {
+  key: 'basic' | 'professional' | 'integrated' | string;
+  name_ar: string;
+  description_ar?: string;
+  service_ids: string[];
+}
+
 export interface Package {
   id: string;
   title_ar: string;
@@ -322,8 +329,12 @@ export interface Package {
   service_ids: string[];
   benefits_ar: string[];
   sort_order: number;
-  // Sector & Enterprise enhancement fields
-  sector_key?: 'health' | 'education' | 'hospitality' | 'fashion' | 'pharma' | 'events' | 'corporate' | 'realestate' | 'logistics' | 'retail';
+  // Commercial solution system: classify by customer outcome/use case, not by industry.
+  solution_key?: string;
+  audience_ar?: string;
+  tiers?: PackageTier[];
+  // Legacy fields retained only for backwards-compatible records; new packages do not depend on them.
+  sector_key?: string;
   target_sector_ar?: string;
   ideal_for_ar?: string;
   turnaround_time_ar?: string;
