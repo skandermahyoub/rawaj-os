@@ -83,6 +83,9 @@ const AppContent: React.FC = () => {
         <div className="relative z-10 flex w-full max-w-sm flex-col items-center px-8 text-center">
           <div className="rawaj-intro__logo-wrap">
             <div className="rawaj-intro__halo" aria-hidden="true" />
+            <div className="rawaj-intro__ring rawaj-intro__ring--one" aria-hidden="true" />
+            <div className="rawaj-intro__ring rawaj-intro__ring--two" aria-hidden="true" />
+            <div className="rawaj-intro__beam" aria-hidden="true" />
             <div className="rawaj-intro__logo">
               <BrandLogo
                 src={siteSettings.logo_url || RAWAJ_BRAND_LOGO}
