@@ -62,10 +62,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
         {/* Action Row */}
         <div className="pt-2 border-t border-[rgba(23,22,22,0.06)] dark:border-[rgba(245,241,234,0.06)] flex items-center justify-between text-xs">
           <span className="text-[10px] font-bold text-brand-primary bg-brand-primary-10 px-2 py-0.5 rounded-[6px]">
-            عرض سعر
+            دليل الخيارات
           </span>
           <div className="flex items-center gap-1 text-[11px] font-bold text-[#171616] dark:text-[#F5F1EA] group-hover:text-brand-primary transition-colors">
-            <span>تخصيص</span>
+            <span>استكشف</span>
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
           </div>
         </div>
