@@ -124,6 +124,8 @@ export interface FieldOption {
   is_default?: boolean;
   description?: string;
   badge?: string;
+  image_url?: string;
+  recommended_for_ar?: string;
 }
 
 export interface VisibilityCondition {
@@ -235,6 +237,9 @@ export interface Service {
   related_service_ids: string[];
   related_package_ids?: string[];
   template_id?: string;
+  catalog_role?: 'customer_service' | 'component';
+  quantity_unit?: string;
+  customer_goal_ar?: string;
   created_at: string;
   updated_at: string;
 }
