@@ -31,11 +31,9 @@ import {
 import { 
   EXPANDED_DEPARTMENTS, 
   EXPANDED_CATEGORIES, 
-  EXPANDED_SERVICES, 
-  EXPANDED_PACKAGES 
+  EXPANDED_SERVICES 
 } from './expandedServicesData';
 import { INITIAL_INDUSTRY_SECTORS } from './industrySectorsData';
-import { SECTOR_PACKAGES_DATA } from './sectorPackagesData';
 
 export { INITIAL_INDUSTRY_SECTORS };
 
@@ -2027,7 +2025,7 @@ const BASE_PACKAGES: Package[] = [
   },
 ];
 
-export const INITIAL_PACKAGES: Package[] = SECTOR_PACKAGES_DATA;
+export const INITIAL_PACKAGES: Package[] = [];
 
 export const INITIAL_PORTFOLIO: PortfolioProject[] = [
   {
