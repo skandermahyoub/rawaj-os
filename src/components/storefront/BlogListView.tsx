@@ -3,6 +3,53 @@ import { useApp } from '../../context/AppContext';
 import { SafeImage } from '../common/SafeImage';
 import { BookOpen, Clock, Calendar, ArrowLeft, Tag, ArrowRight } from 'lucide-react';
 
+const renderInline = (text: string) =>
+  text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i} className="font-black text-[#171616] dark:text-[#F5F3EF]">{part.slice(2, -2)}</strong>
+      : part
+  );
+
+const renderArticle = (markdown: string) => {
+  const lines = markdown.split(/\r?\n/);
+  const nodes: React.ReactNode[] = [];
+  let bullets: string[] = [];
+
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    nodes.push(
+      <ul key={`ul-${nodes.length}`} className="list-disc pr-6 space-y-2 my-4">
+        {bullets.map((item, i) => <li key={i}>{renderInline(item)}</li>)}
+      </ul>
+    );
+    bullets = [];
+  };
+
+  lines.forEach((line, i) => {
+    const value = line.trim();
+    if (!value) {
+      flushBullets();
+      return;
+    }
+    if (value.startsWith('- ')) {
+      bullets.push(value.slice(2));
+      return;
+    }
+    flushBullets();
+    if (value.startsWith('### ')) {
+      nodes.push(<h3 key={i} className="text-base sm:text-lg font-black text-[#B9142D] mt-6 mb-2">{renderInline(value.slice(4))}</h3>);
+    } else if (value.startsWith('## ')) {
+      nodes.push(<h2 key={i} className="text-lg sm:text-xl font-black text-[#171616] dark:text-[#F5F3EF] mt-8 mb-3">{renderInline(value.slice(3))}</h2>);
+    } else if (value.startsWith('# ')) {
+      nodes.push(<h1 key={i} className="text-xl sm:text-2xl font-black text-[#171616] dark:text-[#F5F3EF] mt-2 mb-4">{renderInline(value.slice(2))}</h1>);
+    } else {
+      nodes.push(<p key={i} className="leading-8">{renderInline(value)}</p>);
+    }
+  });
+  flushBullets();
+  return nodes;
+};
+
 export const BlogListView: React.FC = () => {
   const { blogPosts, navigate } = useApp();
 
@@ -137,8 +184,8 @@ export const BlogPostView: React.FC<{ postId: string }> = ({ postId }) => {
           <SafeImage src={post.hero_image} alt={post.title_ar} className="w-full h-full object-cover" fallbackCategory="المدونة" />
         </div>
 
-        <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm text-[#44403C] dark:text-[#D6D3D1] leading-relaxed whitespace-pre-line space-y-4">
-          {post.content_markdown_ar}
+        <div className="max-w-none text-xs sm:text-sm text-[#44403C] dark:text-[#D6D3D1]">
+          {renderArticle(post.content_markdown_ar)}
         </div>
 
         {post.tags_ar && (
