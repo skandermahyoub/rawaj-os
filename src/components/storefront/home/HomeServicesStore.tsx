@@ -5,39 +5,22 @@ import {
   ShoppingBag, 
   SlidersHorizontal, 
   ArrowLeft, 
-  CheckCircle2, 
   Layers, 
   Heart,
   ChevronLeft
 } from 'lucide-react';
-import { Service } from '../../../types';
 
 export const HomeServicesStore: React.FC = () => {
-  const { services, departments, addToQuote, navigate, toggleWishlist, wishlistedServiceIds } = useApp();
+  const { services, departments, navigate, toggleWishlist, wishlistedServiceIds } = useApp();
   const [selectedDeptId, setSelectedDeptId] = useState<string>('all');
-  const [quickAddedId, setQuickAddedId] = useState<string | null>(null);
 
   // Filter published services
-  const publishedServices = services.filter((s) => s.service_status === 'published');
+  const publishedServices = services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component');
 
   const filteredServices = publishedServices.filter((service) => {
     if (selectedDeptId === 'all') return true;
     return service.department_id === selectedDeptId;
   });
-
-  const handleQuickAdd = (service: Service, e: React.MouseEvent) => {
-    e.stopPropagation();
-    addToQuote(
-      service,
-      100,
-      {},
-      [{ label: 'الكمية الافتراضية', value: '100 قطعة' }],
-      'طلب إضافة سريعة من كاتلوج الخدمات المعتمدة — جاهز للمواصفات',
-      'ready'
-    );
-    setQuickAddedId(service.id);
-    setTimeout(() => setQuickAddedId(null), 2000);
-  };
 
   const handleOpenDetailWithSpecs = (serviceId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -63,7 +46,7 @@ export const HomeServicesStore: React.FC = () => {
 
           {/* Subtitle */}
           <p className="text-xs sm:text-sm text-[#70695F] dark:text-[#A8A196] max-w-2xl leading-relaxed">
-            مواصفات هندسية دقيقة، خامات مستوردة، وخيارات تشطيب راقية تشمل البصمة الحرارية والسبوت يو في البارز.
+            لا تحتاج لمعرفة المصطلحات الفنية مسبقاً. افتح الخدمة وشاهد الأنواع والخامات والتشطيبات بصرياً ثم اختر ما يناسبك.
           </p>
         </div>
 
@@ -114,7 +97,6 @@ export const HomeServicesStore: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
         {filteredServices.map((service) => {
           const dept = departments.find((d) => d.id === service.department_id);
-          const isAdded = quickAddedId === service.id;
           const isWishlisted = wishlistedServiceIds?.includes(service.id);
 
           return (
@@ -181,20 +163,10 @@ export const HomeServicesStore: React.FC = () => {
                     className="flex-1 py-1.5 sm:py-2 px-2 rounded-xl bg-[#FAF8F5] dark:bg-[#1C1918] hover:bg-brand-primary hover:text-white text-[#171616] dark:text-[#F7F5F0] text-[10px] sm:text-xs font-bold border border-[#E8E2D5] dark:border-[#2D2A26] transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    <span>مواصفات</span>
+                    <span>استكشف الخيارات</span>
                   </button>
 
-                  <button
-                    onClick={(e) => handleQuickAdd(service, e)}
-                    className={`p-1.5 sm:p-2 rounded-xl border transition-all cursor-pointer ${
-                      isAdded
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-[#171616] dark:bg-[#F7F5F0] text-white dark:text-[#171616] border-transparent hover:bg-brand-primary dark:hover:bg-brand-primary dark:hover:text-white'
-                    }`}
-                    title="إضافة سريعة لطلب التسعير"
-                  >
-                    {isAdded ? <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                  </button>
+
                 </div>
               </div>
 
