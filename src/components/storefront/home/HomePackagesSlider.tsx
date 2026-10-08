@@ -13,12 +13,10 @@ import {
   Building2,
   Check
 } from 'lucide-react';
-import { Package } from '../../../types';
 
 export const HomePackagesSlider: React.FC = () => {
-  const { packages, services, addToQuote, navigate } = useApp();
+  const { packages, services, navigate } = useApp();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [addedPkgId, setAddedPkgId] = useState<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   if (packages.length === 0) return null;
@@ -57,25 +55,9 @@ export const HomePackagesSlider: React.FC = () => {
     }
   };
 
-  const handleOrderPackage = (pkg: Package, e: React.MouseEvent) => {
+  const handleOpenPackage = (packageId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const pkgServices = services.filter((s) => (pkg.service_ids || []).includes(s.id));
-    if (pkgServices.length > 0) {
-      pkgServices.forEach((s) => {
-        addToQuote(
-          s,
-          100,
-          {},
-          [{ label: 'الباقة المعتمدة', value: pkg.title_ar }],
-          `تمت الإضافة ضمن ${pkg.title_ar}`
-        );
-      });
-    }
-    setAddedPkgId(pkg.id);
-    setTimeout(() => {
-      setAddedPkgId(null);
-      navigate({ view: 'quote-cart' });
-    }, 800);
+    navigate({ view: 'package-detail', packageId });
   };
 
   return (
@@ -93,15 +75,15 @@ export const HomePackagesSlider: React.FC = () => {
           <div className="space-y-2 text-right">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#B9142D]/15 text-[#E03A53] border border-[#B9142D]/30 text-xs font-bold shadow-2xs">
               <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>عروض وباقات المشاريع المتكاملة</span>
+              <span>حلول رواج المتكاملة حسب هدف المشروع</span>
             </div>
             
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-black text-white leading-tight">
-              باقات تجهيز المنشآت والشركات الشاملة
+              اختر ما تريد إنجازه، ثم اختر مستوى الباقة
             </h2>
             
             <p className="text-xs sm:text-sm text-[#A69C8E] max-w-2xl leading-relaxed font-medium">
-              حلول إنتاجية موحدة تدمج الواجهات، المطبوعات والتغليف في باقة واحدة لتوفير الوقت والتكلفة وضمان تناسق الهوية البصرية.
+              باقات عملية تجمع الخدمات المناسبة لنتيجة واضحة: إطلاق علامة، افتتاح فرع، تجهيز متجر، إطلاق منتج، فعالية أو تجديد بصري.
             </p>
           </div>
 
@@ -150,7 +132,6 @@ export const HomePackagesSlider: React.FC = () => {
         >
           {packages.map((pkg, idx) => {
             const pkgServices = services.filter((s) => (pkg.service_ids || []).includes(s.id));
-            const isAdded = addedPkgId === pkg.id;
 
             return (
               <div
@@ -179,7 +160,7 @@ export const HomePackagesSlider: React.FC = () => {
 
                   <div className="absolute bottom-3 right-3 left-3 flex items-center justify-between">
                     <span className="text-[11px] font-bold text-[#D4AF37] bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md border border-[#D4AF37]/20">
-                      {pkgServices.length} خدمات مدمجة
+                      {pkg.tiers?.length || 1} مستويات · {pkgServices.length} خدمات
                     </span>
                     <span className="text-[10px] font-mono text-[#A69C8E] bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded">
                       0{idx + 1} / 0{packages.length}
@@ -219,24 +200,11 @@ export const HomePackagesSlider: React.FC = () => {
                   {/* Card Actions Footer */}
                   <div className="pt-2 border-t border-[#26211E] flex items-center gap-2">
                     <button
-                      onClick={(e) => handleOrderPackage(pkg, e)}
-                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
-                        isAdded
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-brand-primary hover:bg-brand-hover text-white border border-white/20'
-                      }`}
+                      onClick={(e) => handleOpenPackage(pkg.id, e)}
+                      className="flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm bg-brand-primary hover:bg-brand-hover text-white border border-white/20"
                     >
-                      {isAdded ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4 text-white" />
-                          <span>تمت الإضافة للسلة!</span>
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingBag className="w-4 h-4 text-brand-accent" />
-                          <span>طلب الباقة للشركة</span>
-                        </>
-                      )}
+                      <Sparkles className="w-4 h-4 text-brand-accent" />
+                      <span>استعراض المستويات والتخصيص</span>
                     </button>
 
                     <button
