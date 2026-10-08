@@ -123,7 +123,11 @@ export const setDoc = async (
       : value;
 
     const { error } = await (supabase.from('settings') as any).upsert(
-      { key: ref.id, value: nextValue ?? {} },
+      {
+        key: ref.id,
+        value: nextValue ?? {},
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: 'key' }
     );
     if (error) throw error;
