@@ -313,3 +313,61 @@ html::-webkit-scrollbar-thumb:hover {
 .dark html::-webkit-scrollbar-track {
   background: rgba(255,255,255,.035);
 }
+
+
+@keyframes rawajIntroRing {
+  0% { transform: rotate(0deg) scale(.88); opacity: .12; }
+  50% { opacity: .34; }
+  100% { transform: rotate(360deg) scale(1.06); opacity: .12; }
+}
+@keyframes rawajIntroRingReverse {
+  0% { transform: rotate(360deg) scale(1.02); opacity: .08; }
+  50% { opacity: .26; }
+  100% { transform: rotate(0deg) scale(.9); opacity: .08; }
+}
+@keyframes rawajIntroBeam {
+  0% { transform: translateX(-160%) rotate(-18deg); opacity: 0; }
+  18% { opacity: .55; }
+  48% { opacity: .18; }
+  100% { transform: translateX(160%) rotate(-18deg); opacity: 0; }
+}
+.rawaj-intro__ring {
+  position: absolute;
+  inset: -4%;
+  border-radius: 9999px;
+  border: 1px solid rgba(185,20,45,.22);
+  pointer-events: none;
+}
+.rawaj-intro__ring::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: inherit;
+  border-top: 1px solid rgba(212,175,55,.34);
+  border-bottom: 1px solid rgba(212,175,55,.12);
+}
+.rawaj-intro__ring--one {
+  animation: rawajIntroRing 8s linear infinite;
+}
+.rawaj-intro__ring--two {
+  inset: 10%;
+  border-color: rgba(212,175,55,.14);
+  animation: rawajIntroRingReverse 11s linear infinite;
+}
+.rawaj-intro__beam {
+  position: absolute;
+  width: 34%;
+  height: 150%;
+  top: -25%;
+  left: 33%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.42), rgba(185,20,45,.10), transparent);
+  filter: blur(8px);
+  pointer-events: none;
+  animation: rawajIntroBeam 4.8s 1s ease-in-out infinite;
+}
+.dark .rawaj-intro__ring { border-color: rgba(185,20,45,.28); }
+.dark .rawaj-intro__ring::after { border-top-color: rgba(212,175,55,.30); }
+.dark .rawaj-intro__beam { background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), rgba(185,20,45,.18), transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .rawaj-intro__ring, .rawaj-intro__beam { animation: none !important; }
+}
