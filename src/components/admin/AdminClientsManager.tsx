@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Building2, 
@@ -38,6 +38,14 @@ export const AdminClientsManager: React.FC = () => {
   const [testimonialFilter, setTestimonialFilter] = useState<string>('all');
   const [actionError, setActionError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const logoEditorRef = useRef<HTMLDivElement>(null);
+  const testimonialEditorRef = useRef<HTMLDivElement>(null);
+
+  const revealEditor = (refEl: React.RefObject<HTMLDivElement | null>) => {
+    window.requestAnimationFrame(() => {
+      refEl.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   // Logo Form State
   const [editingLogo, setEditingLogo] = useState<ClientLogo | null>(null);
@@ -226,6 +234,7 @@ export const AdminClientsManager: React.FC = () => {
                   });
                   setEditingLogo(null);
                   setIsCreatingLogo(true);
+                  revealEditor(logoEditorRef);
                 }}
                 className="px-4 py-2 rounded-xl bg-[#B9142D] hover:bg-[#951126] text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
@@ -237,7 +246,7 @@ export const AdminClientsManager: React.FC = () => {
 
           {/* Logo Form */}
           {isCreatingLogo && (
-            <div className="bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
+            <div ref={logoEditorRef} className="scroll-mt-6 bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E7E0D3] dark:border-[#332F2F]">
                 <h4 className="text-sm font-bold text-[#171616] dark:text-white">
                   {editingLogo ? 'تعديل شعار العميل' : 'إضافة شعار عميل جديد'}
@@ -305,7 +314,7 @@ export const AdminClientsManager: React.FC = () => {
 
           {/* Logos List */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {clientLogos.sort((a, b) => a.sort_order - b.sort_order).map((logo) => (
+            {[...clientLogos].sort((a, b) => a.sort_order - b.sort_order).map((logo) => (
               <div
                 key={logo.id}
                 className="p-4 rounded-xl bg-white dark:bg-[#1C1A1A] border border-[#E7E0D3] dark:border-[#332F2F] flex flex-col items-center justify-between text-center gap-3 shadow-xs"
@@ -323,6 +332,7 @@ export const AdminClientsManager: React.FC = () => {
                       setEditingLogo(logo);
                       setLogoForm({ ...logo });
                       setIsCreatingLogo(true);
+                      revealEditor(logoEditorRef);
                     }}
                     className="p-1.5 rounded-lg text-[#171616] dark:text-white hover:bg-neutral-100"
                   >
@@ -400,6 +410,7 @@ export const AdminClientsManager: React.FC = () => {
                   });
                   setEditingTest(null);
                   setIsCreatingTest(true);
+                  revealEditor(testimonialEditorRef);
                 }}
                 className="px-4 py-2 rounded-xl bg-[#B9142D] hover:bg-[#951126] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
@@ -411,7 +422,7 @@ export const AdminClientsManager: React.FC = () => {
 
           {/* Testimonial Form Modal */}
           {isCreatingTest && (
-            <div className="bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
+            <div ref={testimonialEditorRef} className="scroll-mt-6 bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E7E0D3] dark:border-[#332F2F]">
                 <h4 className="text-sm font-bold text-[#171616] dark:text-white">
                   {editingTest ? 'تعديل تقييم العميل' : 'إضافة تقييم عميل جديد'}
@@ -582,6 +593,7 @@ export const AdminClientsManager: React.FC = () => {
                           setEditingTest(t);
                           setTestForm({ ...t });
                           setIsCreatingTest(true);
+                          revealEditor(testimonialEditorRef);
                         }}
                         className="p-1.5 rounded-lg text-[#171616] dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
                         title="تعديل"
