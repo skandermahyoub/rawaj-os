@@ -346,9 +346,9 @@ export const EXPANDED_SERVICES: Service[] = [
     industry_sector_ids: ['sec-events-exhibitions', 'sec-corporate-business'],
     short_description_ar: 'ستاندات رول أب ألومنيوم ثقيل، بوب أب جداري منحني، طاولات استقبال برومو كاونتر، وأعلام شاطئية وسارية.',
     full_description_ar: 'الحل الأسرع والأكثر فاعلية للترويج في المؤتمرات والندوات والمعارض. نوفر منظومة متكاملة من ستاندات الرول أب بأوزان ألومنيوم ثقيلة تمنع الميلان، جدران بوب أب ماجنتيك بمقاسات 3×3 و 3×4 متر، وأعلام سارية شاطئية مقاومة للرياح مع حقائب حمل مبطنة.',
-    hero_image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+    hero_image: '/images/vehicle_branding_wrap_1790811427153.jpg',
     gallery: [
-      'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+      '/images/vehicle_branding_wrap_1790811427153.jpg',
     ],
     badge: 'سهولة الحمل والتركيب السريع',
     service_status: 'published',
