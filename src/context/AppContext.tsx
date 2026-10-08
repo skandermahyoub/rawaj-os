@@ -394,7 +394,7 @@ const SUPPORTED_HOME_LAYOUTS: Record<HomeModuleId, string[]> = {
   why_us: ['stats_features', 'workflow_steps', 'sourcing_capabilities'],
   promo_banners: ['dynamic_grid'],
   about_us: ['executive_story'],
-  portfolio_showcase: ['case_studies', 'proud_showcase'],
+  portfolio_showcase: ['visual_catalog'],
   testimonials: ['carousel_cards'],
   brands_partners: ['colored_ticker'],
   blog_hub: ['knowledge_highlights'],
