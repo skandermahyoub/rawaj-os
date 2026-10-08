@@ -113,7 +113,7 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
       setSpecGroups(existingService.specification_groups ? JSON.parse(JSON.stringify(existingService.specification_groups)) : []);
     } else {
       // Default initial state for new service
-      setHeroImage('https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=800&q=80');
+      setHeroImage('');
       setServiceStatus('draft');
     }
   }, [existingService, departments, categories]);
