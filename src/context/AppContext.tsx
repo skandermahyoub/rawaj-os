@@ -1260,7 +1260,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       department_name_ar: dept ? dept.name_ar : 'خدمات عامة',
       hero_image: service.hero_image,
       quantity,
-      quantity_unit: 'قطعة / نسخة',
+      quantity_unit: service.quantity_unit || 'وحدة',
       selected_specifications: specs,
       specification_summary: specSummary,
       custom_notes: notes,
@@ -1351,7 +1351,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     quoteItems.forEach((item, index) => {
       waText += `\n--------------------\n`;
       waText += `*${index + 1}. ${item.service_name_ar}*\n`;
-      waText += `▪️ *الكمية:* ${item.quantity}\n`;
+      waText += `▪️ *الكمية:* ${item.quantity} ${item.quantity_unit || 'وحدة'}\n`;
       if (item.specification_summary && item.specification_summary.length > 0) {
         waText += `▪️ *المواصفات الفنية:*\n`;
         item.specification_summary.forEach((spec) => {
