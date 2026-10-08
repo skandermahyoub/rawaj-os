@@ -77,6 +77,29 @@ jobs:
             }
             await page.evaluate(() => window.scrollTo(0, 0));
             await page.waitForTimeout(600);
+
+            // Exercise every primary storefront route through the same UI navigation
+            // a real visitor uses. This catches route-only rendering errors and broken assets.
+            await page.setViewportSize({ width: 1440, height: 1000 });
+            const routeLabels = [
+              'الخدمات المتخصصة',
+              'الأقسام والمصانع',
+              'باقات المشاريع',
+              'معرض الأعمال',
+              'دليل المعايير والطباعة',
+              'عن رواج والاتصال',
+            ];
+            for (const label of routeLabels) {
+              await page.getByRole('button', { name: 'فتح القائمة الرئيسية' }).click();
+              await page.getByRole('button', { name: label, exact: true }).last().click();
+              await page.waitForTimeout(350);
+              await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+              await page.waitForTimeout(250);
+              const routeText = (await page.locator('#root').innerText()).trim();
+              if (routeText.length < 20) errors.push('EMPTY_ROUTE: ' + label);
+              await page.evaluate(() => window.scrollTo(0, 0));
+            }
+
             const rootText = (await page.locator('#root').innerText()).trim();
             const bodyText = (await page.locator('body').innerText()).trim();
             console.log('HTTP_STATUS=' + (response ? response.status() : 'NO_RESPONSE'));
@@ -86,7 +109,7 @@ jobs:
             console.log('BAD_RESPONSES=' + JSON.stringify(badResponses));
             await page.screenshot({ path: '/tmp/rawaj-runtime.png', fullPage: true });
             await browser.close();
-            if (!response || response.status() >= 400 || rootText.length < 20 || errors.length) {
+            if (!response || response.status() >= 400 || rootText.length < 20 || errors.length || badResponses.length) {
               process.exit(1);
             }
           })().catch(err => {
