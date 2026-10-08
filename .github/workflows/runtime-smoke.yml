@@ -98,7 +98,8 @@ jobs:
             ];
             for (const label of routeLabels) {
               await page.getByRole('button', { name: 'فتح القائمة الرئيسية' }).click();
-              await page.getByRole('button', { name: label, exact: true }).last().click();
+              const drawer = page.locator('div.fixed.inset-y-0.right-0');
+              await drawer.getByRole('button', { name: label, exact: true }).click();
               await page.waitForTimeout(350);
               await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
               await page.waitForTimeout(250);
