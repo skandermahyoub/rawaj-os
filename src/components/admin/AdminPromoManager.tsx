@@ -57,7 +57,7 @@ export const AdminPromoManager: React.FC = () => {
     setDiscountTag('خصم 20%');
     setValidUntil('متاح طوال هذا الشهر');
     setHighlightsText('واجهات كلادينج ألمنيوم مقاومة للعوامل\nحروف زنكور وإكريليك مضيئة LED\nطباعة أوراق رسمية وبطاقات فاخرة');
-    setImageUrl('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80');
+    setImageUrl('');
     setCtaText('احجز العرض واستشر مهندسنا');
     setLinkView('packages');
     setIsActive(true);
@@ -80,7 +80,14 @@ export const AdminPromoManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !imageUrl.trim()) return;
+    if (!title.trim()) {
+      setActionError('أدخل عنوان العرض.');
+      return;
+    }
+    if (!imageUrl.trim()) {
+      setActionError('اختر صورة العرض قبل الحفظ.');
+      return;
+    }
 
     const highlightsArray = highlightsText
       .split('\n')
