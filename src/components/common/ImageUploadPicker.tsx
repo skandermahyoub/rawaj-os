@@ -16,6 +16,7 @@ import { useApp } from '../../context/AppContext';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { VERIFIED_RAWAJ_ASSETS, VerifiedMediaAsset } from '../../data/rawajMediaAssets';
 import { uploadDataUrlToRawajStorage } from '../../lib/storage';
+import { SafeImage } from './SafeImage';
 
 export interface ImageUploadPickerProps {
   value: string;
@@ -184,14 +185,11 @@ export const ImageUploadPicker: React.FC<ImageUploadPickerProps> = ({
       {value && (
         <div className="relative group rounded-2xl overflow-hidden border-2 border-[#E8E2D5] dark:border-[#2D2A26] bg-[#FAF8F5] dark:bg-[#141211] shadow-xs">
           <div className={`w-full ${previewHeightClass} relative overflow-hidden bg-neutral-900/5 dark:bg-neutral-100/5 flex items-center justify-center`}>
-            <img
+            <SafeImage
               src={value}
               alt={label}
+              fallbackCategory={defaultCategory}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={(e) => {
-                // If external image fails, gracefully fallback to local asset
-                (e.target as HTMLImageElement).src = '/src/assets/images/printing_brochures_1790806872644.jpg';
-              }}
             />
             <div className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
               <Check className="w-3 h-3 text-emerald-400" />
