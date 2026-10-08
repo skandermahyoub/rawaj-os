@@ -69,6 +69,9 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
   const [executionModel, setExecutionModel] = useState<ExecutionModel>('in_house');
   const [featured, setFeatured] = useState(false);
   const [mostRequested, setMostRequested] = useState(false);
+  const [catalogRole, setCatalogRole] = useState<'customer_service' | 'component'>('customer_service');
+  const [quantityUnit, setQuantityUnit] = useState('وحدة');
+  const [customerGoalAr, setCustomerGoalAr] = useState('');
   const [highlights, setHighlights] = useState<{ id: string; title_ar: string; description_ar: string }[]>([]);
   const [faqs, setFaqs] = useState<{ id: string; question_ar: string; answer_ar: string }[]>([]);
   const [prepressRules, setPrepressRules] = useState({
@@ -101,6 +104,9 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
       setExecutionModel(existingService.execution_model || 'in_house');
       setFeatured(Boolean(existingService.featured));
       setMostRequested(Boolean(existingService.most_requested));
+      setCatalogRole(existingService.catalog_role || 'customer_service');
+      setQuantityUnit(existingService.quantity_unit || 'وحدة');
+      setCustomerGoalAr(existingService.customer_goal_ar || '');
       setHighlights(existingService.highlights || []);
       setFaqs(existingService.faq || []);
       setPrepressRules({
@@ -115,6 +121,9 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
       // Default initial state for new service
       setHeroImage('');
       setServiceStatus('draft');
+      setCatalogRole('customer_service');
+      setQuantityUnit('وحدة');
+      setCustomerGoalAr('');
     }
   }, [existingService, departments, categories]);
 
@@ -158,11 +167,11 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
       key: `field_${Date.now().toString().slice(-4)}`,
       label_ar: 'اسم الحقل الفني',
       type: 'select',
-      required: true,
+      required: false,
       allow_rawaj_recommendation: true,
       sort_order: 1,
       options: [
-        { id: `opt-1`, label_ar: 'الخيار الأول (المعياري)', value: 'option_1', is_default: true },
+        { id: `opt-1`, label_ar: 'الخيار الأول', value: 'option_1' },
         { id: `opt-2`, label_ar: 'الخيار الثاني', value: 'option_2' },
       ],
     };
@@ -287,6 +296,9 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
       prepress_rules: prepressRules,
       specification_groups: specGroups,
       related_service_ids: existingService?.related_service_ids || [],
+      catalog_role: catalogRole,
+      quantity_unit: quantityUnit || 'وحدة',
+      customer_goal_ar: customerGoalAr,
     };
 
     try {
@@ -443,6 +455,41 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
                   placeholder="مثال: الأكثر طلباً للشركات، هوية تنفيذية، مقاوم للماء..."
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#3A3535] rounded-lg px-3 py-2 text-xs text-[#171616] dark:text-white focus:outline-hidden focus:border-[#B9142D]"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-[#171616] dark:text-white">دور الخدمة في الكتالوج</label>
+                  <select
+                    value={catalogRole}
+                    onChange={(e) => setCatalogRole(e.target.value as 'customer_service' | 'component')}
+                    className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#3A3535] rounded-lg px-3 py-2 text-xs"
+                  >
+                    <option value="customer_service">خدمة رئيسية يراها العميل</option>
+                    <option value="component">مكوّن تقني داخلي لخدمة أوسع</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="font-bold text-[#171616] dark:text-white">وحدة الكمية</label>
+                  <input
+                    value={quantityUnit}
+                    onChange={(e) => setQuantityUnit(e.target.value)}
+                    placeholder="مثال: كرت، نسخة، مشروع، متر"
+                    className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#3A3535] rounded-lg px-3 py-2 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-[#171616] dark:text-white">صياغة حاجة العميل</label>
+                <textarea
+                  rows={2}
+                  value={customerGoalAr}
+                  onChange={(e) => setCustomerGoalAr(e.target.value)}
+                  placeholder="مثال: أريد طباعة كروت لكن لا أعرف الأنواع والتشطيبات المتاحة."
+                  className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#3A3535] rounded-lg p-2.5 text-xs"
+                />
+                <p className="text-[10px] text-[#78716C]">تظهر للعميل في بداية صفحة الخدمة لتأكيد أنه وصل إلى الخدمة المناسبة.</p>
               </div>
 
               <div className="space-y-1.5">
@@ -675,7 +722,7 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
                     مجموعات وحقول المواصفات الفنية للخدمة
                   </h3>
                   <p className="text-[11px] text-[#78716C] dark:text-[#A8A29E]">
-                    هذه الحقول تظهر للعميل في واجهة الخدمة لتخصيص المواصفات وإرسالها في طلب السعر.
+                    ابنِ الخيارات كما يفكر العميل: صور ونماذج وفروق مبسطة. اجعل التفاصيل اختيارية واترك له دائماً خيار توصية رواج.
                   </p>
                 </div>
                 <button
@@ -823,21 +870,46 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
 
                                 <div className="space-y-1.5">
                                   {field.options?.map((opt) => (
-                                    <div key={opt.id} className="flex items-center gap-2">
-                                      <input
-                                        type="text"
-                                        value={opt.label_ar}
-                                        onChange={(e) => handleUpdateOption(group.id, field.id, opt.id, { label_ar: e.target.value })}
-                                        placeholder="تسمية الخيار بالعربية"
-                                        className="flex-1 bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#3A3535] rounded px-2 py-1 text-xs text-[#171616] dark:text-white"
+                                    <div key={opt.id} className="rounded-xl border border-[#E7E0D3] dark:border-[#332F2F] bg-[#FAF7F2] dark:bg-[#252222] p-3 space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={opt.label_ar}
+                                          onChange={(e) => handleUpdateOption(group.id, field.id, opt.id, { label_ar: e.target.value })}
+                                          placeholder="اسم الخيار كما يراه العميل"
+                                          className="flex-1 bg-white dark:bg-[#1C1A1A] border border-[#E7E0D3] dark:border-[#3A3535] rounded px-2 py-1.5 text-xs text-[#171616] dark:text-white"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={opt.badge || ''}
+                                          onChange={(e) => handleUpdateOption(group.id, field.id, opt.id, { badge: e.target.value })}
+                                          placeholder="شارة: فاخر / اقتصادي"
+                                          className="w-36 bg-white dark:bg-[#1C1A1A] border border-[#E7E0D3] dark:border-[#3A3535] rounded px-2 py-1.5 text-[10px]"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveOption(group.id, field.id, opt.id)}
+                                          className="text-[#78716C] hover:text-red-600 p-1"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                      <textarea
+                                        rows={2}
+                                        value={opt.description || ''}
+                                        onChange={(e) => handleUpdateOption(group.id, field.id, opt.id, { description: e.target.value })}
+                                        placeholder="اشرح الفرق بلغة العميل: ما الذي يميّز هذا الخيار؟ ومتى يكون مناسباً؟"
+                                        className="w-full bg-white dark:bg-[#1C1A1A] border border-[#E7E0D3] dark:border-[#3A3535] rounded p-2 text-[10px]"
                                       />
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveOption(group.id, field.id, opt.id)}
-                                        className="text-[#78716C] hover:text-red-600 p-1"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </button>
+                                      <ImageUploadPicker
+                                        label="صورة نموذج هذا الخيار (اختياري)"
+                                        helperText="يفضل وضع صورة حقيقية أو نموذج واضح حتى يختار العميل بصرياً."
+                                        value={opt.image_url || ''}
+                                        onChange={(url) => handleUpdateOption(group.id, field.id, opt.id, { image_url: url })}
+                                        aspectRatio="16:9"
+                                        previewHeightClass="h-28"
+                                        defaultCategory="معرض الخيارات"
+                                      />
                                     </div>
                                   ))}
                                 </div>
