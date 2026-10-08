@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
-import { uploadDataUrlToRawajStorage } from '../../lib/storage';
+import { removeRawajStorageUrl, uploadDataUrlToRawajStorage } from '../../lib/storage';
 import { adminRoleLabel, canAccessAdminView } from '../../lib/adminAccess';
 import { BrandLogo } from '../common/BrandLogo';
 import { PWAInstallModal } from '../common/PWAInstallModal';
@@ -406,12 +406,23 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     }
 
     try {
+      const previousLogoUrl = siteSettings.logo_url || '';
       const optimized = await optimizeImageFile(file, 900, 900, 0.9);
       const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
         folder: 'branding',
         fileName: 'rawaj-logo',
       });
-      await updateSiteSettings({ logo_url: stored.publicUrl });
+      try {
+        await updateSiteSettings({ logo_url: stored.publicUrl });
+      } catch (error) {
+        await removeRawajStorageUrl(stored.publicUrl).catch(() => undefined);
+        throw error;
+      }
+      if (previousLogoUrl && previousLogoUrl !== stored.publicUrl) {
+        await removeRawajStorageUrl(previousLogoUrl).catch((cleanupError) => {
+          console.error('Previous logo cleanup failed:', cleanupError);
+        });
+      }
     } catch (error: any) {
       console.error('Supabase logo upload failed:', error);
       alert(error?.message || 'تعذر رفع الشعار.');
