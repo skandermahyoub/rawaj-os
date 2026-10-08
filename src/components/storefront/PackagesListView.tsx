@@ -24,36 +24,36 @@ import { SafeImage } from '../common/SafeImage';
 
 export const PackagesListView: React.FC = () => {
   const { packages, navigate, siteSettings } = useApp();
-  const [selectedSector, setSelectedSector] = useState<string>('all');
+  const [selectedSolution, setSelectedSolution] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const SECTOR_FILTERS = [
-    { key: 'all', label: 'كافة القطاعات', icon: '✨' },
-    { key: 'health', label: 'المستشفيات والصحة', icon: '🏥' },
-    { key: 'education', label: 'التعليم والمدارس', icon: '🎓' },
-    { key: 'hospitality', label: 'المطاعم والكافيهات', icon: '🍽️' },
-    { key: 'fashion', label: 'الأزياء والبراندات', icon: '👗' },
-    { key: 'pharma', label: 'الأدوية ومستحضرات التجميل', icon: '💊' },
-    { key: 'events', label: 'المعارض والفعاليات', icon: '🎪' },
-    { key: 'corporate', label: 'الشركات والبنوك VIP', icon: '🏢' },
-    { key: 'realestate', label: 'العقارات والمقاولات', icon: '🏗️' },
-    { key: 'logistics', label: 'النقل واللوجستيات', icon: '🚚' },
-    { key: 'retail', label: 'المتاجر والتجزئة', icon: '🛍️' },
+  const SOLUTION_FILTERS = [
+    { key: 'all', label: 'كل الحلول', icon: '✨' },
+    { key: 'brand_launch', label: 'إطلاق علامة', icon: '🚀' },
+    { key: 'branch_opening', label: 'افتتاح فرع', icon: '🏬' },
+    { key: 'retail_experience', label: 'تجهيز متجر', icon: '🛍️' },
+    { key: 'food_hospitality', label: 'مطعم وكافيه', icon: '☕' },
+    { key: 'product_launch', label: 'منتج للسوق', icon: '📦' },
+    { key: 'events_exhibitions', label: 'معارض وفعاليات', icon: '🎪' },
+    { key: 'corporate_operations', label: 'هوية مؤسسية', icon: '🏢' },
+    { key: 'field_marketing', label: 'انتشار ميداني', icon: '📣' },
+    { key: 'corporate_gifting', label: 'هدايا مؤسسية', icon: '🎁' },
+    { key: 'visual_refresh', label: 'تجديد بصري', icon: '✨' },
   ];
 
   const filteredPackages = useMemo(() => {
     return packages.filter((pkg) => {
-      if (selectedSector !== 'all' && pkg.sector_key !== selectedSector) {
+      if (selectedSolution !== 'all' && pkg.solution_key !== selectedSolution) {
         return false;
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const text = `${pkg.title_ar} ${pkg.tagline_ar} ${pkg.description_ar} ${pkg.target_sector_ar || ''}`.toLowerCase();
+        const text = `${pkg.title_ar} ${pkg.tagline_ar} ${pkg.description_ar} ${pkg.audience_ar || ''}`.toLowerCase();
         if (!text.includes(q)) return false;
       }
       return true;
     });
-  }, [packages, selectedSector, searchQuery]);
+  }, [packages, selectedSolution, searchQuery]);
 
   return (
     <div className="space-y-8 pb-16 text-right max-w-7xl mx-auto px-4 sm:px-6">
@@ -66,15 +66,15 @@ export const PackagesListView: React.FC = () => {
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 bg-[#B9142D]/30 border border-[#B9142D]/50 text-[#FCA5A5] px-3 py-1 rounded-full text-xs font-bold shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>حلول قطاعية متكاملة للشركات والمنشآت الكبرى (Turnkey B2B Solutions)</span>
+            <span>باقات رواج المبنية على النتيجة (Outcome-Based Solutions)</span>
           </div>
 
           <h1 className="font-heading font-black text-2xl sm:text-4xl text-white leading-tight">
-            باقات القطاعات الحيوية وتجهيز المنشآت
+            اختر النتيجة التي تريد الوصول إليها
           </h1>
 
           <p className="text-sm sm:text-base text-[#D6D3D1] leading-relaxed">
-            لا داعي للتشتت بين عشرات الموردين. توفر رواج باقات دعائية وإنشائية متكاملة مصممة خصيصاً لكل قطاع، تجمع بين المطبوعات الرسمية، الهويات، الزي الموحد، اللوحات الإعلانية، وتغليف المنتجات بإشراف هندسي وتنفيذي موحد وتسليم مفتاح.
+            بدلاً من شراء خدمات متفرقة، اختر هدف المشروع: إطلاق علامة، افتتاح فرع، تجهيز متجر، إطلاق منتج، معرض أو تجديد بصري. رواج تجمع الخدمات المناسبة في حل واحد قابل للتخصيص بثلاثة مستويات.
           </p>
 
           {/* Value props */}
@@ -89,7 +89,7 @@ export const PackagesListView: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 text-white/90">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>توفير حتى ٣٠٪ بالتسعير المجمع</span>
+              <span>3 مستويات لكل باقة</span>
             </div>
             <div className="flex items-center gap-2 text-white/90">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -99,13 +99,13 @@ export const PackagesListView: React.FC = () => {
         </div>
       </div>
 
-      {/* Sector Category Filter Bar */}
+      {/* Solution Filter Bar */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-4 h-4 text-[#B9142D]" />
             <span className="font-heading font-bold text-sm text-[#171616] dark:text-[#F5F3EF]">
-              اختر قطاع نشاطك التجاري:
+              ما الذي تريد إنجازه؟
             </span>
           </div>
           <div className="text-xs text-[#78716C] dark:text-[#A8A29E]">
@@ -113,14 +113,14 @@ export const PackagesListView: React.FC = () => {
           </div>
         </div>
 
-        {/* Scrollable Sector Pills */}
+        {/* Scrollable Solution Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar -mx-2 px-2">
-          {SECTOR_FILTERS.map((s) => {
-            const isActive = selectedSector === s.key;
+          {SOLUTION_FILTERS.map((s) => {
+            const isActive = selectedSolution === s.key;
             return (
               <button
                 key={s.key}
-                onClick={() => setSelectedSector(s.key)}
+                onClick={() => setSelectedSolution(s.key)}
                 className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
                   isActive
                     ? 'bg-[#B9142D] text-white border-[#B9142D] shadow-md scale-102'
@@ -173,9 +173,9 @@ export const PackagesListView: React.FC = () => {
 
                   {/* Title overlay */}
                   <div className="absolute bottom-3 right-3 left-3 text-white z-10">
-                    {pkg.target_sector_ar && (
+                    {pkg.audience_ar && (
                       <div className="text-[11px] text-amber-300 font-bold mb-1 line-clamp-1">
-                        {pkg.target_sector_ar}
+                        {pkg.audience_ar}
                       </div>
                     )}
                     <h2 className="font-heading font-black text-base sm:text-lg text-white leading-snug drop-shadow-sm">
@@ -222,6 +222,16 @@ export const PackagesListView: React.FC = () => {
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                           <span className="leading-snug">{b}</span>
                         </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {pkg.tiers && pkg.tiers.length > 0 && (
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {pkg.tiers.map((tier) => (
+                        <span key={tier.key} className="text-center text-[10px] font-bold rounded-lg px-2 py-1.5 bg-[#171616] dark:bg-[#2A2624] text-white border border-white/10">
+                          {tier.name_ar}
+                        </span>
                       ))}
                     </div>
                   )}
@@ -294,6 +304,7 @@ export const PackagesListView: React.FC = () => {
 export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }) => {
   const { packages, services, addToQuote, navigate, siteSettings } = useApp();
   const [isAddedToQuote, setIsAddedToQuote] = useState(false);
+  const [selectedTierKey, setSelectedTierKey] = useState('professional');
 
   const pkg = packages.find((p) => p.id === packageId);
 
@@ -311,7 +322,10 @@ export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }
     );
   }
 
-  const packageServices = services.filter((s) => (pkg.service_ids || []).includes(s.id));
+  const tiers = pkg.tiers || [];
+  const selectedTier = tiers.find((tier) => tier.key === selectedTierKey) || tiers[0];
+  const selectedServiceIds = selectedTier?.service_ids?.length ? selectedTier.service_ids : (pkg.service_ids || []);
+  const packageServices = services.filter((s) => selectedServiceIds.includes(s.id));
 
   const handleAddAllToQuote = () => {
     packageServices.forEach((s) => {
@@ -319,8 +333,11 @@ export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }
         s,
         1,
         {},
-        [{ label: 'ضمن الباقة', value: pkg.title_ar }],
-        `تمت الإضافة ضمن ${pkg.title_ar}`,
+        [
+          { label: 'ضمن الباقة', value: pkg.title_ar },
+          ...(selectedTier ? [{ label: 'مستوى الباقة', value: selectedTier.name_ar }] : []),
+        ],
+        `تمت الإضافة ضمن ${pkg.title_ar}${selectedTier ? ` - ${selectedTier.name_ar}` : ''}`,
         'ready'
       );
     });
@@ -337,7 +354,7 @@ export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }
       <nav className="flex items-center gap-2 text-xs text-[#78716C] dark:text-[#A8A29E]">
         <button onClick={() => navigate({ view: 'home' })} className="hover:text-[#B9142D]">الرئيسية</button>
         <span>/</span>
-        <button onClick={() => navigate({ view: 'packages' })} className="hover:text-[#B9142D]">باقات القطاعات</button>
+        <button onClick={() => navigate({ view: 'packages' })} className="hover:text-[#B9142D]">باقات رواج</button>
         <span>/</span>
         <span className="text-[#171616] dark:text-white font-bold">{pkg.title_ar}</span>
       </nav>
@@ -383,11 +400,11 @@ export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold text-[#B9142D] bg-[#FDE8EA] dark:bg-[#3D1217] px-3 py-1 rounded-full border border-[#B9142D]/20">
-                  {pkg.badge || 'حلول قطاعية متكاملة'}
+                  {pkg.badge || 'حل متكامل قابل للتخصيص'}
                 </span>
-                {pkg.target_sector_ar && (
+                {pkg.audience_ar && (
                   <span className="text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-                    {pkg.target_sector_ar}
+                    {pkg.audience_ar}
                   </span>
                 )}
               </div>
@@ -427,6 +444,29 @@ export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }
                       <span>{b}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {tiers.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-[#171616] dark:text-white">اختر مستوى الباقة:</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {tiers.map((tier) => {
+                    const active = selectedTier?.key === tier.key;
+                    return (
+                      <button
+                        key={tier.key}
+                        type="button"
+                        onClick={() => setSelectedTierKey(tier.key)}
+                        className={`p-3 rounded-xl border text-right transition-all ${active ? 'bg-[#B9142D] border-[#B9142D] text-white shadow-md' : 'bg-[#FAF7F2] dark:bg-[#252222] border-[#E7E0D3] dark:border-[#332F2F] text-[#171616] dark:text-white'}`}
+                      >
+                        <div className="text-xs font-black">{tier.name_ar}</div>
+                        {tier.description_ar && <div className={`text-[10px] mt-1 leading-relaxed ${active ? 'text-white/80' : 'text-[#78716C] dark:text-[#A8A29E]'}`}>{tier.description_ar}</div>}
+                        <div className={`text-[10px] mt-2 font-bold ${active ? 'text-white' : 'text-[#B9142D]'}`}>{tier.service_ids.length} خدمات</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
