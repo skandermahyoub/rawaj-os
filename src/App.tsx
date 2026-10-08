@@ -3,7 +3,6 @@ import { AppProvider, useApp } from './context/AppContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Header } from './components/common/Header';
 import { BottomNav } from './components/common/BottomNav';
-import { SideRail } from './components/common/SideRail';
 import { Footer } from './components/common/Footer';
 import { SearchModal } from './components/common/SearchModal';
 import { CustomQuoteModal } from './components/common/CustomQuoteModal';
@@ -222,11 +221,7 @@ const AppContent: React.FC = () => {
       {/* Footer */}
       <Footer />
 
-      {/* Fixed navigation frame */}
-      <SideRail
-        onOpenSearch={() => setSearchModalOpen(true)}
-        onOpenCustomQuote={() => setCustomQuoteModalOpen(true)}
-      />
+      {/* Fixed bottom navigation */}
       <BottomNav />
 
       {/* Global Search Modal */}
