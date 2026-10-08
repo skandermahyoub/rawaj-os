@@ -66,7 +66,10 @@ export const uploadDataUrlToRawajStorage = async (
   if (error) throw error;
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  if (!data.publicUrl) throw new Error('تعذر إنشاء رابط الصورة بعد الرفع.');
+  if (!data.publicUrl) {
+    await supabase.storage.from(BUCKET).remove([path]);
+    throw new Error('تعذر إنشاء رابط الصورة بعد الرفع.');
+  }
 
   return {
     path,
@@ -100,7 +103,10 @@ export const uploadFileToRawajStorage = async (
   if (error) throw error;
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  if (!data.publicUrl) throw new Error('تعذر إنشاء رابط الملف بعد الرفع.');
+  if (!data.publicUrl) {
+    await supabase.storage.from(BUCKET).remove([path]);
+    throw new Error('تعذر إنشاء رابط الملف بعد الرفع.');
+  }
 
   return {
     path,
