@@ -158,3 +158,127 @@
 .border-brand-primary-30 { border-color: rgba(var(--rawaj-primary-rgb), 0.3); }
 .border-brand-accent-30 { border-color: rgba(var(--rawaj-accent-rgb), 0.3); }
 
+
+
+/* Rawaj brand intro — replaces technical loading copy with a quiet premium entrance. */
+@keyframes rawajIntroIn {
+  0% { opacity: 0; transform: translateY(14px) scale(.94); }
+  55% { opacity: 1; transform: translateY(0) scale(1.015); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes rawajIntroHalo {
+  0%, 100% { transform: scale(.82); opacity: .18; }
+  50% { transform: scale(1.08); opacity: .42; }
+}
+@keyframes rawajIntroOrb {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, -14px, 0) scale(1.12); }
+}
+@keyframes rawajIntroLine {
+  0% { transform: scaleX(0); opacity: 0; }
+  45% { transform: scaleX(1); opacity: .7; }
+  100% { transform: scaleX(.65); opacity: .22; }
+}
+@keyframes rawajIntroDot {
+  0%, 100% { opacity: .25; transform: scale(.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.rawaj-intro {
+  isolation: isolate;
+}
+.rawaj-intro__grain {
+  position: absolute;
+  inset: 0;
+  opacity: .035;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(23,22,22,.8) .55px, transparent .55px);
+  background-size: 7px 7px;
+}
+.dark .rawaj-intro__grain {
+  opacity: .055;
+  background-image: radial-gradient(rgba(255,255,255,.7) .55px, transparent .55px);
+}
+.rawaj-intro__orb {
+  position: absolute;
+  width: 42vw;
+  height: 42vw;
+  max-width: 430px;
+  max-height: 430px;
+  border-radius: 9999px;
+  filter: blur(48px);
+  pointer-events: none;
+  animation: rawajIntroOrb 7s ease-in-out infinite;
+}
+.rawaj-intro__orb--one {
+  top: -18%;
+  right: -12%;
+  background: rgba(185,20,45,.12);
+}
+.rawaj-intro__orb--two {
+  bottom: -20%;
+  left: -14%;
+  background: rgba(212,175,55,.10);
+  animation-delay: -2.5s;
+}
+.rawaj-intro__logo-wrap {
+  position: relative;
+  width: clamp(126px, 31vw, 174px);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rawajIntroIn 1.15s cubic-bezier(.16,1,.3,1) both;
+}
+.rawaj-intro__halo {
+  position: absolute;
+  inset: -18%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(185,20,45,.15) 0%, rgba(212,175,55,.08) 38%, transparent 70%);
+  filter: blur(3px);
+  animation: rawajIntroHalo 3.8s ease-in-out infinite;
+}
+.rawaj-intro__logo {
+  position: relative;
+  z-index: 1;
+  width: 74%;
+  height: 74%;
+  padding: 10px;
+  border-radius: 30%;
+  background: rgba(255,255,255,.76);
+  border: 1px solid rgba(185,20,45,.10);
+  box-shadow: 0 22px 70px rgba(31,23,20,.13), inset 0 0 0 1px rgba(255,255,255,.72);
+  backdrop-filter: blur(14px);
+  animation: rawajIntroIn 1.25s .08s cubic-bezier(.16,1,.3,1) both;
+}
+.dark .rawaj-intro__logo {
+  background: rgba(25,22,20,.78);
+  border-color: rgba(255,255,255,.08);
+  box-shadow: 0 22px 70px rgba(0,0,0,.36), inset 0 0 0 1px rgba(255,255,255,.04);
+}
+.rawaj-intro__wordmark {
+  animation: rawajIntroIn 1s .35s cubic-bezier(.16,1,.3,1) both;
+}
+.rawaj-intro__pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: #B9142D;
+  box-shadow: 0 0 14px rgba(185,20,45,.55);
+  animation: rawajIntroDot 1.8s ease-in-out infinite;
+}
+.rawaj-intro__line {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  width: min(180px, 42vw);
+  height: 1px;
+  transform-origin: center;
+  background: linear-gradient(90deg, transparent, rgba(185,20,45,.55), rgba(212,175,55,.55), transparent);
+  animation: rawajIntroLine 1.8s .35s cubic-bezier(.16,1,.3,1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rawaj-intro *, .rawaj-intro__orb, .rawaj-intro__halo, .rawaj-intro__line {
+    animation: none !important;
+  }
+}
