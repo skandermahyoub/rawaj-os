@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - admin-hardening
+      - final-delivery-fixes
   pull_request:
     branches:
       - main
