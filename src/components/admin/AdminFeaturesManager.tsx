@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Award, 
@@ -21,6 +21,13 @@ export const AdminFeaturesManager: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [actionError, setActionError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const revealEditor = () => {
+    window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const [formData, setFormData] = useState<Omit<RawajFeature, 'id'>>({
     title_ar: '',
@@ -42,6 +49,7 @@ export const AdminFeaturesManager: React.FC = () => {
     });
     setEditingFeat(null);
     setIsCreating(true);
+    revealEditor();
   };
 
   const handleStartEdit = (feat: RawajFeature) => {
@@ -55,6 +63,7 @@ export const AdminFeaturesManager: React.FC = () => {
       sort_order: feat.sort_order,
     });
     setIsCreating(true);
+    revealEditor();
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -109,7 +118,7 @@ export const AdminFeaturesManager: React.FC = () => {
 
       {/* Form */}
       {isCreating && (
-        <div className="bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
+        <div ref={editorRef} className="scroll-mt-6 bg-white dark:bg-[#1C1A1A] p-6 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#E7E0D3] dark:border-[#332F2F]">
             <h3 className="text-base font-bold text-[#171616] dark:text-white flex items-center gap-2">
               <Award className="w-5 h-5 text-[#B9142D]" />
@@ -220,7 +229,7 @@ export const AdminFeaturesManager: React.FC = () => {
 
       {/* Features Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {rawajFeatures.sort((a, b) => a.sort_order - b.sort_order).map((feat) => (
+        {[...rawajFeatures].sort((a, b) => a.sort_order - b.sort_order).map((feat) => (
           <div
             key={feat.id}
             className="p-5 rounded-2xl bg-white dark:bg-[#1C1A1A] border border-[#E7E0D3] dark:border-[#332F2F] shadow-xs flex flex-col justify-between"
