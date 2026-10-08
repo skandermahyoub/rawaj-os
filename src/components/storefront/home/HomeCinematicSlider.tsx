@@ -15,6 +15,22 @@ export const HomeCinematicSlider: React.FC = () => {
   const progressRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    if (activeSlides.length === 0) {
+      if (currentIndex !== 0) setCurrentIndex(0);
+      progressRef.current = 0;
+      setProgress(0);
+      return;
+    }
+
+    if (currentIndex >= activeSlides.length) {
+      setCurrentIndex(0);
+      progressRef.current = 0;
+      setProgress(0);
+      lastTimeRef.current = null;
+    }
+  }, [activeSlides.length, currentIndex]);
+
   // Smooth frame-accurate animation loop for the progress bar
   useEffect(() => {
     if (activeSlides.length <= 1) return;
@@ -195,7 +211,10 @@ export const HomeCinematicSlider: React.FC = () => {
         <div className="max-w-6xl mx-auto bg-black/75 backdrop-blur-2xl border border-white/15 rounded-2xl p-3.5 sm:px-6 sm:py-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] flex flex-col gap-3">
           
           {/* TOP ROW: Segmented Interactive Progress Bar (أشريط وقت تنقل تفاعلي متقدم) */}
-          <div className="w-full grid gap-1.5 sm:gap-2 grid-cols-5 items-center">
+          <div
+            className="w-full grid gap-1.5 sm:gap-2 items-center"
+            style={{ gridTemplateColumns: `repeat(${Math.max(activeSlides.length, 1)}, minmax(0, 1fr))` }}
+          >
             {activeSlides.map((slide, idx) => {
               const isPast = idx < currentIndex;
               const isCurrent = idx === currentIndex;
