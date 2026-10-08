@@ -57,20 +57,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCustomQuote }) => {
     <>
       <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 dark:bg-[#0E0D0C]/90 backdrop-blur-xl border-b border-[#E8E2D5]/80 dark:border-[#262320]/80 transition-colors duration-300">
         {/* Main Top Header Bar Row */}
-        <div className="max-w-7xl mx-auto w-full h-16 sm:h-20 flex items-center justify-between gap-4 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto w-full h-[72px] sm:h-[84px] flex items-center justify-between gap-4 px-4 sm:px-8">
           
           {/* BRAND & LOGO SECTION */}
           <div className="flex items-center gap-3.5">
             {/* Logo Container */}
             <button 
               onClick={() => navigate({ view: 'home' })}
-              className="relative shrink-0 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl bg-white dark:bg-[#1A1816] border-2 border-[#E8E2D5] dark:border-[#2D2A26] shadow-xs hover:border-brand-primary transition-all overflow-hidden cursor-pointer"
+              className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-[18px] bg-white dark:bg-[#151312] border border-[#E8E2D5] dark:border-[#2D2A26] shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:border-brand-primary transition-all overflow-hidden cursor-pointer"
               title="الصفحة الرئيسية - مطبعة رواج"
             >
               <BrandLogo
                 src={siteSettings.logo_url}
                 alt={siteSettings.company_name_ar || 'رواج'}
-                className="w-full h-full object-contain p-1"
+                className="w-full h-full object-contain scale-[1.10]"
                 fallbackClassName="w-full h-full object-contain"
               />
             </button>
