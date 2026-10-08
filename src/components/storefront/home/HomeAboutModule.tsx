@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { 
   Target, 
   Eye, 
@@ -75,10 +76,11 @@ export const HomeAboutModule: React.FC = () => {
           <div className="lg:col-span-5 flex flex-col items-center sm:flex-row lg:flex-col text-center sm:text-right lg:text-center gap-6 p-6 rounded-2xl bg-white dark:bg-[#201D1C] shadow-md border border-[#EBE5DA] dark:border-[#2E2A28]">
             <div className="relative">
               <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-4 border-[#B9142D] shadow-lg">
-                <img
-                  src={aboutUsData.gm_photo_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'}
-                  alt={aboutUsData.gm_name_ar}
+                <SafeImage
+                  src={aboutUsData.gm_photo_url}
+                  alt={aboutUsData.gm_name_ar || 'صورة الإدارة'}
                   className="w-full h-full object-cover"
+                  fallbackCategory="الإدارة"
                 />
               </div>
               <div className="absolute -bottom-2 -right-2 bg-[#B9142D] text-white p-1.5 rounded-lg shadow-md">
@@ -94,7 +96,7 @@ export const HomeAboutModule: React.FC = () => {
                 {aboutUsData.gm_title_ar}
               </p>
               <div className="flex items-center justify-center sm:justify-start lg:justify-center gap-4 text-xs text-[#746E67] dark:text-[#A0988F]">
-                <span>+18 عاماً خبرة</span>
+                <span>{aboutUsData.years_experience ? `+${aboutUsData.years_experience} عاماً خبرة` : 'خبرة متراكمة'}</span>
                 <span>•</span>
                 <span>{siteSettings.address_ar.split('-')[0] || 'صنعاء'}</span>
               </div>
