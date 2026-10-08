@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Sparkles, 
@@ -22,6 +22,13 @@ export const AdminSliderManager: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [actionError, setActionError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const revealEditor = () => {
+    window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   // Form State
   const [formData, setFormData] = useState<Omit<HomeSlide, 'id'>>({
@@ -52,6 +59,7 @@ export const AdminSliderManager: React.FC = () => {
     });
     setEditingSlide(null);
     setIsCreating(true);
+    revealEditor();
   };
 
   const handleStartEdit = (slide: HomeSlide) => {
@@ -69,6 +77,7 @@ export const AdminSliderManager: React.FC = () => {
       is_active: slide.is_active,
     });
     setIsCreating(true);
+    revealEditor();
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -123,7 +132,7 @@ export const AdminSliderManager: React.FC = () => {
 
       {/* Create / Edit Form Modal */}
       {isCreating && (
-        <div className="bg-white dark:bg-[#1C1A1A] p-6 sm:p-8 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
+        <div ref={editorRef} className="scroll-mt-6 bg-white dark:bg-[#1C1A1A] p-6 sm:p-8 rounded-2xl border-2 border-[#B9142D] shadow-lg animate-fadeIn">
           <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#E7E0D3] dark:border-[#332F2F]">
             <h3 className="text-lg font-bold text-[#171616] dark:text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[#B9142D]" />
@@ -314,7 +323,7 @@ export const AdminSliderManager: React.FC = () => {
 
       {/* Slides List */}
       <div className="grid grid-cols-1 gap-4">
-        {homeSlides.sort((a, b) => a.sort_order - b.sort_order).map((slide, index) => (
+        {[...homeSlides].sort((a, b) => a.sort_order - b.sort_order).map((slide, index) => (
           <div
             key={slide.id}
             className={`p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#1C1A1A] border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs ${
