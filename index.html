@@ -25,7 +25,7 @@
       (function() {
         try {
           var saved = localStorage.getItem('rawaj_theme') || localStorage.getItem('rawaj_theme_mode');
-          if (saved === 'dark' || (saved && saved.indexOf('"is_dark":true') !== -1)) {
+          if (saved === 'dark' || saved === '"dark"' || (saved && saved.indexOf('"is_dark":true') !== -1)) {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
