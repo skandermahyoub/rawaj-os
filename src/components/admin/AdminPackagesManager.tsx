@@ -25,52 +25,52 @@ export const AdminPackagesManager: React.FC = () => {
   const { packages, services, createPackage, updatePackage, deletePackage, navigate } = useApp();
   const [editingPkg, setEditingPkg] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSector, setSelectedSector] = useState<string>('all');
+  const [selectedSolution, setSelectedSolution] = useState<string>('all');
   const [actionError, setActionError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const SECTOR_OPTIONS = [
-    { key: 'all', label: 'كافة القطاعات', icon: '✨' },
-    { key: 'health', label: 'المستشفيات والصحة 🏥', icon: '🏥' },
-    { key: 'education', label: 'التعليم والمدارس 🎓', icon: '🎓' },
-    { key: 'hospitality', label: 'المطاعم والكافيهات 🍽️', icon: '🍽️' },
-    { key: 'fashion', label: 'الأزياء والبراندات 👗', icon: '👗' },
-    { key: 'pharma', label: 'الأدوية ومستحضرات التجميل 💊', icon: '💊' },
-    { key: 'events', label: 'المعارض والفعاليات 🎪', icon: '🎪' },
-    { key: 'corporate', label: 'الشركات والبنوك VIP 🏢', icon: '🏢' },
-    { key: 'realestate', label: 'العقارات والمقاولات 🏗️', icon: '🏗️' },
-    { key: 'logistics', label: 'النقل واللوجستيات 🚚', icon: '🚚' },
-    { key: 'retail', label: 'المتاجر والتجزئة 🛍️', icon: '🛍️' },
+  const SOLUTION_OPTIONS = [
+    { key: 'all', label: 'كل الحلول' },
+    { key: 'brand_launch', label: 'إطلاق علامة' },
+    { key: 'branch_opening', label: 'افتتاح فرع' },
+    { key: 'retail_experience', label: 'تجهيز متجر' },
+    { key: 'food_hospitality', label: 'مطعم وكافيه' },
+    { key: 'product_launch', label: 'منتج جاهز للسوق' },
+    { key: 'events_exhibitions', label: 'معارض وفعاليات' },
+    { key: 'corporate_operations', label: 'هوية مؤسسية' },
+    { key: 'field_marketing', label: 'انتشار ميداني' },
+    { key: 'corporate_gifting', label: 'هدايا مؤسسية' },
+    { key: 'visual_refresh', label: 'تجديد بصري' },
   ];
 
   const filteredPackages = useMemo(() => {
     return packages.filter((pkg) => {
-      if (selectedSector !== 'all' && pkg.sector_key !== selectedSector) {
+      if (selectedSolution !== 'all' && pkg.solution_key !== selectedSolution) {
         return false;
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const text = `${pkg.title_ar} ${pkg.title_en || ''} ${pkg.tagline_ar || ''} ${pkg.target_sector_ar || ''}`.toLowerCase();
+        const text = `${pkg.title_ar} ${pkg.title_en || ''} ${pkg.tagline_ar || ''} ${pkg.audience_ar || ''}`.toLowerCase();
         if (!text.includes(q)) return false;
       }
       return true;
     });
-  }, [packages, selectedSector, searchQuery]);
+  }, [packages, selectedSolution, searchQuery]);
 
   const handleAddNew = () => {
     setEditingPkg({
       id: `pkg-${Date.now()}`,
-      title_ar: 'باقة تجارية جديدة لقطاع مخصص',
-      title_en: 'New Custom Sector Package',
+      title_ar: 'باقة حل تجاري جديدة',
+      title_en: 'New Commercial Solution Package',
       slug: `custom-package-${Date.now()}`,
       tagline_ar: 'حلول متكاملة تشمل المطبوعات والهوية واللوحات والتغليف.',
       description_ar: 'تفاصيل شمولية الباقة والخدمات المشمولة فيها لإدارات الشركات والمشتريات...',
       hero_image: '',
-      badge: 'باقة قطاعية متكاملة',
+      badge: 'حل رواج متكامل',
       featured: true,
-      sector_key: 'corporate',
-      target_sector_ar: 'الشركات والمؤسسات التجارية',
-      ideal_for_ar: 'إدارات المشتريات والتسويق في الشركات',
+      solution_key: 'brand_launch',
+      audience_ar: 'الشركات والمشاريع والعلامات التجارية',
+      ideal_for_ar: 'عميل لديه نتيجة واضحة ويريد جمع عدة خدمات في مشروع واحد',
       turnaround_time_ar: '٥ - ٨ أيام عمل',
       service_ids: services.slice(0, 4).map((s) => s.id),
       benefits_ar: [
@@ -81,6 +81,11 @@ export const AdminPackagesManager: React.FC = () => {
       items_breakdown: [
         { name_ar: 'المطبوعات الرسمية والهوية', description_ar: 'أوراق مراسلات، أظرف، وكروت شخصية فاخرة.' },
         { name_ar: 'اللوحات واللافتات التعريفية', description_ar: 'لوحات أكريليك وستانلس ستيل مضيئة.' }
+      ],
+      tiers: [
+        { key: 'basic', name_ar: 'أساسية', description_ar: 'الحد الضروري للنتيجة المطلوبة', service_ids: services.slice(0, 2).map((s) => s.id) },
+        { key: 'professional', name_ar: 'احترافية', description_ar: 'الخيار المتوازن لمعظم العملاء', service_ids: services.slice(0, 4).map((s) => s.id) },
+        { key: 'integrated', name_ar: 'متكاملة', description_ar: 'أوسع نطاق تنفيذ داخل الباقة', service_ids: services.slice(0, 6).map((s) => s.id) },
       ],
       sort_order: packages.length + 1,
     });
@@ -113,10 +118,10 @@ export const AdminPackagesManager: React.FC = () => {
             </span>
             <div>
               <h1 className="font-heading font-black text-lg sm:text-xl text-[#171616] dark:text-white">
-                إدارة باقات القطاعات والحلول المجمّعة ({packages.length})
+                إدارة باقات رواج والحلول المخصصة ({packages.length})
               </h1>
               <p className="text-xs text-[#78716C] dark:text-[#A8A29E] mt-0.5">
-                تخصيص العروض الاستراتيجية للقطاعات (المستشفيات، المدارس، المطاعم، البراندات، الفعاليات...) لجلب كبرى صفقات الشركات.
+                كل باقة تبدأ من نتيجة يريدها العميل، ثم تُبنى من خدمات رواج بثلاثة مستويات: أساسية، احترافية، ومتكاملة.
               </p>
             </div>
           </div>
@@ -130,7 +135,7 @@ export const AdminPackagesManager: React.FC = () => {
             className="flex-1 md:flex-initial bg-[#B9142D] hover:bg-[#930F23] text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>+ إضافة باقة قطاعية</span>
+            <span>+ إضافة باقة مخصصة</span>
           </button>
         </div>
       </div>
@@ -150,7 +155,7 @@ export const AdminPackagesManager: React.FC = () => {
             <Search className="w-4 h-4 text-[#78716C] absolute right-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="ابحث عن باقة بالاسم، القطاع المستهدف، أو الوصف..."
+              placeholder="ابحث عن باقة بالاسم، النتيجة، الجمهور أو الوصف..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#332F2F] rounded-xl pr-10 pl-4 py-2 text-xs text-[#171616] dark:text-white focus:outline-hidden focus:border-[#B9142D]"
@@ -162,14 +167,14 @@ export const AdminPackagesManager: React.FC = () => {
           </div>
         </div>
 
-        {/* Sector Filter Chips */}
+        {/* Solution Filter Chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {SECTOR_OPTIONS.map((s) => {
-            const isActive = selectedSector === s.key;
+          {SOLUTION_OPTIONS.map((s) => {
+            const isActive = selectedSolution === s.key;
             return (
               <button
                 key={s.key}
-                onClick={() => setSelectedSector(s.key)}
+                onClick={() => setSelectedSolution(s.key)}
                 className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
                   isActive
                     ? 'bg-[#B9142D] text-white border-[#B9142D]'
@@ -203,7 +208,7 @@ export const AdminPackagesManager: React.FC = () => {
                   />
                   <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                     <span className="bg-[#B9142D] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-md shadow-xs">
-                      {pkg.badge || 'باقة قطاعية'}
+                      {pkg.badge || 'باقة مخصصة'}
                     </span>
                   </div>
                   {pkg.turnaround_time_ar && (
@@ -215,9 +220,9 @@ export const AdminPackagesManager: React.FC = () => {
                 </div>
 
                 <div className="p-4 space-y-3">
-                  {pkg.target_sector_ar && (
+                  {pkg.audience_ar && (
                     <div className="text-[11px] font-bold text-amber-800 dark:text-amber-400">
-                      🎯 {pkg.target_sector_ar}
+                      🎯 {pkg.audience_ar}
                     </div>
                   )}
 
@@ -295,10 +300,10 @@ export const AdminPackagesManager: React.FC = () => {
                 </span>
                 <div>
                   <h3 className="font-heading font-bold text-base text-[#171616] dark:text-white">
-                    تعديل وتخصيص الباقة القطاعية
+                    تعديل وتخصيص باقة رواج
                   </h3>
                   <p className="text-[11px] text-[#78716C] dark:text-[#A8A29E]">
-                    حدد البنود الهندسية والخدمات المشمولة لتجهيز عروض الشركات الكبرى
+                    حدد النتيجة والجمهور والخدمات ثم اضبط مستويات الباقة الثلاثة
                   </p>
                 </div>
               </div>
@@ -324,32 +329,25 @@ export const AdminPackagesManager: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-[#171616] dark:text-white">تصنيف القطاع المستهدف:</label>
+                <label className="font-bold text-[#171616] dark:text-white">نوع الحل / النتيجة المستهدفة:</label>
                 <select
-                  value={editingPkg.sector_key || 'corporate'}
-                  onChange={(e) => setEditingPkg({ ...editingPkg, sector_key: e.target.value })}
+                  value={editingPkg.solution_key || 'brand_launch'}
+                  onChange={(e) => setEditingPkg({ ...editingPkg, solution_key: e.target.value })}
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#332F2F] rounded-xl px-3 py-2 text-xs"
                 >
-                  <option value="health">المستشفيات والصحة 🏥</option>
-                  <option value="education">التعليم والمدارس 🎓</option>
-                  <option value="hospitality">المطاعم والكافيهات 🍽️</option>
-                  <option value="fashion">الأزياء والبراندات 👗</option>
-                  <option value="pharma">الأدوية ومستحضرات التجميل 💊</option>
-                  <option value="events">المعارض والفعاليات 🎪</option>
-                  <option value="corporate">الشركات والبنوك VIP 🏢</option>
-                  <option value="realestate">العقارات والمقاولات 🏗️</option>
-                  <option value="logistics">النقل واللوجستيات 🚚</option>
-                  <option value="retail">المتاجر والتجزئة 🛍️</option>
+                  {SOLUTION_OPTIONS.filter((s) => s.key !== 'all').map((s) => (
+                    <option key={s.key} value={s.key}>{s.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="font-bold text-[#171616] dark:text-white">القطاع المستهدف (نص وصفي):</label>
+                <label className="font-bold text-[#171616] dark:text-white">الجمهور المستهدف:</label>
                 <input
                   type="text"
-                  placeholder="مثلاً: المستشفيات، المجمعات الطبية، ومراكز الأسنان"
+                  placeholder="مثلاً: المشاريع الجديدة، المتاجر، الشركات والمؤسسات"
                   value={editingPkg.target_sector_ar || ''}
                   onChange={(e) => setEditingPkg({ ...editingPkg, target_sector_ar: e.target.value })}
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#332F2F] rounded-xl px-3 py-2 text-xs"
@@ -446,6 +444,58 @@ export const AdminPackagesManager: React.FC = () => {
                     </label>
                   );
                 })}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="font-bold text-[#171616] dark:text-white">مستويات الباقة الثلاثة:</div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                {(editingPkg.tiers || []).map((tier: any, tierIndex: number) => (
+                  <div key={tier.key || tierIndex} className="p-3 rounded-2xl bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#332F2F] space-y-2">
+                    <input
+                      value={tier.name_ar || ''}
+                      onChange={(e) => {
+                        const tiers = [...(editingPkg.tiers || [])];
+                        tiers[tierIndex] = { ...tiers[tierIndex], name_ar: e.target.value };
+                        setEditingPkg({ ...editingPkg, tiers });
+                      }}
+                      className="w-full bg-white dark:bg-[#1C1A1A] border border-[#E7E0D3] dark:border-[#332F2F] rounded-lg px-2.5 py-2 font-bold"
+                    />
+                    <textarea
+                      rows={2}
+                      value={tier.description_ar || ''}
+                      onChange={(e) => {
+                        const tiers = [...(editingPkg.tiers || [])];
+                        tiers[tierIndex] = { ...tiers[tierIndex], description_ar: e.target.value };
+                        setEditingPkg({ ...editingPkg, tiers });
+                      }}
+                      className="w-full bg-white dark:bg-[#1C1A1A] border border-[#E7E0D3] dark:border-[#332F2F] rounded-lg px-2.5 py-2"
+                    />
+                    <div className="max-h-36 overflow-y-auto space-y-1">
+                      {services.map((service) => {
+                        const checked = (tier.service_ids || []).includes(service.id);
+                        return (
+                          <label key={service.id} className="flex items-center gap-2 text-[10px] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                const tiers = [...(editingPkg.tiers || [])];
+                                const ids = checked
+                                  ? (tier.service_ids || []).filter((id: string) => id !== service.id)
+                                  : [...(tier.service_ids || []), service.id];
+                                tiers[tierIndex] = { ...tiers[tierIndex], service_ids: ids };
+                                setEditingPkg({ ...editingPkg, tiers });
+                              }}
+                              className="accent-[#B9142D]"
+                            />
+                            <span className="truncate">{service.name_ar}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
