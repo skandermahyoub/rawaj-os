@@ -11,7 +11,6 @@ import { MostRequestedGrid } from './home/MostRequestedGrid';
 import { InteractiveQuoteEstimator } from './home/InteractiveQuoteEstimator';
 import { HomeServicesStore } from './home/HomeServicesStore';
 import { DepartmentGrid } from './home/DepartmentGrid';
-import { HomePackages } from './home/HomePackages';
 import { HomePackagesSlider } from './home/HomePackagesSlider';
 import { HomePortfolio } from './home/HomePortfolio';
 import { HomeProudPortfolio } from './home/HomeProudPortfolio';
@@ -127,7 +126,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onOpenSearch, onOpenCustomQu
       case 'sector_packages':
         return (
           <div key="mod-packages" id="packages-module" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-            {layout === 'tabs_slider' ? <HomePackagesSlider /> : <HomePackages />}
+            <HomePackagesSlider />
           </div>
         );
 
