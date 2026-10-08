@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { RawajLogo } from '../../common/RawajLogo';
+import { SafeImage } from '../../common/SafeImage';
 import { 
   Calculator, 
   Layers, 
@@ -107,10 +107,11 @@ export const HomeHeroHeader: React.FC<HomeHeroHeaderProps> = ({ onOpenCustomQuot
       {/* 1. Architectural Texture & Background Lighting */}
       {heroHeaderSettings.bg_image_url ? (
         <div className="absolute inset-0 pointer-events-none opacity-25">
-          <img 
-            src={heroHeaderSettings.bg_image_url} 
-            alt="Hero Background" 
+          <SafeImage
+            src={heroHeaderSettings.bg_image_url}
+            alt="Hero Background"
             className="w-full h-full object-cover object-center"
+            fallbackCategory="خلفية الهيدر"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#12100F] via-[#12100F]/85 to-[#12100F]/60" />
         </div>
