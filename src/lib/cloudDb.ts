@@ -192,14 +192,27 @@ export const onSnapshot = (
 ): (() => void) => {
   let disposed = false;
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let retryAttempt = 0;
   let channel: RealtimeChannel | null = null;
 
   const refresh = async () => {
     try {
       const snapshot = await readCollection(ref.table);
+      retryAttempt = 0;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
       if (!disposed) onNext(snapshot);
     } catch (error) {
-      if (!disposed) onError?.(error);
+      if (!disposed) {
+        onError?.(error);
+        const delay = Math.min(5000, 500 * 2 ** retryAttempt);
+        retryAttempt += 1;
+        if (retryTimer) clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => void refresh(), delay);
+      }
     }
   };
 
@@ -223,6 +236,7 @@ export const onSnapshot = (
   return () => {
     disposed = true;
     if (refreshTimer) clearTimeout(refreshTimer);
+    if (retryTimer) clearTimeout(retryTimer);
     if (channel) void supabase.removeChannel(channel);
   };
 };
