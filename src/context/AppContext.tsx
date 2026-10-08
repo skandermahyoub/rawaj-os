@@ -2029,7 +2029,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Search Engine with synonym normalization
   const searchServices = (query: string): Service[] => {
-    if (!query || !query.trim()) return services.filter((s) => s.service_status === 'published');
+    if (!query || !query.trim()) return services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component');
     const q = query.trim().toLowerCase();
 
     // Check synonym expansions
@@ -2041,8 +2041,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return services.filter((service) => {
-      if (service.service_status !== 'published') return false;
-      const searchableText = `${service.name_ar} ${service.name_en} ${service.short_description_ar} ${service.full_description_ar} ${service.slug}`.toLowerCase();
+      if (service.service_status !== 'published' || service.catalog_role === 'component') return false;
+      const specificationText = (service.specification_groups || [])
+        .flatMap((group) => [
+          group.title_ar,
+          group.description_ar || '',
+          ...(group.fields || []).flatMap((field) => [
+            field.label_ar,
+            field.help_text_ar || '',
+            ...(field.options || []).flatMap((opt) => [
+              opt.label_ar,
+              opt.description || '',
+              opt.badge || '',
+            ]),
+          ]),
+        ])
+        .join(' ');
+      const searchableText = `${service.name_ar} ${service.name_en} ${service.short_description_ar} ${service.full_description_ar} ${service.customer_goal_ar || ''} ${service.slug} ${specificationText}`.toLowerCase();
       return searchTerms.some((term) => searchableText.includes(term));
     });
   };
