@@ -35,20 +35,24 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<'all' | 'customer_service' | 'component'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [actionError, setActionError] = useState('');
 
   // Metrics
   const totalCount = services.length;
-  const publishedCount = services.filter((s) => s.service_status === 'published').length;
+  const customerServicesCount = services.filter((s) => s.catalog_role !== 'component').length;
+  const componentCount = services.filter((s) => s.catalog_role === 'component').length;
+  const publishedCount = services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component').length;
   const draftCount = services.filter((s) => s.service_status === 'draft' || s.service_status === 'ready_for_review').length;
-  const coveredDeptsCount = new Set(services.map((s) => s.department_id)).size;
+  const coveredDeptsCount = new Set(services.filter((s) => s.catalog_role !== 'component').map((s) => s.department_id)).size;
 
   // Filtered services
   const filteredServices = useMemo(() => {
     return services.filter((s) => {
       if (selectedDept !== 'all' && s.department_id !== selectedDept) return false;
       if (selectedStatus !== 'all' && s.service_status !== selectedStatus) return false;
+      if (selectedRole !== 'all' && (s.catalog_role || 'customer_service') !== selectedRole) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const text = `${s.name_ar} ${s.name_en || ''} ${s.slug} ${s.short_description_ar || ''}`.toLowerCase();
@@ -56,7 +60,7 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
       }
       return true;
     });
-  }, [services, selectedDept, selectedStatus, searchQuery]);
+  }, [services, selectedDept, selectedStatus, selectedRole, searchQuery]);
 
   const handleToggleStatus = async (serviceId: string, currentStatus: ServiceStatus, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -120,13 +124,13 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 bg-[#B9142D]/10 dark:bg-[#B9142D]/20 text-[#B9142D] dark:text-[#E02440] px-3 py-1 rounded-full text-xs font-bold border border-[#B9142D]/20">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>إدارة الخدمات والمنتجات الطباعية المتقدمة</span>
+              <span>إدارة دليل الخدمات الذكي</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-[#171616] dark:text-white tracking-tight">
-              كتالوج الخدمات والمواصفات الفنية
+              الخدمات الرئيسية والمكونات التقنية
             </h1>
             <p className="text-xs sm:text-sm text-[#78716C] dark:text-[#A8A29E] max-w-2xl leading-relaxed">
-              تحكم ديناميكي شامل في التسعير، المواصفات المخصصة، قوالب الطلب، ومعارض الصور لـ <span className="font-bold text-[#B9142D] dark:text-[#E02440]">{totalCount} خدمة</span> طباعية وصناعية.
+              الخدمات الرئيسية هي ما يراه العميل كحاجة واضحة، أما المكونات التقنية فتبقى داخلية وتظهر كخيارات داخل صفحات الخدمات. الإجمالي <span className="font-bold text-[#B9142D] dark:text-[#E02440]">{totalCount}</span>.
             </p>
           </div>
 
@@ -162,9 +166,9 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
         
         <div className="bg-[#FFFDFA] dark:bg-[#1C1A1A] p-4 rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F] shadow-xs flex items-center justify-between">
           <div>
-            <div className="text-xs text-[#78716C] dark:text-[#A8A29E] font-medium">إجمالي الخدمات</div>
-            <div className="text-2xl font-black text-[#171616] dark:text-white mt-1">{totalCount}</div>
-            <div className="text-[11px] text-[#78716C] dark:text-[#A8A29E] mt-0.5">جاهزة للطلب والتسعير</div>
+            <div className="text-xs text-[#78716C] dark:text-[#A8A29E] font-medium">الخدمات الرئيسية</div>
+            <div className="text-2xl font-black text-[#171616] dark:text-white mt-1">{customerServicesCount}</div>
+            <div className="text-[11px] text-[#78716C] dark:text-[#A8A29E] mt-0.5">تظهر في دليل العميل</div>
           </div>
           <div className="w-11 h-11 rounded-xl bg-[#B9142D]/10 text-[#B9142D] flex items-center justify-center shrink-0">
             <Layers className="w-5 h-5" />
@@ -342,6 +346,30 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
 
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setSelectedRole('all')}
+          className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedRole === 'all' ? 'bg-[#171616] text-white border-[#171616]' : 'bg-white dark:bg-[#1C1A1A] border-[#E7E0D3] dark:border-[#332F2F] text-[#78716C] dark:text-[#A8A29E]'}`}
+        >
+          الكل ({totalCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedRole('customer_service')}
+          className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedRole === 'customer_service' ? 'bg-[#B9142D] text-white border-[#B9142D]' : 'bg-white dark:bg-[#1C1A1A] border-[#E7E0D3] dark:border-[#332F2F] text-[#78716C] dark:text-[#A8A29E]'}`}
+        >
+          خدمات العميل ({customerServicesCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedRole('component')}
+          className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedRole === 'component' ? 'bg-[#D4AF37] text-black border-[#D4AF37]' : 'bg-white dark:bg-[#1C1A1A] border-[#E7E0D3] dark:border-[#332F2F] text-[#78716C] dark:text-[#A8A29E]'}`}
+        >
+          مكونات تقنية ({componentCount})
+        </button>
+      </div>
+
       {/* Services Content: Grid View or Table View */}
       {filteredServices.length === 0 ? (
         <div className="bg-[#FFFDFA] dark:bg-[#1C1A1A] rounded-3xl border border-[#E7E0D3] dark:border-[#332F2F] p-12 text-center space-y-4">
@@ -453,7 +481,7 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
                         className="flex-1 bg-[#FAF7F2] dark:bg-[#252222] hover:bg-[#B9142D] hover:text-white dark:hover:bg-[#B9142D] text-[#171616] dark:text-white text-xs font-bold py-2 px-3 rounded-xl border border-[#E7E0D3] dark:border-[#3A3535] hover:border-[#B9142D] flex items-center justify-center gap-1.5 transition-all shadow-xs"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
-                        <span>تعديل المواصفات</span>
+                        <span>تحرير دليل الخدمة</span>
                       </button>
                     )}
 
@@ -579,7 +607,7 @@ export const AdminServicesList: React.FC<AdminServicesListProps> = ({ onNavigate
                             <button
                               onClick={() => onNavigateSubView('service-edit', service.id)}
                               className="p-2 rounded-xl bg-[#FAF7F2] dark:bg-[#252222] text-[#171616] dark:text-white hover:bg-[#B9142D] hover:text-white border border-[#E7E0D3] dark:border-[#3A3535] transition-colors shadow-xs"
-                              title="تعديل المواصفات والبيانات"
+                              title="تحرير دليل الخدمة والبيانات"
                             >
                               <Edit3 className="w-4 h-4" />
                             </button>
