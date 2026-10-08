@@ -1,17 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ServiceCard } from './ServiceCard';
-import { 
-  Filter, 
-  Search, 
-  X, 
-  Sparkles, 
-  Layers, 
-  SlidersHorizontal, 
+import {
+  Layers,
+  Search,
+  X,
+  Sparkles,
   RotateCcw,
-  Briefcase,
-  Globe,
-  ChevronLeft
+  SlidersHorizontal,
+  WandSparkles,
 } from 'lucide-react';
 
 interface ServicesListViewProps {
@@ -25,339 +22,189 @@ interface ServicesListViewProps {
 export const ServicesListView: React.FC<ServicesListViewProps> = ({
   initialDepartmentId,
   initialCategoryId,
-  initialIndustrySectorId,
   initialSearchQuery = '',
   onOpenCustomQuote,
 }) => {
-  const { services, departments, categories, industrySectors, getIndustrySectorById } = useApp();
+  const { services, departments, categories } = useApp();
 
-  const activeDepartments = departments.filter((d) => d.is_active !== false);
-  const [selectedSector, setSelectedSector] = useState<string>(initialIndustrySectorId || 'all');
-  const [selectedDept, setSelectedDept] = useState<string>(initialDepartmentId || 'all');
-  const [selectedCat, setSelectedCat] = useState<string>(initialCategoryId || 'all');
-  const [searchQuery, setSearchQuery] = useState<string>(initialSearchQuery);
-  const [activeTabMode, setActiveTabMode] = useState<'sectors' | 'departments'>(
-    initialIndustrySectorId ? 'sectors' : 'departments'
+  const activeDepartments = useMemo(
+    () => departments.filter((d) => d.is_active !== false).sort((a, b) => a.sort_order - b.sort_order),
+    [departments]
   );
 
-  useEffect(() => {
-    if (initialIndustrySectorId) {
-      setSelectedSector(initialIndustrySectorId);
-      setActiveTabMode('sectors');
-    }
-  }, [initialIndustrySectorId]);
+  const [selectedDept, setSelectedDept] = useState<string>(initialDepartmentId || 'all');
+  const [selectedCat, setSelectedCat] = useState<string>(initialCategoryId || 'all');
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
 
   useEffect(() => {
-    if (initialDepartmentId) {
-      setSelectedDept(initialDepartmentId);
-      setActiveTabMode('departments');
-    }
+    if (initialDepartmentId) setSelectedDept(initialDepartmentId);
   }, [initialDepartmentId]);
 
-  // Current active sector details if selected
-  const activeSectorData = useMemo(() => {
-    if (selectedSector === 'all') return null;
-    return getIndustrySectorById(selectedSector);
-  }, [selectedSector, getIndustrySectorById]);
+  useEffect(() => {
+    if (initialCategoryId) setSelectedCat(initialCategoryId);
+  }, [initialCategoryId]);
 
-  // Available categories for selected department
+  const publicServices = useMemo(
+    () =>
+      services.filter(
+        (s) => s.service_status === 'published' && s.catalog_role !== 'component'
+      ),
+    [services]
+  );
+
   const availableCategories = useMemo(() => {
-    if (selectedDept === 'all') return categories.filter((c) => c.is_active !== false);
-    return categories.filter((c) => c.department_id === selectedDept && c.is_active !== false);
+    if (selectedDept === 'all') return [];
+    return categories
+      .filter((c) => c.department_id === selectedDept && c.is_active !== false)
+      .sort((a, b) => a.sort_order - b.sort_order);
   }, [categories, selectedDept]);
 
-  // Handle sector change
-  const handleSectorChange = (sectorId: string) => {
-    setSelectedSector(sectorId);
-    if (sectorId !== 'all') {
-      setSelectedDept('all');
-      setSelectedCat('all');
-    }
-  };
+  const filteredServices = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
 
-  // Handle department change
+    return publicServices.filter((s) => {
+      if (selectedDept !== 'all' && s.department_id !== selectedDept) return false;
+      if (selectedCat !== 'all' && s.category_id !== selectedCat) return false;
+
+      if (!q) return true;
+
+      const specText = (s.specification_groups || [])
+        .flatMap((group) => [
+          group.title_ar,
+          group.description_ar || '',
+          ...(group.fields || []).flatMap((field) => [
+            field.label_ar,
+            field.help_text_ar || '',
+            ...(field.options || []).flatMap((opt) => [
+              opt.label_ar,
+              opt.description || '',
+              opt.badge || '',
+            ]),
+          ]),
+        ])
+        .join(' ');
+
+      const haystack = [
+        s.name_ar,
+        s.name_en,
+        s.short_description_ar,
+        s.full_description_ar,
+        s.customer_goal_ar || '',
+        specText,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(q);
+    });
+  }, [publicServices, selectedDept, selectedCat, searchQuery]);
+
   const handleDeptChange = (deptId: string) => {
     setSelectedDept(deptId);
     setSelectedCat('all');
-    if (deptId !== 'all') {
-      setSelectedSector('all');
-    }
   };
 
-  // Filtered services
-  const filteredServices = useMemo(() => {
-    return services.filter((s) => {
-      // Public catalog shows customer needs, not internal technical components.
-      if (s.service_status !== 'published' || s.catalog_role === 'component') return false;
-
-      // Sector filter
-      if (selectedSector !== 'all') {
-        const sector = (industrySectors || []).find(sec => sec.id === selectedSector);
-        const matchesSector = 
-          (sector?.service_ids || []).includes(s.id) || 
-          (s.industry_sector_ids || []).includes(selectedSector);
-        if (!matchesSector) return false;
-      }
-
-      // Department filter
-      if (selectedDept !== 'all' && s.department_id !== selectedDept) {
-        return false;
-      }
-
-      // Category filter
-      if (selectedCat !== 'all' && s.category_id !== selectedCat) {
-        return false;
-      }
-
-      // Search query filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const specText = (s.specification_groups || [])
-          .flatMap((group) => [
-            group.title_ar,
-            group.description_ar || '',
-            ...(group.fields || []).flatMap((field) => [
-              field.label_ar,
-              field.help_text_ar || '',
-              ...(field.options || []).flatMap((opt) => [
-                opt.label_ar,
-                opt.description || '',
-                opt.badge || '',
-              ]),
-            ]),
-          ])
-          .join(' ');
-        const text = `${s.name_ar} ${s.name_en} ${s.short_description_ar} ${s.full_description_ar} ${s.customer_goal_ar || ''} ${specText}`.toLowerCase();
-        if (!text.includes(q)) return false;
-      }
-
-      return true;
-    });
-  }, [services, selectedSector, selectedDept, selectedCat, searchQuery, industrySectors]);
-
-  const handleResetFilters = () => {
-    setSelectedSector('all');
+  const reset = () => {
     setSelectedDept('all');
     setSelectedCat('all');
     setSearchQuery('');
   };
 
-  const hasActiveFilters = 
-    selectedSector !== 'all' || 
-    selectedDept !== 'all' || 
-    selectedCat !== 'all' || 
-    searchQuery.trim() !== '';
+  const hasFilters = selectedDept !== 'all' || selectedCat !== 'all' || Boolean(searchQuery.trim());
 
   return (
-    <div className="space-y-6 pb-12 font-sans">
-      
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-right">
-        <div>
-          <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-[#171616] dark:text-[#F5F3EF]">
-            دليل خدمات الطباعة والإعلان والتجهيزات والتوريد
-          </h1>
-          <p className="text-xs sm:text-sm text-[#78716C] dark:text-[#A8A29E]">
-            دليل تفاعلي يساعدك على اكتشاف الخيارات والخامات والتشطيبات، ثم جمع ما تحتاجه في طلب واحد.
-          </p>
-        </div>
-
-        <button
-          onClick={onOpenCustomQuote}
-          className="self-start sm:self-auto bg-[#FDE8EA] dark:bg-[#3D1217] hover:bg-[#F8D2D6] text-[#B9142D] text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors border border-[#B9142D]/20 shadow-xs cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-[#B9142D]" />
-          <span>طلب خدمة مخصصة أو توريد</span>
-        </button>
-      </div>
-
-      {/* ACTIVE SECTOR HERO BANNER IF FILTERED BY SECTOR */}
-      {activeSectorData && (
-        <div 
-          className="p-5 sm:p-6 rounded-2xl text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-          style={{ 
-            background: `linear-gradient(135deg, #171616 0%, ${activeSectorData.color_accent || '#B9142D'}33 100%)`,
-            border: `2px solid ${activeSectorData.color_accent || '#B9142D'}66`
-          }}
-        >
-          <div className="space-y-1.5 text-right z-10">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-xs font-bold text-[#F5F3EF]">
-              <Briefcase className="w-3.5 h-3.5" />
-              <span>قطاع النشاط: {activeSectorData.name_ar}</span>
+    <div className="space-y-6 pb-16 text-right">
+      <section className="relative overflow-hidden rounded-[28px] border border-[#2B2622] bg-[#11100F] text-white p-5 sm:p-8 shadow-xl">
+        <div className="absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[#B9142D]/18 blur-3xl" />
+        <div className="relative z-10 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-bold text-[#F3C64F]">
+              <WandSparkles className="h-3.5 w-3.5" />
+              <span>دليل خدمات يفهم ما الذي تريد إنجازه</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black text-white">
-              {activeSectorData.tagline_ar}
-            </h2>
-            <p className="text-xs text-[#D6D3D1] max-w-2xl leading-relaxed">
-              {activeSectorData.description_ar}
+            <h1 className="mt-4 font-heading text-2xl sm:text-4xl font-black leading-tight">
+              ابحث عن حاجتك، ثم شاهد كل الطرق الممكنة لتنفيذها
+            </h1>
+            <p className="mt-3 text-xs sm:text-sm leading-7 text-[#BDB4AA]">
+              لا تحتاج لمعرفة أسماء الخامات أو تقنيات الطباعة. افتح الخدمة وشاهد الأنواع والفروق والصور،
+              اختر ما يعجبك، وحدد الكمية، أو اترك القرار الفني لرواج.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => handleSectorChange('all')}
-            className="px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-all shrink-0 cursor-pointer self-start md:self-auto"
+            onClick={onOpenCustomQuote}
+            className="shrink-0 rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-xs font-black text-white hover:bg-white/12"
           >
-            ✕ إلغاء تصفية القطاع
+            لم أجد ما أريده — طلب مخصص
           </button>
         </div>
-      )}
+      </section>
 
-      {/* Filter Control Bar */}
-      <div className="bg-[#FFFDFA] dark:bg-[#1C1A1A] rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F] p-4 space-y-4 shadow-xs">
-        
-        {/* Search input & Browse Mode Tabs */}
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative w-full flex-1">
-            <Search className="w-4 h-4 text-[#78716C] absolute right-3 top-1/2 -translate-y-1/2" />
+      <section className="sticky top-[72px] sm:top-[84px] z-20 rounded-[22px] border border-[#E5DED4] dark:border-[#332E2A] bg-[#FFFDF9]/94 dark:bg-[#171412]/94 p-3 sm:p-4 backdrop-blur-xl shadow-xs">
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A8178]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث بالاسم، المادة (أكريليك، كلادينج، كرتون، توريد، أختام، منيو...)..."
-              className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#3A3535] rounded-xl pr-9 pl-8 py-2.5 text-xs text-[#171616] dark:text-white placeholder-[#78716C] focus:outline-hidden focus:border-[#B9142D]"
+              placeholder="ابحث بما تعرفه: كروت، UV بارز، واجهة، كلادينج، نيون، مجلة، أكياس، تطريز..."
+              className="h-12 w-full rounded-2xl border border-[#E4DDD3] dark:border-[#332E2A] bg-[#FAF8F4] dark:bg-[#201D1B] pr-10 pl-10 text-xs outline-none focus:border-[#B9142D]"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C] hover:text-[#171616]"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A8178]"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
-          {/* Tab Switcher: By Industry vs By Department */}
-          <div className="flex items-center gap-1 bg-[#FAF7F2] dark:bg-[#252222] p-1 rounded-xl border border-[#E7E0D3] dark:border-[#3A3535] shrink-0 w-full sm:w-auto">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
               type="button"
-              onClick={() => setActiveTabMode('sectors')}
-              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTabMode === 'sectors'
-                  ? 'bg-[#B9142D] text-white shadow-xs'
-                  : 'text-[#57534E] dark:text-[#D6D3D1]'
+              onClick={() => handleDeptChange('all')}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-[10px] font-black border ${
+                selectedDept === 'all'
+                  ? 'bg-[#B9142D] border-[#B9142D] text-white'
+                  : 'bg-white dark:bg-[#211E1B] border-[#E4DDD3] dark:border-[#332E2A] text-[#665E57] dark:text-[#C8BFB8]'
               }`}
             >
-              <Briefcase className="w-3.5 h-3.5" />
-              <span>القطاعات</span>
+              جميع الاحتياجات ({publicServices.length})
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveTabMode('departments')}
-              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTabMode === 'departments'
-                  ? 'bg-[#B9142D] text-white shadow-xs'
-                  : 'text-[#57534E] dark:text-[#D6D3D1]'
-              }`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>الأقسام</span>
-            </button>
+
+            {activeDepartments.map((dept) => {
+              const count = publicServices.filter((s) => s.department_id === dept.id).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={dept.id}
+                  type="button"
+                  onClick={() => handleDeptChange(dept.id)}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-[10px] font-black border ${
+                    selectedDept === dept.id
+                      ? 'bg-[#B9142D] border-[#B9142D] text-white'
+                      : 'bg-white dark:bg-[#211E1B] border-[#E4DDD3] dark:border-[#332E2A] text-[#665E57] dark:text-[#C8BFB8]'
+                  }`}
+                >
+                  {dept.name_ar} ({count})
+                </button>
+              );
+            })}
           </div>
 
-          {hasActiveFilters && (
-            <button
-              onClick={handleResetFilters}
-              className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[#57534E] dark:text-[#D6D3D1] bg-[#FAF7F2] dark:bg-[#252222] hover:bg-[#EAE4D6] px-3 py-2.5 rounded-xl border border-[#E7E0D3] dark:border-[#3A3535] transition-colors shrink-0 cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>إلغاء الفلاتر</span>
-            </button>
-          )}
-        </div>
-
-        {/* TAB 1: INDUSTRY SECTORS CHIPS */}
-        {activeTabMode === 'sectors' && (
-          <div className="space-y-1.5 pt-1">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-[#78716C] dark:text-[#A8A29E]">
-              <Briefcase className="w-3.5 h-3.5 text-[#B9142D]" />
-              <span>التصفية حسب قطاع ونشاط العمل:</span>
-            </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+          {availableCategories.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto no-scrollbar border-t border-[#EEE8E0] dark:border-[#2D2824] pt-3">
               <button
-                onClick={() => handleSectorChange('all')}
-                className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition-colors cursor-pointer ${
-                  selectedSector === 'all'
-                    ? 'bg-[#B9142D] text-white font-bold shadow-xs'
-                    : 'bg-[#FAF7F2] dark:bg-[#221F1F] text-[#44403C] dark:text-[#D6D3D1] border border-[#E7E0D3] dark:border-[#332F2F]'
-                }`}
-              >
-                جميع القطاعات ({services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component').length})
-              </button>
-              {industrySectors.map((sector) => {
-                const count = services.filter((s) => 
-                  s.service_status === 'published' && s.catalog_role !== 'component' &&
-                  (((sector.service_ids || []).includes(s.id)) || (s.industry_sector_ids || []).includes(sector.id))
-                ).length;
-                return (
-                  <button
-                    key={sector.id}
-                    onClick={() => handleSectorChange(sector.id)}
-                    className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition-colors cursor-pointer ${
-                      selectedSector === sector.id
-                        ? 'bg-[#B9142D] text-white font-bold shadow-xs'
-                        : 'bg-[#FAF7F2] dark:bg-[#221F1F] text-[#44403C] dark:text-[#D6D3D1] border border-[#E7E0D3] dark:border-[#332F2F]'
-                    }`}
-                  >
-                    {sector.name_ar} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: DEPARTMENTS CHIPS */}
-        {activeTabMode === 'departments' && (
-          <div className="space-y-1.5 pt-1">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-[#78716C] dark:text-[#A8A29E]">
-              <Layers className="w-3.5 h-3.5 text-[#B9142D]" />
-              <span>خطوط الإنتاج والأقسام التخصصية:</span>
-            </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
-              <button
-                onClick={() => handleDeptChange('all')}
-                className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition-colors cursor-pointer ${
-                  selectedDept === 'all'
-                    ? 'bg-[#B9142D] text-white font-bold shadow-xs'
-                    : 'bg-[#FAF7F2] dark:bg-[#221F1F] text-[#44403C] dark:text-[#D6D3D1] border border-[#E7E0D3] dark:border-[#332F2F]'
-                }`}
-              >
-                جميع الأقسام ({services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component').length})
-              </button>
-              {activeDepartments.map((dept) => {
-                const count = services.filter((s) => s.department_id === dept.id && s.service_status === 'published' && s.catalog_role !== 'component').length;
-                return (
-                  <button
-                    key={dept.id}
-                    onClick={() => handleDeptChange(dept.id)}
-                    className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition-colors cursor-pointer ${
-                      selectedDept === dept.id
-                        ? 'bg-[#B9142D] text-white font-bold shadow-xs'
-                        : 'bg-[#FAF7F2] dark:bg-[#221F1F] text-[#44403C] dark:text-[#D6D3D1] border border-[#E7E0D3] dark:border-[#332F2F]'
-                    }`}
-                  >
-                    {dept.name_ar} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Categories if specific department selected */}
-        {availableCategories.length > 0 && selectedDept !== 'all' && activeTabMode === 'departments' && (
-          <div className="space-y-1.5 pt-2 border-t border-[#F5F1E9] dark:border-[#252222]">
-            <div className="text-[11px] font-bold text-[#78716C] dark:text-[#A8A29E]">
-              التصنيف الفرعي للقسم:
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <button
+                type="button"
                 onClick={() => setSelectedCat('all')}
-                className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                className={`shrink-0 rounded-xl px-3 py-1.5 text-[10px] font-bold ${
                   selectedCat === 'all'
-                    ? 'bg-[#171616] dark:bg-white text-white dark:text-[#171616] font-bold'
-                    : 'bg-[#FAF7F2] dark:bg-[#252222] text-[#57534E] dark:text-[#D6D3D1] hover:bg-[#EAE4D6]'
+                    ? 'bg-[#171616] dark:bg-white text-white dark:text-[#171616]'
+                    : 'bg-[#F2EDE6] dark:bg-[#24201D] text-[#675F57] dark:text-[#C8BFB8]'
                 }`}
               >
                 الكل
@@ -365,66 +212,70 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
               {availableCategories.map((cat) => (
                 <button
                   key={cat.id}
+                  type="button"
                   onClick={() => setSelectedCat(cat.id)}
-                  className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                  className={`shrink-0 rounded-xl px-3 py-1.5 text-[10px] font-bold ${
                     selectedCat === cat.id
-                      ? 'bg-[#171616] dark:bg-white text-white dark:text-[#171616] font-bold'
-                      : 'bg-[#FAF7F2] dark:bg-[#252222] text-[#57534E] dark:text-[#D6D3D1] hover:bg-[#EAE4D6]'
+                      ? 'bg-[#171616] dark:bg-white text-white dark:text-[#171616]'
+                      : 'bg-[#F2EDE6] dark:bg-[#24201D] text-[#675F57] dark:text-[#C8BFB8]'
                   }`}
                 >
                   {cat.name_ar}
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={reset}
+              className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#7B7169] hover:text-[#B9142D]"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>إلغاء البحث والتصفية</span>
+            </button>
+          )}
+        </div>
+      </section>
+
+      <div className="flex items-center justify-between gap-3 px-1">
+        <div className="flex items-center gap-2">
+          <Layers className="h-4 w-4 text-[#B9142D]" />
+          <span className="text-xs font-black text-[#171616] dark:text-white">
+            {filteredServices.length} خدمة رئيسية
+          </span>
+        </div>
+        <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-[#7A7169] dark:text-[#AAA198]">
+          <Sparkles className="h-3.5 w-3.5 text-[#F0B23D]" />
+          <span>كل خدمة تحتوي خياراتها وتقنياتها داخلها</span>
+        </div>
       </div>
 
-      {/* Services Grid (2 in row mobile / 3-4 on desktop) */}
       {filteredServices.length === 0 ? (
-        <div className="bg-[#FFFDFA] dark:bg-[#1C1A1A] rounded-2xl border border-[#E7E0D3] dark:border-[#332F2F] p-8 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-[#B9142D]/10 text-[#B9142D] mx-auto flex items-center justify-center">
-            <SlidersHorizontal className="w-6 h-6" />
-          </div>
-          <h3 className="font-heading font-bold text-base text-[#171616] dark:text-[#F5F3EF]">
-            لا توجد خدمات مطابقة لخيارات التصفية الحالية
+        <div className="rounded-[24px] border border-dashed border-[#D9D0C4] dark:border-[#39332F] p-10 text-center">
+          <SlidersHorizontal className="mx-auto mb-3 h-8 w-8 text-[#9B9188]" />
+          <h3 className="font-heading text-sm font-black text-[#171616] dark:text-white">
+            لم نجد خدمة مطابقة بهذه العبارة
           </h3>
-          <p className="text-xs text-[#78716C] dark:text-[#A8A29E] max-w-md mx-auto">
-            رواج تتولى توريد وتصنيع كافة حلول الطباعة والإعلان والتغليف حسب الطلب مباشرة.
+          <p className="mx-auto mt-2 max-w-lg text-xs leading-6 text-[#7A7169] dark:text-[#AAA198]">
+            جرّب اسم الشيء نفسه أو التقنية التي تعرفها. البحث يقرأ أيضًا الخيارات الموجودة داخل صفحات الخدمات.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-            <button
-              onClick={handleResetFilters}
-              className="text-xs font-semibold bg-[#F5F1E9] dark:bg-[#252222] text-[#171616] dark:text-white px-4 py-2 rounded-xl cursor-pointer"
-            >
-              عرض جميع الخدمات
-            </button>
-            <button
-              onClick={onOpenCustomQuote}
-              className="text-xs font-bold bg-[#B9142D] hover:bg-[#9E1026] text-white px-4 py-2 rounded-xl shadow-xs cursor-pointer"
-            >
-              + إنشاء طلب توريد خاص جديد
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onOpenCustomQuote}
+            className="mt-4 rounded-xl bg-[#B9142D] px-4 py-2.5 text-xs font-black text-white"
+          >
+            أرسل طلبًا مخصصًا لرواج
+          </button>
         </div>
       ) : (
-        <div className="space-y-3">
-          <div className="text-xs text-[#78716C] dark:text-[#A8A29E] flex items-center justify-between px-1">
-            <span>تم العثور على <strong>{filteredServices.length}</strong> خدمة رئيسية</span>
-            <span className="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded">
-              اختر ثم خصص حسب رغبتك
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {filteredServices.map((service) => (
-              <ServiceCard key={service.id} service={service} />
-            ))}
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {filteredServices.map((service) => (
+            <ServiceCard key={service.id} service={service} />
+          ))}
         </div>
       )}
-
     </div>
   );
 };
