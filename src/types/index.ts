@@ -346,7 +346,7 @@ export interface PortfolioProject {
   id: string;
   title_ar: string;
   title_en?: string;
-  client_type_ar: string; // e.g. "قطاع التجزئة والعطور", "سلسلة مطاعم", "شركة اتصالات"
+  client_type_ar: string;
   industry: string;
   year: string;
   city: string;
@@ -356,6 +356,11 @@ export interface PortfolioProject {
   services_used_ids: string[];
   images: string[];
   featured: boolean;
+  sort_order?: number;
+  is_active?: boolean;
+  category_ar?: string;
+  work_type?: 'project' | 'gallery';
+  tags_ar?: string[];
 }
 
 export interface BlogPost {
