@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - supabase-migration
+      - final-delivery-fixes
   pull_request:
     branches:
       - main
