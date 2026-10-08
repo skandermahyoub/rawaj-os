@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { 
   ShoppingBag, 
   SlidersHorizontal, 
@@ -124,11 +125,12 @@ export const HomeServicesStore: React.FC = () => {
             >
               {/* Image Frame */}
               <div className="relative h-36 sm:h-48 overflow-hidden bg-neutral-100 dark:bg-neutral-900">
-                <img
+                <SafeImage
                   src={service.hero_image}
                   alt={service.name_ar}
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
                   loading="lazy"
+                  fallbackCategory={service.name_ar}
                 />
                 
                 {/* Overlaid Badges */}
