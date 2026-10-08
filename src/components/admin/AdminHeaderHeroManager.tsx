@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { ImageUploadPicker } from '../common/ImageUploadPicker';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
-import { uploadDataUrlToRawajStorage } from '../../lib/storage';
+import { removeRawajStorageUrl, uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminHeaderHeroManager: React.FC = () => {
   const { heroHeaderSettings, updateHeroHeaderSettings, siteSettings, updateSiteSettings } = useApp();
@@ -34,16 +34,29 @@ export const AdminHeaderHeroManager: React.FC = () => {
     if (!file) return;
 
     try {
+      const previousLogoUrl = siteSettings.logo_url || '';
       const optimized = await optimizeImageFile(file, 900, 900, 0.9);
       const stored = await uploadDataUrlToRawajStorage(optimized.dataUrl, {
         folder: 'branding',
         fileName: 'rawaj-logo',
       });
+      try {
+        await updateSiteSettings({ logo_url: stored.publicUrl });
+      } catch (error) {
+        await removeRawajStorageUrl(stored.publicUrl).catch(() => undefined);
+        throw error;
+      }
       setLogoUrl(stored.publicUrl);
-      await updateSiteSettings({ logo_url: stored.publicUrl });
+      if (previousLogoUrl && previousLogoUrl !== stored.publicUrl) {
+        await removeRawajStorageUrl(previousLogoUrl).catch((cleanupError) => {
+          console.error('Previous logo cleanup failed:', cleanupError);
+        });
+      }
     } catch (error: any) {
       console.error('Supabase logo upload failed:', error);
       alert(error?.message || 'تعذر رفع الشعار.');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
