@@ -77,7 +77,14 @@ export const AdminClientsManager: React.FC = () => {
   // Logo Handlers
   const handleSaveLogo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!logoForm.name_ar.trim()) return;
+    if (!logoForm.name_ar.trim()) {
+      setActionError('أدخل اسم العميل أو العلامة التجارية.');
+      return;
+    }
+    if (!logoForm.logo_url?.trim()) {
+      setActionError('اختر شعار العميل قبل الحفظ.');
+      return;
+    }
     setActionError('');
     setIsSaving(true);
     try {
@@ -227,7 +234,7 @@ export const AdminClientsManager: React.FC = () => {
                 onClick={() => {
                   setLogoForm({
                     name_ar: '',
-                    logo_url: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?auto=format&fit=crop&w=300&q=80',
+                    logo_url: '',
                     industry_ar: 'قطاع الأعمال',
                     sort_order: clientLogos.length + 1,
                     is_active: true,
@@ -400,7 +407,7 @@ export const AdminClientsManager: React.FC = () => {
                     client_name_ar: '',
                     client_title_ar: 'المدير العام',
                     client_company_ar: '',
-                    client_avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+                    client_avatar_url: '',
                     comment_ar: '',
                     rating: 5,
                     project_type_ar: 'طباعة وتوريد',
