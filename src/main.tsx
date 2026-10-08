@@ -3,30 +3,25 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-const removeLegacyBrowserCaches = async () => {
+const prepareFreshPwaRuntime = async () => {
   try {
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map(async (registration) => {
-        try {
-          await registration.update();
-        } catch {
-          // Continue with unregister even if the update check fails.
-        }
-        await registration.unregister();
-      }));
-    }
-
+    // Remove any caches left by historical service-worker versions.
     if ('caches' in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map((key) => caches.delete(key)));
     }
+
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      // Ask the browser to pick up a newer worker immediately when one exists.
+      await registration.update().catch(() => undefined);
+    }
   } catch (error) {
-    console.warn('[Rawaj] Legacy cache cleanup note:', error);
+    console.warn('[Rawaj] PWA runtime note:', error);
   }
 };
 
-void removeLegacyBrowserCaches();
+void prepareFreshPwaRuntime();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
