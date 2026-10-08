@@ -40,21 +40,22 @@ export const DepartmentGrid: React.FC = () => {
     }
   };
 
-  const displayDepartments = departments.slice(0, 8);
+  const activeDepartments = departments.filter((d) => d.is_active !== false);
+  const displayDepartments = activeDepartments.slice(0, 8);
 
   return (
     <section className="bg-[#FFFDF9] dark:bg-[#1C1918] rounded-[26px] sm:rounded-[30px] border border-[rgba(23,22,22,0.08)] dark:border-[rgba(245,241,234,0.08)] p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-5 shadow-xs">
       <SectionHeader
-        title="استكشف أقسام رواج الـ 12"
-        subtitle="تصفح الكتالوج حسب خطوط الإنتاج والتقنيات التخصصية."
-        actionLabel="عرض جميع الأقسام الـ 12"
+        title="ابدأ من الشيء الذي تحتاجه"
+        subtitle="قسمنا خدمات رواج إلى مسارات واضحة حتى تصل إلى الخدمة المناسبة دون معرفة المصطلحات الفنية."
+        actionLabel={`عرض جميع الأقسام (${activeDepartments.length})`}
         onAction={() => navigate({ view: 'departments' })}
       />
 
       {/* Mobile Horizontal Carousel / Desktop 4-Column Grid */}
       <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2 md:pb-0 md:grid md:grid-cols-4 no-scrollbar -mx-1 px-1">
         {displayDepartments.map((dept) => {
-          const deptServices = services.filter((s) => s.department_id === dept.id && s.service_status === 'published');
+          const deptServices = services.filter((s) => s.department_id === dept.id && s.service_status === 'published' && s.catalog_role !== 'component');
           const count = deptServices.length;
 
           return (
