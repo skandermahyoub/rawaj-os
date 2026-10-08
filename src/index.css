@@ -282,3 +282,34 @@
     animation: none !important;
   }
 }
+
+
+/* Premium Rawaj scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(185, 20, 45, 0.78) rgba(23, 22, 22, 0.08);
+}
+html::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html::-webkit-scrollbar-track {
+  background: rgba(23, 22, 22, 0.055);
+}
+html::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(185,20,45,.92), rgba(185,20,45,.58));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 0 9px rgba(185,20,45,.32);
+}
+html::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(210,32,58,.98), rgba(185,20,45,.72));
+  background-clip: padding-box;
+}
+.dark html {
+  scrollbar-color: rgba(185, 20, 45, 0.88) rgba(255, 255, 255, 0.045);
+}
+.dark html::-webkit-scrollbar-track {
+  background: rgba(255,255,255,.035);
+}
