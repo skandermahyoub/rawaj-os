@@ -161,10 +161,14 @@ export const setDoc = async (
 
   // A duplicate primary key means this is a full replacement of an existing row.
   if (insertError.code === '23505') {
-    const { error: updateError } = await (supabase.from(tableName as any) as any)
+    const { data: updatedRows, error: updateError } = await (supabase.from(tableName as any) as any)
       .update(payload)
-      .eq('id', ref.id);
+      .eq('id', ref.id)
+      .select('id');
     if (updateError) throw updateError;
+    if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
+      throw new Error('تعذر حفظ التعديل: لم تسمح قاعدة البيانات بتحديث السجل المطلوب.');
+    }
     return;
   }
 
@@ -178,11 +182,15 @@ export const deleteDoc = async (ref: DocumentRef): Promise<void> => {
 
   const tableName = physicalTable(ref.table);
   const keyColumn = ref.table === 'settings' ? 'key' : 'id';
-  const { error } = await (supabase.from(tableName as any) as any)
+  const { data: deletedRows, error } = await (supabase.from(tableName as any) as any)
     .delete()
-    .eq(keyColumn, ref.id);
+    .eq(keyColumn, ref.id)
+    .select(keyColumn);
 
   if (error) throw error;
+  if (!Array.isArray(deletedRows) || deletedRows.length === 0) {
+    throw new Error('تعذر الحذف: السجل غير موجود أو لا تملك صلاحية حذفه.');
+  }
 };
 
 export const onSnapshot = (
