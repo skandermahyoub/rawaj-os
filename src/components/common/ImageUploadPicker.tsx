@@ -427,11 +427,12 @@ export const ImageUploadPicker: React.FC<ImageUploadPickerProps> = ({
                   }`}
                   title={asset.title}
                 >
-                  <img
+                  <SafeImage
                     src={asset.url}
                     alt={asset.title}
                     className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
                     loading="lazy"
+                    fallbackCategory={asset.category || defaultCategory}
                   />
                   {isSelected && (
                     <div className="absolute inset-0 bg-[#B9142D]/40 flex items-center justify-center">
