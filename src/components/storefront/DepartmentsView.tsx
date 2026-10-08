@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { SafeImage } from '../common/SafeImage';
 import { 
   Printer, 
   Package, 
@@ -182,10 +183,11 @@ export const DepartmentsView: React.FC = () => {
                 >
                   {/* Hero Cover */}
                   <div className="relative aspect-16/9 bg-[#F5F1E9] dark:bg-[#252222] overflow-hidden">
-                    <img
+                    <SafeImage
                       src={sector.hero_image}
                       alt={sector.name_ar}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      fallbackCategory="القطاعات"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-transparent flex items-end p-4">
                       <div className="flex items-center gap-3 text-white">
@@ -282,10 +284,11 @@ export const DepartmentsView: React.FC = () => {
                 >
                   {/* Department Hero Image */}
                   <div className="relative aspect-16/9 bg-[#F5F1E9] dark:bg-[#252222] overflow-hidden">
-                    <img
+                    <SafeImage
                       src={dept.hero_image}
                       alt={dept.name_ar}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      fallbackCategory="الأقسام"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent flex items-end p-4">
                       <div className="flex items-center gap-3 text-white">

@@ -447,10 +447,11 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
                 {/* Author Info */}
                 <div className="flex items-center gap-3 pt-3.5 mt-3 border-t border-[#E8E2D5]/70 dark:border-[#262320]">
                   {t.client_avatar_url ? (
-                    <img
+                    <SafeImage
                       src={t.client_avatar_url}
                       alt={t.client_name_ar}
                       className="w-10 h-10 rounded-full object-cover border border-[#E8E2D5] dark:border-[#2D2A26]"
+                      fallbackCategory="صورة عميل"
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-[#B9142D]/10 text-[#B9142D] dark:text-[#E03A53] flex items-center justify-center font-bold text-xs">

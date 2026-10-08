@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { SafeImage } from '../common/SafeImage';
 import { 
   ShoppingBag, 
   Trash2, 
@@ -195,10 +196,11 @@ export const QuoteCartView: React.FC = () => {
                   {/* Top Item Row */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <img
+                      <SafeImage
                         src={item.hero_image}
                         alt={item.service_name_ar}
                         className="w-14 h-14 rounded-lg object-cover border border-[#E7E0D3] dark:border-[#332F2F] shrink-0"
+                        fallbackCategory={item.service_name_ar}
                       />
                       <div>
                         <span className="text-[10px] font-bold text-brand-primary bg-brand-primary-10 px-1.5 py-0.2 rounded">

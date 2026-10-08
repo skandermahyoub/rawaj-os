@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { SafeImage } from '../common/SafeImage';
 import { Service, ArtworkStatus } from '../../types';
 import { 
   ArrowRight, 
@@ -235,10 +236,11 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
           
           {/* Main Photo Frame */}
           <div className="aspect-4/3 sm:aspect-1/1 rounded-3xl overflow-hidden bg-white dark:bg-[#161414] border border-[#E6DFD5] dark:border-[#282424] shadow-md relative group">
-            <img
+            <SafeImage
               src={activeImage || service.hero_image}
               alt={service.name_ar}
               className="w-full h-full object-cover transition-all duration-300"
+              fallbackCategory={service.name_ar}
             />
             {service.badge && (
               <span className="absolute top-3.5 right-3.5 bg-brand-primary text-white text-xs font-bold px-3 py-1 rounded-lg shadow-sm border border-white/20">
@@ -258,7 +260,7 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
                     activeImage === img ? 'border-brand-primary scale-102' : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt={`view-${idx}`} className="w-full h-full object-cover" />
+                  <SafeImage src={img} alt={`view-${idx}`} className="w-full h-full object-cover" fallbackCategory={service.name_ar} />
                 </button>
               ))}
             </div>
@@ -665,10 +667,11 @@ ${customNotes ? `📝 ملاحظات خاصة: ${customNotes}\n` : ''}
                     onClick={() => navigate({ view: 'service-detail', serviceId: rel.id })}
                     className="p-3 rounded-2xl bg-white dark:bg-[#161414] border border-[#E6DFD5] dark:border-[#282424] hover:border-brand-primary cursor-pointer flex items-center gap-3 transition-all shadow-2xs hover:shadow-md"
                   >
-                    <img
+                    <SafeImage
                       src={rel.hero_image}
                       alt={rel.name_ar}
                       className="w-13 h-13 rounded-xl object-cover shrink-0"
+                      fallbackCategory={rel.name_ar}
                     />
                     <div className="space-y-0.5">
                       <div className="text-xs font-bold text-[#181616] dark:text-white hover:text-brand-primary line-clamp-1">

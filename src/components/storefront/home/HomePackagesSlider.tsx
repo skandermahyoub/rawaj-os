@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { 
   Sparkles, 
   CheckCircle2, 
@@ -159,11 +160,12 @@ export const HomePackagesSlider: React.FC = () => {
               >
                 {/* Visual Banner Header */}
                 <div className="relative h-44 sm:h-52 overflow-hidden bg-[#12100F]">
-                  <img
+                  <SafeImage
                     src={pkg.hero_image}
                     alt={pkg.title_ar}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     loading="lazy"
+                    fallbackCategory="الباقات"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#181514] via-[#181514]/40 to-transparent" />
                   

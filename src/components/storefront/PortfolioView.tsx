@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { SafeImage } from '../common/SafeImage';
 import { Briefcase, MapPin, Calendar, CheckCircle2, ArrowLeft, Layers } from 'lucide-react';
 import { PortfolioProject } from '../../types';
 
@@ -43,10 +44,11 @@ export const PortfolioView: React.FC<{ projectId?: string }> = ({ projectId }) =
             >
               <div>
                 <div className="aspect-16/10 relative overflow-hidden bg-[#F5F1E9] dark:bg-[#252222]">
-                  <img
-                    src={proj.images[0]}
+                  <SafeImage
+                    src={proj.images?.[0]}
                     alt={proj.title_ar}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    fallbackCategory="معرض الأعمال"
                   />
                   <div className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-brand-primary" />
@@ -125,7 +127,7 @@ export const PortfolioView: React.FC<{ projectId?: string }> = ({ projectId }) =
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {selectedProject.images.map((img, idx) => (
                   <div key={idx} className="aspect-16/10 rounded-xl overflow-hidden bg-[#F5F1E9] dark:bg-[#252222]">
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <SafeImage src={img} alt={selectedProject.title_ar} className="w-full h-full object-cover" fallbackCategory="معرض الأعمال" />
                   </div>
                 ))}
               </div>

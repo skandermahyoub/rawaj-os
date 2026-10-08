@@ -519,10 +519,11 @@ export const PackageDetailView: React.FC<{ packageId: string }> = ({ packageId }
                 onClick={() => navigate({ view: 'service-detail', serviceId: service.id })}
                 className="p-3.5 rounded-2xl bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] dark:border-[#332F2F] hover:border-[#B9142D] cursor-pointer flex items-center gap-3.5 transition-all hover:shadow-xs group"
               >
-                <img 
-                  src={service.hero_image} 
-                  alt={service.name_ar} 
-                  className="w-14 h-14 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform" 
+                <SafeImage
+                  src={service.hero_image}
+                  alt={service.name_ar}
+                  className="w-14 h-14 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
+                  fallbackCategory={service.name_ar}
                 />
                 <div className="space-y-1 flex-1 min-w-0">
                   <h3 className="text-xs font-bold text-[#171616] dark:text-white truncate group-hover:text-[#B9142D] transition-colors">

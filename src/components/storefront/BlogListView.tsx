@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { SafeImage } from '../common/SafeImage';
 import { BookOpen, Clock, Calendar, ArrowLeft, Tag, ArrowRight } from 'lucide-react';
 
 export const BlogListView: React.FC = () => {
@@ -32,10 +33,11 @@ export const BlogListView: React.FC = () => {
           >
             <div>
               <div className="aspect-16/10 relative overflow-hidden bg-[#F5F1E9] dark:bg-[#252222]">
-                <img
+                <SafeImage
                   src={post.hero_image}
                   alt={post.title_ar}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fallbackCategory="المدونة"
                 />
                 <span className="absolute top-3 right-3 bg-[#B9142D] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs">
                   {post.category_ar}
@@ -132,7 +134,7 @@ export const BlogPostView: React.FC<{ postId: string }> = ({ postId }) => {
         </div>
 
         <div className="aspect-16/9 rounded-xl overflow-hidden bg-[#F5F1E9] dark:bg-[#252222]">
-          <img src={post.hero_image} alt={post.title_ar} className="w-full h-full object-cover" />
+          <SafeImage src={post.hero_image} alt={post.title_ar} className="w-full h-full object-cover" fallbackCategory="المدونة" />
         </div>
 
         <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm text-[#44403C] dark:text-[#D6D3D1] leading-relaxed whitespace-pre-line space-y-4">
