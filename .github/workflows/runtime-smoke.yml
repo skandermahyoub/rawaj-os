@@ -57,9 +57,16 @@ jobs:
             const browser = await chromium.launch({ headless: true });
             const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
             const errors = [];
+            const badResponses = [];
             page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
             page.on('console', m => {
               if (m.type() === 'error') errors.push('CONSOLE: ' + m.text());
+            });
+            page.on('response', r => {
+              if (r.status() >= 400) badResponses.push(r.status() + ' ' + r.url());
+            });
+            page.on('requestfailed', r => {
+              badResponses.push('FAILED ' + r.url() + ' :: ' + (r.failure()?.errorText || 'unknown'));
             });
             const response = await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 45000 });
             const rootText = (await page.locator('#root').innerText()).trim();
@@ -68,6 +75,7 @@ jobs:
             console.log('ROOT_TEXT_LENGTH=' + rootText.length);
             console.log('BODY_TEXT_SAMPLE=' + bodyText.slice(0, 300).replace(/\n/g, ' | '));
             console.log('RUNTIME_ERRORS=' + JSON.stringify(errors));
+            console.log('BAD_RESPONSES=' + JSON.stringify(badResponses));
             await page.screenshot({ path: '/tmp/rawaj-runtime.png', fullPage: true });
             await browser.close();
             if (!response || response.status() >= 400 || rootText.length < 20 || errors.length) {
