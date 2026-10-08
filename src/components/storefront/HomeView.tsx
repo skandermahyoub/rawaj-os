@@ -127,7 +127,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onOpenSearch, onOpenCustomQu
       case 'sector_packages':
         return (
           <div key="mod-packages" id="packages-module" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-            <HomePackages />
+            {layout === 'tabs_slider' ? <HomePackagesSlider /> : <HomePackages />}
           </div>
         );
 
