@@ -40,30 +40,6 @@ import {
   IndustrySector
 } from '../types';
 import {
-  INITIAL_DEPARTMENTS,
-  INITIAL_CATEGORIES,
-  INITIAL_TEMPLATES,
-  INITIAL_SERVICES,
-  INITIAL_PACKAGES,
-  INITIAL_PORTFOLIO,
-  INITIAL_BLOG_POSTS,
-  INITIAL_SITE_SETTINGS,
-  INITIAL_MEDIA,
-  INITIAL_HOME_SLIDES,
-  INITIAL_MARQUEE_ITEMS,
-  INITIAL_HERO_HEADER_SETTINGS,
-  INITIAL_ABOUT_US_DATA,
-  INITIAL_RAWAJ_FEATURES,
-  INITIAL_CLIENT_LOGOS,
-  INITIAL_TESTIMONIALS,
-  INITIAL_PROMO_SETTINGS,
-  INITIAL_FAQ_ITEMS,
-  INITIAL_FOOTER_SETTINGS,
-  INITIAL_HOME_MODULES_CONFIG,
-  INITIAL_THEME_SETTINGS,
-  INITIAL_INDUSTRY_SECTORS
-} from '../data/initialData';
-import {
   db,
   collection,
   doc,
@@ -329,6 +305,85 @@ const STORAGE_KEYS = {
   BRANDS_MODE: 'rawaj_brands_mode_v2',
 };
 
+const EMPTY_SITE_SETTINGS: SiteSettings = {
+  company_name_ar: '',
+  company_name_en: '',
+  slogan_ar: '',
+  slogan_en: '',
+  logo_url: '',
+  founding_year: 0,
+  phone: '',
+  mobile_whatsapp: '',
+  email: '',
+  address_ar: '',
+  working_hours_ar: '',
+};
+
+const EMPTY_HERO_HEADER_SETTINGS: HeroHeaderSettings = {
+  enabled: false,
+  company_name_ar: '',
+  company_name_en: '',
+  slogan_ar: '',
+  welcome_title_ar: '',
+  welcome_subtitle_ar: '',
+  badge_ar: '',
+  bg_image_url: '',
+  primary_cta_text_ar: '',
+  secondary_cta_text_ar: '',
+  preferred_dimensions_ar: '',
+};
+
+const EMPTY_ABOUT_US_DATA: AboutUsModuleData = {
+  gm_name_ar: '',
+  gm_title_ar: '',
+  gm_photo_url: '',
+  gm_quote_ar: '',
+  goal_ar: '',
+  vision_ar: '',
+  mission_ar: '',
+  profile_pdf_url: '',
+};
+
+const EMPTY_PROMO_SETTINGS: PromoModuleSettings = {
+  enabled: false,
+  title_ar: '',
+  subtitle_ar: '',
+  layout: 'carousel',
+  banners: [],
+};
+
+const EMPTY_FOOTER_SETTINGS: FooterSettings = {
+  logo_url: '',
+  company_name_ar: '',
+  slogan_ar: '',
+  description_ar: '',
+  phone: '',
+  mobile_whatsapp: '',
+  email: '',
+  website: '',
+  branches: [],
+  social_links: {},
+  copyright_text_ar: '',
+  powered_by_ar: '',
+  show_quick_links: false,
+  show_policies: false,
+};
+
+const EMPTY_THEME_SETTINGS: ThemeCustomizerSettings = {
+  theme_mode: 'light',
+  color_preset_id: '',
+  primary_color: '#000000',
+  primary_hover: '#000000',
+  secondary_bg: '#ffffff',
+  accent_color: '#000000',
+  card_surface_style: 'solid',
+  background_pattern: 'clean',
+  glow_intensity: 0,
+  arabic_font: 'tajawal',
+  border_radius: 'rounded-xl',
+  header_style: 'classic_bar',
+};
+
 const SUPPORTED_HOME_LAYOUTS: Record<HomeModuleId, string[]> = {
   header_hero: ['industrial_console', 'split_hero', 'minimal_search'],
   slider: ['full_cinematic'],
@@ -385,7 +440,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Theme state: Default strictly to LIGHT MODE
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.THEME);
-    if (saved === 'dark') return true;
+    if (saved === 'dark' || saved === '"dark"') return true;
     return false; // Default to Light Mode
   });
 
@@ -500,7 +555,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
 
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>(INITIAL_SITE_SETTINGS);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(EMPTY_SITE_SETTINGS);
 
   const [users, setUsers] = useState<User[]>([]);
 
@@ -612,7 +667,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [marqueeItems, setMarqueeItems] = useState<MarqueeTickerItem[]>([]);
 
-  const [aboutUsData, setAboutUsData] = useState<AboutUsModuleData>(INITIAL_ABOUT_US_DATA);
+  const [aboutUsData, setAboutUsData] = useState<AboutUsModuleData>(EMPTY_ABOUT_US_DATA);
 
   const [rawajFeatures, setRawajFeatures] = useState<RawajFeature[]>([]);
 
@@ -620,19 +675,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
-  const [heroHeaderSettings, setHeroHeaderSettings] = useState<HeroHeaderSettings>(INITIAL_HERO_HEADER_SETTINGS);
+  const [heroHeaderSettings, setHeroHeaderSettings] = useState<HeroHeaderSettings>(EMPTY_HERO_HEADER_SETTINGS);
 
-  const [promoSettings, setPromoSettings] = useState<PromoModuleSettings>(INITIAL_PROMO_SETTINGS);
+  const [promoSettings, setPromoSettings] = useState<PromoModuleSettings>(EMPTY_PROMO_SETTINGS);
 
   const [faqItems, setFaqItems] = useState<GlobalFAQItem[]>([]);
 
-  const [footerSettings, setFooterSettings] = useState<FooterSettings>(INITIAL_FOOTER_SETTINGS);
+  const [footerSettings, setFooterSettings] = useState<FooterSettings>(EMPTY_FOOTER_SETTINGS);
 
-  const [homeModulesConfig, setHomeModulesConfig] = useState<HomeModuleConfig[]>(
-    () => sanitizeHomeModulesConfig(INITIAL_HOME_MODULES_CONFIG)
-  );
+  const [homeModulesConfig, setHomeModulesConfig] = useState<HomeModuleConfig[]>([]);
 
-  const [themeSettings, setThemeSettings] = useState<ThemeCustomizerSettings>(INITIAL_THEME_SETTINGS);
+  const [themeSettings, setThemeSettings] = useState<ThemeCustomizerSettings>(EMPTY_THEME_SETTINGS);
 
   useEffect(() => {
     applyThemeToDocument(themeSettings);
@@ -1036,15 +1089,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     safeStorageSave(STORAGE_KEYS.CART, quoteItems);
   }, [quoteItems]);
-
-  useEffect(() => {
-    applyThemeToDocument(themeSettings);
-    if (themeSettings.theme_mode === 'dark' && !isDarkMode) {
-      setIsDarkMode(true);
-    } else if (themeSettings.theme_mode === 'light' && isDarkMode) {
-      setIsDarkMode(false);
-    }
-  }, [themeSettings]);
 
   // Module 1: Hero Header settings
   const updateHeroHeaderSettings = async (settings: Partial<HeroHeaderSettings>): Promise<void> => {
