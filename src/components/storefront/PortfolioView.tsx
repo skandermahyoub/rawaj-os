@@ -21,13 +21,13 @@ export const PortfolioView: React.FC<{ projectId?: string }> = ({ projectId }) =
       <div className="space-y-1">
         <div className="inline-flex items-center gap-1.5 bg-brand-primary-10 text-brand-primary px-2.5 py-0.5 rounded text-xs font-bold">
           <Briefcase className="w-3.5 h-3.5" />
-          <span>سابقة أعمال ودراسات مشاريع واقعية</span>
+          <span>نماذج من أعمال رواج ومجالات التنفيذ</span>
         </div>
         <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-[#171616] dark:text-[#F5F3EF]">
-          معرض المشاريع وسابقة أعمال رواج
+          معرض أعمال رواج
         </h1>
         <p className="text-xs sm:text-sm text-[#78716C] dark:text-[#A8A29E]">
-          نماذج لمشاريع الواجهات، تجليد الأساطيل، والمطبوعات التجارية مع تفاصيل التحديات والحلول الهندسية المنفذة.
+          نماذج مستندة إلى بروفايل رواج في الواجهات والحروف المضيئة، الأكشاك ونقاط البيع، الهوية الداخلية، الطباعة التجارية، الليزر والهدايا الدعائية.
         </p>
       </div>
 
@@ -50,10 +50,12 @@ export const PortfolioView: React.FC<{ projectId?: string }> = ({ projectId }) =
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     fallbackCategory="معرض الأعمال"
                   />
-                  <div className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-brand-primary" />
-                    <span>{proj.city} • {proj.year}</span>
-                  </div>
+                  {(proj.city || proj.year) && (
+                    <div className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-brand-primary" />
+                      <span>{[proj.city, proj.year].filter(Boolean).join(' • ')}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 space-y-3">
@@ -107,7 +109,7 @@ export const PortfolioView: React.FC<{ projectId?: string }> = ({ projectId }) =
             <div className="p-4 border-b border-[#E7E0D3] dark:border-[#332F2F] flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold text-brand-primary">
-                  {selectedProject.client_type_ar} • {selectedProject.city} ({selectedProject.year})
+                  {selectedProject.client_type_ar}{(selectedProject.city || selectedProject.year) ? ` • ${[selectedProject.city, selectedProject.year].filter(Boolean).join(' • ')}` : ''}
                 </span>
                 <h3 className="font-heading font-bold text-sm sm:text-base text-[#171616] dark:text-white">
                   {selectedProject.title_ar}
@@ -142,14 +144,14 @@ export const PortfolioView: React.FC<{ projectId?: string }> = ({ projectId }) =
 
                 {selectedProject.challenge_ar && (
                   <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-200 space-y-1">
-                    <strong className="block font-bold">التحدي الفني / الموقعي:</strong>
+                    <strong className="block font-bold">متطلبات التنفيذ:</strong>
                     <p className="text-[11px] leading-relaxed">{selectedProject.challenge_ar}</p>
                   </div>
                 )}
 
                 {selectedProject.solution_ar && (
                   <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-200 space-y-1">
-                    <strong className="block font-bold">الحل الهندسي والتنفيذي من رواج:</strong>
+                    <strong className="block font-bold">المعالجة التنفيذية من رواج:</strong>
                     <p className="text-[11px] leading-relaxed">{selectedProject.solution_ar}</p>
                   </div>
                 )}
