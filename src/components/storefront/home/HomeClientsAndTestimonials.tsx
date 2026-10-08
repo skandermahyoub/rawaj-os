@@ -178,16 +178,28 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
                   className="w-[75vw] sm:w-[300px] md:w-[340px] shrink-0 snap-start rounded-2xl bg-white dark:bg-[#141211] border border-[#E8E2D5] dark:border-[#262320] shadow-xs hover:shadow-md hover:border-[#B9142D]/50 transition-all duration-300 overflow-hidden flex flex-col group"
                 >
                   {/* Logo Artwork Frame */}
-                  <div className="h-36 sm:h-44 bg-[#FAF8F5] dark:bg-[#1A1817] p-0 flex items-center justify-center relative overflow-hidden border-b border-[#E8E2D5] dark:border-[#262320]">
-                    <SafeImage
-                      src={logo.logo_url}
-                      alt={logo.name_ar}
-                      className={`w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300 ${
-                        isGrayscale ? 'filter grayscale group-hover:grayscale-0' : ''
-                      }`}
-                      loading="lazy"
-                      fallbackCategory="شعار عميل"
-                    />
+                  <div className="h-36 sm:h-44 bg-[#FAF8F5] dark:bg-[#1A1817] flex items-center justify-center relative overflow-hidden border-b border-[#E8E2D5] dark:border-[#262320]">
+                    <div
+                      className="w-[132px] h-[132px] max-w-[calc(100%-24px)] max-h-[calc(100%-16px)] aspect-square rounded-2xl border border-dashed border-[#B9142D]/35 dark:border-[#D4AF37]/30 bg-white dark:bg-[#201D1B] shadow-inner flex flex-col items-center justify-center text-center p-3"
+                      aria-label="قالب شعار العميل — المقاس المطلوب 1200×1200 بكسل"
+                    >
+                      {logo.logo_url ? (
+                        <SafeImage
+                          src={logo.logo_url}
+                          alt={logo.name_ar}
+                          className={`w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-300 ${isGrayscale ? 'filter grayscale group-hover:grayscale-0' : ''}`}
+                          loading="lazy"
+                          fallbackCategory="شعار عميل"
+                        />
+                      ) : (
+                        <>
+                          <div className="w-9 h-9 rounded-xl border border-[#B9142D]/25 text-[#B9142D] flex items-center justify-center mb-2 text-sm font-black">شعار</div>
+                          <span className="text-[10px] font-black text-[#171616] dark:text-[#F7F5F0]">مكان شعار العميل</span>
+                          <span className="text-[8px] text-[#78716C] dark:text-[#A8A29E] mt-1">المقاس المطلوب: 1200 × 1200 px</span>
+                          <span className="text-[8px] text-[#78716C] dark:text-[#A8A29E]">PNG / SVG / WebP</span>
+                        </>
+                      )}
+                    </div>
                     
                     <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white font-mono text-[9px] font-bold border border-white/10">
                       #{idx + 1}
