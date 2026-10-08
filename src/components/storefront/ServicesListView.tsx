@@ -86,8 +86,8 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
   // Filtered services
   const filteredServices = useMemo(() => {
     return services.filter((s) => {
-      // Must be published
-      if (s.service_status !== 'published') return false;
+      // Public catalog shows customer needs, not internal technical components.
+      if (s.service_status !== 'published' || s.catalog_role === 'component') return false;
 
       // Sector filter
       if (selectedSector !== 'all') {
@@ -111,7 +111,22 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
       // Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const text = `${s.name_ar} ${s.name_en} ${s.short_description_ar} ${s.full_description_ar}`.toLowerCase();
+        const specText = (s.specification_groups || [])
+          .flatMap((group) => [
+            group.title_ar,
+            group.description_ar || '',
+            ...(group.fields || []).flatMap((field) => [
+              field.label_ar,
+              field.help_text_ar || '',
+              ...(field.options || []).flatMap((opt) => [
+                opt.label_ar,
+                opt.description || '',
+                opt.badge || '',
+              ]),
+            ]),
+          ])
+          .join(' ');
+        const text = `${s.name_ar} ${s.name_en} ${s.short_description_ar} ${s.full_description_ar} ${s.customer_goal_ar || ''} ${specText}`.toLowerCase();
         if (!text.includes(q)) return false;
       }
 
@@ -142,7 +157,7 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
             دليل خدمات الطباعة والإعلان والتجهيزات والتوريد
           </h1>
           <p className="text-xs sm:text-sm text-[#78716C] dark:text-[#A8A29E]">
-            تصفح {services.length} خدمة فنية، اختر المواصفات الهندسية الدقيقة، وأضفها لسلة عرض السعر الموحد.
+            دليل تفاعلي يساعدك على اكتشاف الخيارات والخامات والتشطيبات، ثم جمع ما تحتاجه في طلب واحد.
           </p>
         </div>
 
@@ -266,11 +281,11 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
                     : 'bg-[#FAF7F2] dark:bg-[#221F1F] text-[#44403C] dark:text-[#D6D3D1] border border-[#E7E0D3] dark:border-[#332F2F]'
                 }`}
               >
-                جميع القطاعات ({services.filter((s) => s.service_status === 'published').length})
+                جميع القطاعات ({services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component').length})
               </button>
               {industrySectors.map((sector) => {
                 const count = services.filter((s) => 
-                  s.service_status === 'published' &&
+                  s.service_status === 'published' && s.catalog_role !== 'component' &&
                   (((sector.service_ids || []).includes(s.id)) || (s.industry_sector_ids || []).includes(sector.id))
                 ).length;
                 return (
@@ -307,10 +322,10 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
                     : 'bg-[#FAF7F2] dark:bg-[#221F1F] text-[#44403C] dark:text-[#D6D3D1] border border-[#E7E0D3] dark:border-[#332F2F]'
                 }`}
               >
-                جميع الأقسام ({services.filter((s) => s.service_status === 'published').length})
+                جميع الأقسام ({services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component').length})
               </button>
               {departments.map((dept) => {
-                const count = services.filter((s) => s.department_id === dept.id && s.service_status === 'published').length;
+                const count = services.filter((s) => s.department_id === dept.id && s.service_status === 'published' && s.catalog_role !== 'component').length;
                 return (
                   <button
                     key={dept.id}
@@ -395,9 +410,9 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
       ) : (
         <div className="space-y-3">
           <div className="text-xs text-[#78716C] dark:text-[#A8A29E] flex items-center justify-between px-1">
-            <span>تم العثور على <strong>{filteredServices.length}</strong> خدمة فنية معتمدة</span>
+            <span>تم العثور على <strong>{filteredServices.length}</strong> خدمة رئيسية</span>
             <span className="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded">
-              جاهزة للإضافة لعرض السعر
+              اختر ثم خصص حسب رغبتك
             </span>
           </div>
 
