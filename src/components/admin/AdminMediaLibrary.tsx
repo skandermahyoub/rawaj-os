@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Image, Upload, Trash2, Copy, Check } from 'lucide-react';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
-import { uploadDataUrlToRawajStorage } from '../../lib/storage';
+import { removeRawajStorageObject, uploadDataUrlToRawajStorage } from '../../lib/storage';
 
 export const AdminMediaLibrary: React.FC = () => {
   const { mediaItems, uploadMedia, deleteMedia } = useApp();
@@ -43,15 +43,24 @@ export const AdminMediaLibrary: React.FC = () => {
           folder: newCategory || 'uploads',
           fileName: cleanName || 'image',
         });
-        await uploadMedia({
-          name: cleanName,
-          url: stored.publicUrl,
-          storage_path: stored.path,
-          mime_type: stored.mimeType,
-          size_kb: stored.sizeKb,
-          category: newCategory,
-          alt_ar: file.name,
-        });
+        try {
+          await uploadMedia({
+            name: cleanName,
+            url: stored.publicUrl,
+            storage_path: stored.path,
+            mime_type: stored.mimeType,
+            size_kb: stored.sizeKb,
+            category: newCategory,
+            alt_ar: file.name,
+          });
+        } catch (metadataError) {
+          try {
+            await removeRawajStorageObject(stored.path);
+          } catch (cleanupError) {
+            console.error('Failed to clean up orphaned Storage object:', cleanupError);
+          }
+          throw metadataError;
+        }
       } catch (err: any) {
         setActionError(err?.message || 'تعذر رفع الصورة إلى Supabase Storage.');
       } finally {
