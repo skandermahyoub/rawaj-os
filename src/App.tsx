@@ -221,6 +221,16 @@ const AppContent: React.FC = () => {
       {/* Footer */}
       <Footer />
 
+      {/*
+        Global clearance for the fixed bottom navigation.
+        Keeping this spacer outside <main> also protects the footer/end-of-page
+        content on every storefront route, including service detail pages.
+      */}
+      <div
+        aria-hidden="true"
+        className="h-[calc(96px+env(safe-area-inset-bottom))] sm:h-[calc(108px+env(safe-area-inset-bottom))] shrink-0"
+      />
+
       {/* Fixed bottom navigation */}
       <BottomNav />
 
