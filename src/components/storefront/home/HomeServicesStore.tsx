@@ -13,6 +13,7 @@ import {
 export const HomeServicesStore: React.FC = () => {
   const { services, departments, navigate, toggleWishlist, wishlistedServiceIds } = useApp();
   const [selectedDeptId, setSelectedDeptId] = useState<string>('all');
+  const activeDepartments = departments.filter((d) => d.is_active !== false);
 
   // Filter published services
   const publishedServices = services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component');
@@ -74,7 +75,7 @@ export const HomeServicesStore: React.FC = () => {
           <span>جميع الخدمات ({publishedServices.length})</span>
         </button>
         
-        {departments.map((dept) => {
+        {activeDepartments.map((dept) => {
           const count = publishedServices.filter((s) => s.department_id === dept.id).length;
           const isSelected = selectedDeptId === dept.id;
           return (
