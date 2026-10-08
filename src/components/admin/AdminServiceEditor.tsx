@@ -26,6 +26,7 @@ import {
   FieldType 
 } from '../../types';
 import { ImageUploadPicker } from '../common/ImageUploadPicker';
+import { SafeImage } from '../common/SafeImage';
 
 interface AdminServiceEditorProps {
   serviceId?: string;
@@ -624,13 +625,10 @@ export const AdminServiceEditor: React.FC<AdminServiceEditorProps> = ({
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {galleryImages.map((imgUrl, idx) => (
                       <div key={idx} className="relative group rounded-xl overflow-hidden border border-[#E7E0D3] dark:border-[#332F2F] aspect-4/3 bg-neutral-100 dark:bg-neutral-800">
-                        <img 
-                          src={imgUrl} 
-                          alt="" 
-                          className="w-full h-full object-cover" 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/src/assets/images/printing_brochures_1790806872644.jpg';
-                          }}
+                        <SafeImage
+                          src={imgUrl}
+                          alt="صورة معرض الخدمة"
+                          className="w-full h-full object-cover"
                         />
                         <button
                           type="button"
