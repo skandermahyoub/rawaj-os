@@ -16,9 +16,9 @@ export const KnowledgeHighlights: React.FC = () => {
   return (
     <section className="bg-[#FFFDF9] dark:bg-[#1C1918] rounded-[26px] sm:rounded-[30px] border border-[rgba(23,22,22,0.08)] dark:border-[rgba(245,241,234,0.08)] p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-5 shadow-xs">
       <SectionHeader
-        title="دليل رواج للطباعة والمواد"
-        subtitle="مقالات استرشادية لمساعدتك في اختيار أنسب أنواع الورق، القياسات، وتقنيات التشطيب."
-        actionLabel="جميع المقالات والأدلة"
+        title="مجلة رواج الرقمية"
+        subtitle="قراءات تحريرية راقية عن الطباعة والإعلان والديكور والهوية المادية للعلامات في عالم اليوم."
+        actionLabel="تصفح المجلة كاملة"
         onAction={() => navigate({ view: 'blog' })}
       />
 
@@ -61,7 +61,7 @@ export const KnowledgeHighlights: React.FC = () => {
               </p>
 
               <div className="pt-2.5 border-t border-[rgba(23,22,22,0.06)] dark:border-[rgba(245,241,234,0.06)] flex items-center justify-between text-xs font-bold text-[#B9142D]">
-                <span>قراءة الدليل الفني بالتفصيل</span>
+                <span>قراءة المقال كاملاً</span>
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               </div>
             </div>
