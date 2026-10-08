@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { 
   Star, 
   Quote, 
@@ -178,13 +179,14 @@ export const HomeClientsAndTestimonials: React.FC<HomeClientsAndTestimonialsProp
                 >
                   {/* Logo Artwork Frame */}
                   <div className="h-36 sm:h-44 bg-[#FAF8F5] dark:bg-[#1A1817] p-0 flex items-center justify-center relative overflow-hidden border-b border-[#E8E2D5] dark:border-[#262320]">
-                    <img
+                    <SafeImage
                       src={logo.logo_url}
                       alt={logo.name_ar}
                       className={`w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300 ${
                         isGrayscale ? 'filter grayscale group-hover:grayscale-0' : ''
                       }`}
                       loading="lazy"
+                      fallbackCategory="شعار عميل"
                     />
                     
                     <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white font-mono text-[9px] font-bold border border-white/10">
