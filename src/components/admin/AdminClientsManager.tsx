@@ -323,7 +323,14 @@ export const AdminClientsManager: React.FC = () => {
                 className="p-4 rounded-xl bg-white dark:bg-[#1C1A1A] border border-[#E7E0D3] dark:border-[#332F2F] flex flex-col items-center justify-between text-center gap-3 shadow-xs"
               >
                 <div className="w-full h-16 bg-neutral-50 dark:bg-neutral-900 rounded-lg p-2 flex items-center justify-center">
-                  <img src={logo.logo_url} alt={logo.name_ar} className="max-h-12 max-w-full object-contain" />
+                  {logo.logo_url ? (
+                    <img src={logo.logo_url} alt={logo.name_ar} className="max-h-12 max-w-full object-contain" />
+                  ) : (
+                    <div className="w-14 h-14 aspect-square rounded-lg border border-dashed border-[#B9142D]/30 flex flex-col items-center justify-center text-center text-[#B9142D]">
+                      <span className="text-[9px] font-black">شعار</span>
+                      <span className="text-[6px] mt-0.5 text-[#78716C]">1200×1200</span>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h5 className="font-bold text-xs text-[#171616] dark:text-white line-clamp-1">{logo.name_ar}</h5>
