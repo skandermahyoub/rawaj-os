@@ -89,10 +89,10 @@ export const QuoteCartView: React.FC = () => {
         <div>
           <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-[#171616] dark:text-[#F5F3EF] flex items-center gap-2">
             <ShoppingBag className="w-6 h-6 text-brand-primary" />
-            <span>طلب عرض السعر (سلة المواصفات)</span>
+            <span>احتياجات المشروع</span>
           </h1>
           <p className="text-xs text-[#78716C] dark:text-[#A8A29E]">
-            راجع الخدمات والمواصفات المختارة وأرسل طلب التسعير الفني الموحد لفريق رواج
+اجمع ما تحتاجه في مكان واحد. يمكن أن تحدد التفاصيل الآن أو تترك بعضها لفريق رواج عند التواصل.
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export const QuoteCartView: React.FC = () => {
             className="self-start sm:self-auto text-xs text-[#78716C] hover:text-brand-primary flex items-center gap-1 font-semibold"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>تفريغ السلة</span>
+            <span>مسح الاحتياجات</span>
           </button>
         )}
       </div>
@@ -158,10 +158,10 @@ export const QuoteCartView: React.FC = () => {
           </div>
           <div className="space-y-1">
             <h3 className="font-heading font-bold text-base text-[#171616] dark:text-[#F5F3EF]">
-              سلة طلب عرض السعر فارغة حالياً
+              لم تضف احتياجات إلى مشروعك بعد
             </h3>
             <p className="text-xs text-[#78716C] dark:text-[#A8A29E] max-w-md mx-auto">
-              يمكنك استعراض دليل الخدمات الفنية وتخصيص المقاسات والخامات لكل خدمة وإضافتها هنا لتجميعها في طلب واحد.
+استكشف دليل الخدمات، شاهد الخيارات والخامات، ثم أضف ما تحتاجه هنا. لا يلزم أن تعرف كل التفاصيل الفنية مسبقاً.
             </p>
           </div>
           <div className="pt-2">
@@ -183,7 +183,7 @@ export const QuoteCartView: React.FC = () => {
           <div className="lg:col-span-7 space-y-4">
             
             <div className="text-xs font-bold text-[#78716C] dark:text-[#A8A29E] px-1">
-              الخدمات المضافة ({quoteItems.length} بنود):
+              احتياجات المشروع ({quoteItems.length} بنود):
             </div>
 
             <div className="space-y-3">
@@ -270,7 +270,7 @@ export const QuoteCartView: React.FC = () => {
                           <Minus className="w-3 h-3" />
                         </button>
                         <span className="px-2.5 py-0.5 text-xs font-bold text-[#171616] dark:text-white min-w-8 text-center">
-                          {item.quantity}
+                          {item.quantity} {item.quantity_unit || 'وحدة'}
                         </span>
                         <button
                           type="button"
@@ -300,7 +300,7 @@ export const QuoteCartView: React.FC = () => {
                 className="w-full py-2.5 rounded-xl border border-dashed border-[#D4CDC0] dark:border-[#3A3535] hover:border-[#B9142D] text-xs font-bold text-[#57534E] dark:text-[#D6D3D1] hover:text-[#B9142D] transition-colors flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
-                <span>إضافة خدمة أخرى إلى نفس طلب عرض السعر</span>
+                <span>إضافة احتياج آخر إلى المشروع</span>
               </button>
             </div>
 
@@ -311,10 +311,10 @@ export const QuoteCartView: React.FC = () => {
             
             <div className="pb-3 border-b border-[#E7E0D3] dark:border-[#332F2F]">
               <h3 className="font-heading font-bold text-sm text-[#171616] dark:text-[#F5F3EF]">
-                بيانات التواصل لاستلام عرض السعر
+                أرسل احتياجاتك إلى رواج
               </h3>
               <p className="text-[11px] text-[#78716C] dark:text-[#A8A29E]">
-                سيقوم فريق مبيعات رواج بالتواصل معكم مباشرة لتأكيد التسعير وموعد التوريد.
+سيصل لفريق رواج ما اخترته والكميات والمواصفات التي حددتها، ثم يتواصلون معك لاستكمال الناقص والتسعير.
               </p>
             </div>
 
