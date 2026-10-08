@@ -31,6 +31,7 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
 }) => {
   const { services, departments, categories, industrySectors, getIndustrySectorById } = useApp();
 
+  const activeDepartments = departments.filter((d) => d.is_active !== false);
   const [selectedSector, setSelectedSector] = useState<string>(initialIndustrySectorId || 'all');
   const [selectedDept, setSelectedDept] = useState<string>(initialDepartmentId || 'all');
   const [selectedCat, setSelectedCat] = useState<string>(initialCategoryId || 'all');
@@ -61,8 +62,8 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
 
   // Available categories for selected department
   const availableCategories = useMemo(() => {
-    if (selectedDept === 'all') return categories;
-    return categories.filter((c) => c.department_id === selectedDept);
+    if (selectedDept === 'all') return categories.filter((c) => c.is_active !== false);
+    return categories.filter((c) => c.department_id === selectedDept && c.is_active !== false);
   }, [categories, selectedDept]);
 
   // Handle sector change
@@ -324,7 +325,7 @@ export const ServicesListView: React.FC<ServicesListViewProps> = ({
               >
                 جميع الأقسام ({services.filter((s) => s.service_status === 'published' && s.catalog_role !== 'component').length})
               </button>
-              {departments.map((dept) => {
+              {activeDepartments.map((dept) => {
                 const count = services.filter((s) => s.department_id === dept.id && s.service_status === 'published' && s.catalog_role !== 'component').length;
                 return (
                   <button
