@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { BrandLogo } from './BrandLogo';
-import { RawajLogo } from './RawajLogo';
 import { 
   Download, 
   Smartphone, 
@@ -76,17 +75,12 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
           
           {/* Logo Container (Uses logo from control panel or certified fallback) */}
           <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-[#171413] border-2 border-[#D4AF37] shadow-xl p-1.5 flex items-center justify-center shrink-0 overflow-hidden relative group">
-            {siteSettings.logo_url ? (
-              <img
-                src={siteSettings.logo_url}
-                alt={appName}
-                className="w-full h-full object-contain rounded-xl"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white">
-                <RawajLogo className="w-full h-full object-contain" />
-              </div>
-            )}
+            <BrandLogo
+              src={siteSettings.logo_url}
+              alt={appName}
+              className="w-full h-full object-contain rounded-xl"
+              fallbackClassName="w-full h-full"
+            />
             <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 border-2 border-[#0F0D0C] flex items-center justify-center text-white shadow-xs" title="تطبيق رواج المعتمد">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
