@@ -535,7 +535,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, name, email, role, avatar_url, phone, created_at')
+        .select('id, name, email, role, avatar_url, phone, is_active, created_at')
         .eq('id', authUserId)
         .single();
 
@@ -551,6 +551,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         role: profile.role as User['role'],
         avatar: profile.avatar_url || undefined,
         phone: profile.phone || undefined,
+        is_active: profile.is_active !== false,
         createdAt: profile.created_at,
         isOwnerProtected: profile.role === 'owner',
       };
@@ -570,6 +571,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           role: row.role as User['role'],
           avatar: row.avatar_url || undefined,
           phone: row.phone || undefined,
+          is_active: row.is_active !== false,
           createdAt: row.created_at,
           isOwnerProtected: row.role === 'owner',
         }));
@@ -1547,11 +1549,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteMedia = async (id: string): Promise<void> => {
     const target = mediaItems.find((m) => m.id === id);
-    if (target?.storage_path) {
-      await removeRawajStorageObject(target.storage_path);
-    }
+
+    // Remove database metadata first so a transient Storage failure can never
+    // leave a visible library record pointing at a file that was already deleted.
     await deleteDoc(doc(db, 'media', id));
     setMediaItems((prev) => prev.filter((m) => m.id !== id));
+
+    if (target?.storage_path) {
+      try {
+        await removeRawajStorageObject(target.storage_path);
+      } catch (error) {
+        // The media item is already deleted from the CMS. A leftover object is
+        // safer than a broken database record and can be cleaned later.
+        console.error('Supabase Storage cleanup failed after media deletion:', error);
+      }
+    }
   };
 
   // Packages CRUD
