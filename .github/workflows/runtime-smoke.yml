@@ -69,6 +69,14 @@ jobs:
               badResponses.push('FAILED ' + r.url() + ' :: ' + (r.failure()?.errorText || 'unknown'));
             });
             const response = await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 45000 });
+            // Exercise every lazy-loaded storefront section rather than only the first viewport.
+            const pageHeight = await page.evaluate(() => document.body.scrollHeight);
+            for (let y = 0; y < pageHeight; y += 700) {
+              await page.evaluate((nextY) => window.scrollTo(0, nextY), y);
+              await page.waitForTimeout(120);
+            }
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await page.waitForTimeout(600);
             const rootText = (await page.locator('#root').innerText()).trim();
             const bodyText = (await page.locator('body').innerText()).trim();
             console.log('HTTP_STATUS=' + (response ? response.status() : 'NO_RESPONSE'));
