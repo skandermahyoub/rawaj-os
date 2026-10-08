@@ -13,13 +13,13 @@ export const BlogListView: React.FC = () => {
       <div className="space-y-1">
         <div className="inline-flex items-center gap-1.5 bg-[#FDE8EA] dark:bg-[#3D1217] text-[#B9142D] px-2.5 py-0.5 rounded text-xs font-bold">
           <BookOpen className="w-3.5 h-3.5" />
-          <span>مركز المعرفة ودليل الخامات الفنية</span>
+          <span>مجلة رواج الرقمية</span>
         </div>
         <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-[#171616] dark:text-[#F5F3EF]">
-          دليل الطباعة والمواصفات الهندسية
+          مجلة رواج — الطباعة والإعلان والديكور اليوم
         </h1>
         <p className="text-xs sm:text-sm text-[#78716C] dark:text-[#A8A29E]">
-          مقالات فنية متخصصة ومقارنات علمية في الخامات، التغليف، اللوحات، والتشطيبات لمساعدتك في اتخاذ القرار الصحيح لمشروعك.
+          مجموعة مقالات تحريرية وفنية تتناول كيف تتغير الطباعة والإعلان والديكور والهوية المادية للعلامات، مع معرفة عملية تساعدك على اتخاذ قرارات أفضل لمشاريعك.
         </p>
       </div>
 
@@ -78,7 +78,7 @@ export const BlogListView: React.FC = () => {
             </div>
 
             <div className="p-4 pt-0 flex items-center justify-between text-xs font-bold text-[#B9142D]">
-              <span>قراءة الدليل الفني كاملاً</span>
+              <span>قراءة المقال كاملاً</span>
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
             </div>
 
@@ -112,7 +112,7 @@ export const BlogPostView: React.FC<{ postId: string }> = ({ postId }) => {
       <nav className="flex items-center gap-2 text-xs text-[#78716C]">
         <button onClick={() => navigate({ view: 'home' })}>الرئيسية</button>
         <span>/</span>
-        <button onClick={() => navigate({ view: 'blog' })}>دليل الخامات</button>
+        <button onClick={() => navigate({ view: 'blog' })}>مجلة رواج</button>
         <span>/</span>
         <span className="text-[#171616] dark:text-white font-bold truncate max-w-[200px]">{post.title_ar}</span>
       </nav>
