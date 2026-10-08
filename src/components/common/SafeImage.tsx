@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ImageOff, Sparkles } from 'lucide-react';
-import { VERIFIED_RAWAJ_ASSETS } from '../../data/rawajMediaAssets';
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackCategory?: string;
@@ -16,29 +15,18 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   ...props
 }) => {
   const [currentSrc, setCurrentSrc] = useState<string | undefined>(src);
-  const [hasTriedFallback, setHasTriedFallback] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   // Sync if src prop changes
   React.useEffect(() => {
     setCurrentSrc(src);
-    setHasTriedFallback(false);
     setHasError(false);
   }, [src]);
 
   const handleError = () => {
-    if (!hasTriedFallback) {
-      setHasTriedFallback(true);
-      // Select appropriate verified local Rawaj asset
-      const match = VERIFIED_RAWAJ_ASSETS.find(a => 
-        (fallbackCategory && a.category.includes(fallbackCategory)) || 
-        (alt && a.tags.some(t => alt.includes(t)))
-      );
-      const fallbackUrl = match ? match.url : VERIFIED_RAWAJ_ASSETS[0].url;
-      setCurrentSrc(fallbackUrl);
-    } else {
-      setHasError(true);
-    }
+    // Never resurrect bundled/legacy artwork when the authoritative image fails.
+    // A neutral placeholder is safer than showing stale content that the admin replaced.
+    setHasError(true);
   };
 
   if (hasError || !currentSrc) {
