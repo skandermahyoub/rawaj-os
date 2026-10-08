@@ -248,10 +248,10 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar: Copyright & Powered by Rawaj */}
         <div className="pt-6 border-t border-[#231F1D] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#7E756A]">
           <div>
-            {footerSettings.copyright_text_ar || `جميع الحقوق محفوظة © ${new Date().getFullYear()} وكالة رواج للطباعة والإعلان والديكور.`}
+            `© ${new Date().getFullYear()} رواج للطباعة والإعلان والديكور — كافة الحقوق محفوظة.`
           </div>
           <div className="flex items-center gap-2 font-semibold text-[#B3AA9E]">
-            <span>مدعوم بواسطة:</span>
+            <span>مدعوم بواسطة</span>
             <a href="https://oryx.business" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] hover:text-white transition-colors">أوريكس لتطوير الأعمال والحلول الذكية</a>
           </div>
         </div>
