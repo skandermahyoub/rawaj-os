@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Upload, 
   Link as LinkIcon, 
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
-import { VERIFIED_RAWAJ_ASSETS, VerifiedMediaAsset } from '../../data/rawajMediaAssets';
+import { VERIFIED_RAWAJ_ASSETS } from '../../data/rawajMediaAssets';
 import { uploadDataUrlToRawajStorage } from '../../lib/storage';
 import { SafeImage } from './SafeImage';
 
@@ -61,6 +61,10 @@ export const ImageUploadPicker: React.FC<ImageUploadPickerProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    setUrlInput(value && !value.startsWith('data:') ? value : '');
+  }, [value]);
+
   // Categories list
   const categories = [
     'all',
@@ -106,6 +110,7 @@ export const ImageUploadPicker: React.FC<ImageUploadPickerProps> = ({
 
       // 4. Apply the durable public URL as the current value.
       onChange(stored.publicUrl);
+      setUrlInput(stored.publicUrl);
       setUploadSuccess(`تم رفع الصورة إلى Supabase Storage بنجاح (${stored.sizeKb} ك.ب)`);
       setTimeout(() => setUploadSuccess(null), 4000);
     } catch (err: any) {
