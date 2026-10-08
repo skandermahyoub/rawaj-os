@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { SafeImage } from '../../common/SafeImage';
 import { PromoBanner } from '../../../types';
 import { 
   Sparkles, 
@@ -178,11 +179,12 @@ export const HomePromoBanners: React.FC = () => {
               onClick={() => handleBannerClick(currentBanner)}
             >
               <div className="relative aspect-4/3 sm:aspect-16/10 lg:aspect-4/3 rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/25 shadow-2xl bg-black/40">
-                <img
+                <SafeImage
                   key={currentBanner.id}
                   src={currentBanner.image_url}
                   alt={currentBanner.title_ar}
                   className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
+                  fallbackCategory="العروض"
                 />
                 
                 {/* Subtle dark gradient scrim at the bottom of the photo */}
