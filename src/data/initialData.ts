@@ -77,7 +77,7 @@ const BASE_DEPARTMENTS: Department[] = [
     slug: 'large-format',
     icon: 'Maximize',
     description_ar: 'بنرات PVC، فلكس إعلاني، استيكر سيارات، أرضيات مانعة للانزلاق، ويندو جرافيكس، وبوسترات معارض.',
-    hero_image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+    hero_image: '/images/vehicle_branding_wrap_1790811427153.jpg',
     sort_order: 4,
   },
   {
@@ -1570,9 +1570,9 @@ const BASE_SERVICES: Service[] = [
     category_id: 'cat-outdoor-banners',
     short_description_ar: 'بنرات PVC مقاومة للتمزق والرياح وفلكس مضيء بحلقات تثبيت معدنية لجميع المقاسات.',
     full_description_ar: 'حلول الإعلانات الخارجية المؤقتة والدائمة. نطبع بنرات الـ PVC والفلكس بأحبار يابانية مقاومة لأشعة الشمس المباشرة والأمطار، مع تقوية الحواف بحلقات تثبيت ألومنيوم مقاومة للصدأ.',
-    hero_image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+    hero_image: '/images/vehicle_branding_wrap_1790811427153.jpg',
     gallery: [
-      'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+      '/images/vehicle_branding_wrap_1790811427153.jpg',
     ],
     badge: 'مقاوم للرياح والشمس',
     service_status: 'published',
