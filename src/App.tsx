@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Header } from './components/common/Header';
 import { BottomNav } from './components/common/BottomNav';
+import { SideRail } from './components/common/SideRail';
 import { Footer } from './components/common/Footer';
 import { SearchModal } from './components/common/SearchModal';
 import { CustomQuoteModal } from './components/common/CustomQuoteModal';
@@ -162,7 +163,7 @@ const AppContent: React.FC = () => {
       />
 
       {/* Main Storefront Area */}
-      <main className="flex-1 w-full">
+      <main className="flex-1 w-full pb-24 sm:pb-28">
         {currentRoute.view === 'home' && (
           <HomeView
             onOpenSearch={() => setSearchModalOpen(true)}
@@ -221,7 +222,11 @@ const AppContent: React.FC = () => {
       {/* Footer */}
       <Footer />
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Fixed navigation frame */}
+      <SideRail
+        onOpenSearch={() => setSearchModalOpen(true)}
+        onOpenCustomQuote={() => setCustomQuoteModalOpen(true)}
+      />
       <BottomNav />
 
       {/* Global Search Modal */}
