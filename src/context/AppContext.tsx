@@ -561,7 +561,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: visibleProfiles, error: usersError } = await supabase
         .from('profiles')
-        .select('id, name, email, role, avatar_url, phone, created_at');
+        .select('id, name, email, role, avatar_url, phone, is_active, created_at');
 
       if (!usersError && visibleProfiles) {
         const mappedUsers: User[] = visibleProfiles.map((row) => ({
