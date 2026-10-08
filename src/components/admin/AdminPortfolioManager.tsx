@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Briefcase, Plus, Trash2, Edit3, Image as ImageIcon } from 'lucide-react';
 import { ImageUploadPicker } from '../common/ImageUploadPicker';
+import { SafeImage } from '../common/SafeImage';
 
 export const AdminPortfolioManager: React.FC = () => {
   const { portfolioProjects, services, createPortfolioProject, updatePortfolioProject, deletePortfolioProject } = useApp();
@@ -11,14 +12,14 @@ export const AdminPortfolioManager: React.FC = () => {
 
   const handleAddNew = () => {
     setEditingProj({
-      title_ar: 'مشروع واجهة أو مطبوعات جديد',
-      client_type_ar: 'قطاع التجزئة والتجارة',
-      industry: 'التجارة العامة',
-      year: '2026',
-      city: 'صنعاء',
-      short_description_ar: 'وصف مختصر لنطاق العمل المنفذ والتجهيزات...',
-      challenge_ar: 'التحدي الفني في الموقع...',
-      solution_ar: 'الحل التنفيذي من رواج...',
+      title_ar: 'نموذج عمل جديد من مجالات تنفيذ رواج',
+      client_type_ar: 'نوع العميل أو مجال الاستخدام',
+      industry: 'مجال التنفيذ',
+      year: '',
+      city: '',
+      short_description_ar: 'وصف مختصر لنطاق العمل كما يظهر في بروفايل أو أرشيف رواج...',
+      challenge_ar: 'متطلبات التنفيذ أو طبيعة المشروع...',
+      solution_ar: 'المعالجة والتنفيذ الذي تقدمه رواج...',
       services_used_ids: services.slice(0, 2).map((s) => s.id),
       images: [],
       featured: true,
@@ -54,7 +55,7 @@ export const AdminPortfolioManager: React.FC = () => {
             <span>إدارة سابقة الأعمال والمشاريع ({portfolioProjects.length})</span>
           </h1>
           <p className="text-xs text-[#78716C] dark:text-[#A8A29E]">
-            توثيق دراسات الحالة الهندسية والحلول المنفذة للعملاء
+            إدارة أعمال رواج الموثقة ونماذج مجالات التنفيذ دون إضافة ادعاءات أو أرقام غير موثقة
           </p>
         </div>
         <button
@@ -74,10 +75,10 @@ export const AdminPortfolioManager: React.FC = () => {
           >
             <div className="space-y-2">
               <div className="aspect-16/10 rounded-xl overflow-hidden bg-[#FAF7F2]">
-                <img src={proj.images[0]} alt="" className="w-full h-full object-cover" />
+                <SafeImage src={proj.images?.[0]} alt={proj.title_ar} className="w-full h-full object-cover" fallbackCategory="معرض الأعمال" />
               </div>
               <span className="text-[10px] font-bold text-[#B9142D] bg-[#FDE8EA] dark:bg-[#3D1217] px-2 py-0.5 rounded">
-                {proj.client_type_ar} • {proj.city} ({proj.year})
+                {proj.client_type_ar}{(proj.city || proj.year) ? ` • ${[proj.city, proj.year].filter(Boolean).join(' • ')}` : ''}
               </span>
               <h3 className="font-heading font-bold text-sm text-[#171616] dark:text-white">{proj.title_ar}</h3>
               <p className="text-xs text-[#78716C] line-clamp-2">{proj.short_description_ar}</p>
@@ -129,22 +130,40 @@ export const AdminPortfolioManager: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="font-bold">نوع العميل / القطاع:</label>
+                <label className="font-bold">نوع العميل / مجال الاستخدام:</label>
                 <input
                   type="text"
-                  value={editingProj.client_type_ar}
+                  value={editingProj.client_type_ar || ''}
                   onChange={(e) => setEditingProj({ ...editingProj, client_type_ar: e.target.value })}
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded px-2.5 py-1.5"
                 />
               </div>
               <div className="space-y-1">
-                <label className="font-bold">المدينة والسنة:</label>
+                <label className="font-bold">مجال التنفيذ:</label>
                 <input
                   type="text"
-                  value={editingProj.city}
+                  value={editingProj.industry || ''}
+                  onChange={(e) => setEditingProj({ ...editingProj, industry: e.target.value })}
+                  className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded px-2.5 py-1.5"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="font-bold">المدينة (اختياري):</label>
+                <input
+                  type="text"
+                  value={editingProj.city || ''}
                   onChange={(e) => setEditingProj({ ...editingProj, city: e.target.value })}
+                  className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded px-2.5 py-1.5"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="font-bold">السنة (اختياري):</label>
+                <input
+                  type="text"
+                  value={editingProj.year || ''}
+                  onChange={(e) => setEditingProj({ ...editingProj, year: e.target.value })}
                   className="w-full bg-[#FAF7F2] dark:bg-[#252222] border border-[#E7E0D3] rounded px-2.5 py-1.5"
                 />
               </div>
@@ -161,7 +180,7 @@ export const AdminPortfolioManager: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="font-bold">التحدي الفني:</label>
+              <label className="font-bold">متطلبات التنفيذ:</label>
               <textarea
                 rows={2}
                 value={editingProj.challenge_ar}
@@ -171,7 +190,7 @@ export const AdminPortfolioManager: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="font-bold">الحل الهندسي والتنفيذي من رواج:</label>
+              <label className="font-bold">المعالجة التنفيذية من رواج:</label>
               <textarea
                 rows={2}
                 value={editingProj.solution_ar}
