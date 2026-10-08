@@ -15,7 +15,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { VERIFIED_RAWAJ_ASSETS } from '../../data/rawajMediaAssets';
-import { uploadDataUrlToRawajStorage } from '../../lib/storage';
+import { removeRawajStorageObject, uploadDataUrlToRawajStorage } from '../../lib/storage';
 import { SafeImage } from './SafeImage';
 
 export interface ImageUploadPickerProps {
@@ -98,15 +98,24 @@ export const ImageUploadPicker: React.FC<ImageUploadPickerProps> = ({
       });
 
       // 3. Save only URL/path metadata in Postgres.
-      await uploadMedia({
-        name: cleanName || 'صورة مرفوعة',
-        url: stored.publicUrl,
-        storage_path: stored.path,
-        mime_type: stored.mimeType,
-        size_kb: stored.sizeKb,
-        category: defaultCategory,
-        alt_ar: cleanName,
-      });
+      try {
+        await uploadMedia({
+          name: cleanName || 'صورة مرفوعة',
+          url: stored.publicUrl,
+          storage_path: stored.path,
+          mime_type: stored.mimeType,
+          size_kb: stored.sizeKb,
+          category: defaultCategory,
+          alt_ar: cleanName,
+        });
+      } catch (metadataError) {
+        try {
+          await removeRawajStorageObject(stored.path);
+        } catch (cleanupError) {
+          console.error('Failed to clean up orphaned Storage object:', cleanupError);
+        }
+        throw metadataError;
+      }
 
       // 4. Apply the durable public URL as the current value.
       onChange(stored.publicUrl);
