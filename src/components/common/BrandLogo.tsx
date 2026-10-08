@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { RawajLogo } from './RawajLogo';
 
 interface BrandLogoProps {
   src?: string | null;
@@ -32,5 +31,13 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     );
   }
 
-  return <RawajLogo className={fallbackClassName} />;
+  return (
+    <div
+      role="img"
+      aria-label={alt}
+      className={`flex items-center justify-center text-center font-black text-[11px] leading-none text-[#B9142D] ${fallbackClassName}`}
+    >
+      رواج
+    </div>
+  );
 };
