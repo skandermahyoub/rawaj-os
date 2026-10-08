@@ -48,6 +48,8 @@ import { AdminFooterManager } from './components/admin/AdminFooterManager';
 import { canAccessAdminView } from './lib/adminAccess';
 import { BrandLogo } from './components/common/BrandLogo';
 
+const RAWAJ_BRAND_LOGO = 'https://jidrhknvrctqzquyurxl.supabase.co/storage/v1/object/public/rawaj-media/branding/1791332863962-084d2dd4-9c86-4d17-b018-7cba142b7db3-rawaj-logo-migrated.webp';
+
 const AppContent: React.FC = () => {
   const { currentRoute, navigate, currentUser, isCloudSynced, siteSettings } = useApp();
 
@@ -83,7 +85,7 @@ const AppContent: React.FC = () => {
             <div className="rawaj-intro__halo" aria-hidden="true" />
             <div className="rawaj-intro__logo">
               <BrandLogo
-                src={siteSettings.logo_url}
+                src={siteSettings.logo_url || RAWAJ_BRAND_LOGO}
                 alt={siteSettings.company_name_ar || 'رواج'}
                 className="h-full w-full object-contain"
                 fallbackClassName="h-full w-full object-contain"
