@@ -532,7 +532,7 @@ drop policy if exists rawaj_customer_design_tasks_read on public.design_tasks;
 create policy rawaj_customer_design_tasks_read on public.design_tasks for select to authenticated
 using (exists (
   select 1 from public.customers c
-  where regexp_replace(coalesce(c.phone,''), '\\D', '', 'g') = regexp_replace(coalesce(design_tasks.client_phone,''), '\\D', '', 'g')
+  where regexp_replace(coalesce(c.phone,''), '[^0-9]', '', 'g') = regexp_replace(coalesce(design_tasks.client_phone,''), '[^0-9]', '', 'g')
     and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
 ));
 
@@ -559,7 +559,7 @@ begin
   select c.name into customer_name_value
   from public.design_tasks d
   join public.customers c
-    on regexp_replace(coalesce(c.phone,''), '\\D', '', 'g') = regexp_replace(coalesce(d.client_phone,''), '\\D', '', 'g')
+    on regexp_replace(coalesce(c.phone,''), '[^0-9]', '', 'g') = regexp_replace(coalesce(d.client_phone,''), '[^0-9]', '', 'g')
   where d.id = p_task_id
     and d.status = 'proof_submitted'
     and lower(coalesce(c.email,'')) = customer_email_value
