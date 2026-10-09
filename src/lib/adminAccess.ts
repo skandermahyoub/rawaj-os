@@ -33,7 +33,7 @@ const salesStaff: UserRole[] = ['owner', 'admin', 'sales'];
 
 export const ADMIN_VIEW_ACCESS: Record<AdminSubview, UserRole[]> = {
   dashboard: allStaff,
-  quotes: [...salesStaff, 'designer'],
+  quotes: salesStaff,
   'design-tasks': ['owner', 'admin', 'sales', 'designer'],
   'contact-inbox': salesStaff,
   services: [...contentStaff, 'sales', 'designer'],
