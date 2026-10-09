@@ -452,4 +452,139 @@ grant usage, select on sequence public.invoices_invoice_number_seq to authentica
 grant usage, select on sequence public.production_orders_order_number_seq to authenticated;
 grant usage, select on sequence public.purchase_orders_purchase_number_seq to authenticated;
 
+
+-- Customer self-service access is bound to the authenticated, verified email address.
+drop policy if exists rawaj_customer_self_read on public.customers;
+create policy rawaj_customer_self_read on public.customers for select to authenticated
+using (lower(coalesce(email,'')) = lower(coalesce(auth.jwt()->>'email','')));
+
+drop policy if exists rawaj_customer_quote_requests_read on public.quotes;
+create policy rawaj_customer_quote_requests_read on public.quotes for select to authenticated
+using (lower(coalesce(customer->>'email','')) = lower(coalesce(auth.jwt()->>'email','')));
+drop policy if exists rawaj_customer_quote_requests_insert on public.quotes;
+create policy rawaj_customer_quote_requests_insert on public.quotes for insert to authenticated
+with check (
+  lower(coalesce(customer->>'email','')) = lower(coalesce(auth.jwt()->>'email',''))
+  and coalesce(status,'new') = 'new'
+);
+
+drop policy if exists rawaj_customer_projects_read on public.operational_projects;
+create policy rawaj_customer_projects_read on public.operational_projects for select to authenticated
+using (exists (
+  select 1 from public.customers c
+  where c.id = operational_projects.customer_id
+    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
+));
+
+drop policy if exists rawaj_customer_commercial_quotes_read on public.commercial_quotes;
+create policy rawaj_customer_commercial_quotes_read on public.commercial_quotes for select to authenticated
+using (exists (
+  select 1 from public.customers c
+  where c.id = commercial_quotes.customer_id
+    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
+));
+
+drop policy if exists rawaj_customer_invoices_read on public.invoices;
+create policy rawaj_customer_invoices_read on public.invoices for select to authenticated
+using (exists (
+  select 1 from public.customers c
+  where c.id = invoices.customer_id
+    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
+));
+
+drop policy if exists rawaj_customer_payments_read on public.payments;
+create policy rawaj_customer_payments_read on public.payments for select to authenticated
+using (exists (
+  select 1 from public.invoices i
+  join public.customers c on c.id = i.customer_id
+  where i.id = payments.invoice_id
+    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
+));
+
+drop policy if exists rawaj_customer_production_orders_read on public.production_orders;
+create policy rawaj_customer_production_orders_read on public.production_orders for select to authenticated
+using (exists (
+  select 1 from public.operational_projects p
+  join public.customers c on c.id = p.customer_id
+  where p.id = production_orders.project_id
+    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
+));
+
+drop policy if exists rawaj_customer_production_stages_read on public.production_stages;
+create policy rawaj_customer_production_stages_read on public.production_stages for select to authenticated
+using (exists (
+  select 1 from public.production_orders o
+  join public.operational_projects p on p.id = o.project_id
+  join public.customers c on c.id = p.customer_id
+  where o.id = production_stages.production_order_id
+    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
+));
+
+drop policy if exists rawaj_customer_activities_read on public.customer_activities;
+create policy rawaj_customer_activities_read on public.customer_activities for select to authenticated
+using (exists (
+  select 1 from public.customers c
+  where c.id = customer_activities.customer_id
+    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
+));
+
+drop policy if exists rawaj_customer_design_tasks_read on public.design_tasks;
+create policy rawaj_customer_design_tasks_read on public.design_tasks for select to authenticated
+using (exists (
+  select 1 from public.customers c
+  where regexp_replace(coalesce(c.phone,''), '\\D', '', 'g') = regexp_replace(coalesce(design_tasks.client_phone,''), '\\D', '', 'g')
+    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
+));
+
+create or replace function private.respond_to_rawaj_proof(
+  p_task_id text,
+  p_decision text,
+  p_comment text default null
+) returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, private, auth
+as $rawaj$
+declare
+  customer_name_value text;
+  customer_email_value text := lower(coalesce(auth.jwt()->>'email',''));
+begin
+  if auth.uid() is null or customer_email_value = '' then
+    raise exception 'Authentication is required.';
+  end if;
+  if p_decision not in ('approved','feedback_requested') then
+    raise exception 'Unsupported proof decision.';
+  end if;
+
+  select c.name into customer_name_value
+  from public.design_tasks d
+  join public.customers c
+    on regexp_replace(coalesce(c.phone,''), '\\D', '', 'g') = regexp_replace(coalesce(d.client_phone,''), '\\D', '', 'g')
+  where d.id = p_task_id
+    and d.status = 'proof_submitted'
+    and lower(coalesce(c.email,'')) = customer_email_value
+  for update of d;
+
+  if customer_name_value is null then
+    raise exception 'Proof not found, not awaiting approval, or not associated with this customer.';
+  end if;
+
+  update public.design_tasks d
+  set status = p_decision,
+      comments = coalesce(d.comments, '[]'::jsonb) || jsonb_build_array(jsonb_build_object(
+        'id', gen_random_uuid()::text,
+        'author_id', auth.uid()::text,
+        'author_name', customer_name_value,
+        'author_role', 'client',
+        'text', coalesce(nullif(btrim(p_comment),''), case when p_decision = 'approved' then 'تم اعتماد البروفة من العميل.' else 'طلب العميل إجراء تعديلات على البروفة.' end),
+        'created_at', now()
+      )),
+      updated_at = now()
+  where d.id = p_task_id;
+end;
+$rawaj$;
+
+revoke all on function private.respond_to_rawaj_proof(text,text,text) from public, anon;
+grant execute on function private.respond_to_rawaj_proof(text,text,text) to authenticated;
+
 commit;
