@@ -63,6 +63,7 @@ export type NavigationTarget =
   | { view: 'blog-post'; postId: string }
   | { view: 'about-contact' }
   | { view: 'custom-quote' }
+  | { view: 'client-portal' }
   | { 
       view: 'admin'; 
       subView?: 
