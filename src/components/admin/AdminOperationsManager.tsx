@@ -346,6 +346,12 @@ export const AdminOperationsManager: React.FC = () => {
       setError('اختر فاتورة وأدخل مبلغ دفعة أكبر من صفر.');
       return;
     }
+    const selectedInvoice = invoices.find((invoice) => invoice.id === paymentInvoice);
+    const remainingAmount = selectedInvoice ? Number(selectedInvoice.total || 0) - (paidByInvoice[paymentInvoice] || 0) : 0;
+    if (!selectedInvoice || Number(paymentAmount) > remainingAmount) {
+      setError('مبلغ الدفعة أكبر من المبلغ المتبقي على الفاتورة.');
+      return;
+    }
     setSaving(true);
     setError('');
     setNotice('');
