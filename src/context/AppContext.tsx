@@ -64,7 +64,6 @@ export type NavigationTarget =
   | { view: 'about-contact' }
   | { view: 'custom-quote' }
   | { view: 'client-portal' }
-  | { view: 'client-portal' }
   | { 
       view: 'admin'; 
       subView?: 
