@@ -30,6 +30,7 @@ export const AdminOperationsManager: React.FC = () => {
   const [customers, setCustomers] = useState<Row[]>([]);
   const [incomingQuotes, setIncomingQuotes] = useState<Row[]>([]);
   const [stages, setStages] = useState<Row[]>([]);
+  const [designTasks, setDesignTasks] = useState<Row[]>([]);
   const [projects, setProjects] = useState<Row[]>([]);
   const [quotes, setQuotes] = useState<Row[]>([]);
   const [invoices, setInvoices] = useState<Row[]>([]);
@@ -63,6 +64,7 @@ export const AdminOperationsManager: React.FC = () => {
       ['customers', 'customers', setCustomers, 'created_at'],
       ['incomingQuotes', 'quotes', setIncomingQuotes, 'created_at'],
       ['stages', 'production_stages', setStages, 'created_at'],
+      ['designTasks', 'design_tasks', setDesignTasks, 'created_at'],
       ['projects', 'operational_projects', setProjects, 'created_at'],
       ['quotes', 'commercial_quotes', setQuotes, 'created_at'],
       ['invoices', 'invoices', setInvoices, 'issued_at'],
@@ -119,7 +121,7 @@ export const AdminOperationsManager: React.FC = () => {
       projects: { customer_id: customers[0]?.id || '', title: '', description: '', status: 'open', priority: 'normal', due_date: '', estimated_total: '0', notes: '' },
       quotes: { customer_id: customers[0]?.id || '', project_id: '', status: 'draft', currency: 'YER', subtotal: '0', discount: '0', tax: '0', valid_until: '', terms: '', line_items: [] },
       finance: { customer_id: customers[0]?.id || '', project_id: '', commercial_quote_id: '', subtotal: '0', discount: '0', tax: '0', due_date: '', notes: '' },
-      production: { project_id: projects[0]?.id || '', status: 'queued', priority: 'normal', due_date: '', specifications: {}, quality_notes: '' },
+      production: { project_id: projects[0]?.id || '', source_design_task_id: '', status: 'queued', priority: 'normal', due_date: '', specifications: {}, quality_notes: '' },
       inventory: { sku: '', name: '', category: '', unit: 'متر', quantity: '0', reorder_level: '0', average_unit_cost: '0', notes: '' },
       suppliers: { name: '', contact_name: '', phone: '', email: '', address: '', payment_terms: '', lead_time_days: '', notes: '', is_active: true },
       purchases: { supplier_id: suppliers[0]?.id || '', status: 'draft', expected_at: '', total: '0', notes: '' },
@@ -167,6 +169,7 @@ export const AdminOperationsManager: React.FC = () => {
         tableName = 'production_orders';
         if (!payload.project_id) throw new Error('اختر المشروع المرتبط بأمر الإنتاج.');
         payload.specifications = {};
+        payload.source_design_task_id = payload.source_design_task_id || null;
         payload.due_date = payload.due_date || null;
       } else if (tab === 'followups') {
         tableName = 'customer_activities';
@@ -501,7 +504,7 @@ export const AdminOperationsManager: React.FC = () => {
         {tab === 'projects' && <>{selectField('العميل','customer_id',customers.map((c)=>({value:c.id,label:c.company_name||c.name})))}{field('اسم المشروع','title')}{field('وصف مختصر','description')}{selectField('الأولوية','priority',[{value:'low',label:'منخفضة'},{value:'normal',label:'عادية'},{value:'high',label:'عالية'},{value:'urgent',label:'عاجلة'}])}{field('موعد التسليم','due_date','date')}{field('القيمة التقديرية بالريال اليمني','estimated_total','number')}{field('ملاحظات داخلية','notes')}</>}
         {tab === 'quotes' && <>{selectField('العميل','customer_id',customers.map((c)=>({value:c.id,label:c.company_name||c.name})))}{selectField('المشروع (اختياري)','project_id',[{value:'',label:'بدون مشروع'} ,...projects.map((p)=>({value:p.id,label:p.title}))])}{field('القيمة قبل الخصم','subtotal','number')}{field('الخصم','discount','number')}{field('الضريبة / الرسوم','tax','number')}{field('صالح حتى','valid_until','date')}{field('الشروط','terms')}</>}
         {tab === 'finance' && <>{selectField('العميل','customer_id',customers.map((c)=>({value:c.id,label:c.company_name||c.name})))}{selectField('المشروع (اختياري)','project_id',[{value:'',label:'بدون مشروع'},...projects.map((p)=>({value:p.id,label:p.title}))])}{selectField('عرض السعر (اختياري)','commercial_quote_id',[{value:'',label:'بدون ربط'},...quotes.map((q)=>({value:q.id,label:`Q-${q.quote_number}-V${q.version} · ${customerName(q.customer_id)}`}))])}{field('القيمة قبل الخصم','subtotal','number')}{field('الخصم','discount','number')}{field('الضريبة / الرسوم','tax','number')}{field('تاريخ الاستحقاق','due_date','date')}{field('ملاحظات','notes')}</>}
-        {tab === 'production' && <>{selectField('المشروع','project_id',projects.map((p)=>({value:p.id,label:p.title})))}{selectField('الأولوية','priority',[{value:'low',label:'منخفضة'},{value:'normal',label:'عادية'},{value:'high',label:'عالية'},{value:'urgent',label:'عاجلة'}])}{field('موعد التسليم','due_date','date')}{selectField('حالة البداية','status',[{value:'queued',label:'في قائمة الإنتاج'},{value:'prepress',label:'تجهيز الملفات'}])}{field('ملاحظات الجودة','quality_notes')}</>}
+        {tab === 'production' && <>{selectField('المشروع','project_id',projects.map((p)=>({value:p.id,label:p.title})))}{selectField('مهمة التصميم المرتبطة (اختياري)','source_design_task_id',[{value:'',label:'بدون ربط'},...designTasks.map((task)=>({value:task.id,label:task.title_ar+' · '+task.client_name}))])}{selectField('الأولوية','priority',[{value:'low',label:'منخفضة'},{value:'normal',label:'عادية'},{value:'high',label:'عالية'},{value:'urgent',label:'عاجلة'}])}{field('موعد التسليم','due_date','date')}{selectField('حالة البداية','status',[{value:'queued',label:'في قائمة الإنتاج'},{value:'prepress',label:'تجهيز الملفات'}])}{field('ملاحظات الجودة','quality_notes')}</>}
         {tab === 'inventory' && <>{field('اسم المادة','name')}{field('رمز المادة / SKU','sku')}{field('التصنيف','category')}{field('وحدة القياس','unit')}{field('الرصيد الافتتاحي','quantity','number')}{field('حد إعادة الطلب','reorder_level','number')}{field('متوسط تكلفة الوحدة','average_unit_cost','number')}{field('ملاحظات','notes')}</>}
         {tab === 'suppliers' && <>{field('اسم المورد','name')}{field('اسم مسؤول التواصل','contact_name')}{field('الهاتف','phone','tel')}{field('البريد الإلكتروني','email','email')}{field('العنوان','address')}{field('شروط الدفع','payment_terms')}{field('مدة التوريد بالأيام','lead_time_days','number')}{field('ملاحظات','notes')}</>}
         {tab === 'purchases' && <>{selectField('المورد','supplier_id',suppliers.map((s)=>({value:s.id,label:s.name})))}{selectField('الحالة','status',[{value:'draft',label:'مسودة'},{value:'ordered',label:'تم الطلب'},{value:'partially_received',label:'استلام جزئي'},{value:'received',label:'مستلم'},{value:'cancelled',label:'ملغي'}])}{field('القيمة الإجمالية','total','number')}{field('موعد التوريد المتوقع','expected_at','date')}{field('ملاحظات','notes')}</>}
