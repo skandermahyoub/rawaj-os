@@ -113,3 +113,14 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 
 - Updated `updateQuoteStatus` and `updateQuoteNotes` in `AppContext.tsx` to persist only the fields changed by the action and merge those fields into current client state. This reduces the risk that an edit based on an older in-memory quote overwrites unrelated, newer fields. Explicitly saving an empty internal note now clears it rather than silently retaining the previous value.
 - **Remaining concurrency limitation:** quote history is still stored as an embedded `timeline` array. Two simultaneous actions can still race while writing that array. A durable fix requires an append-only quote-event table or a server-side atomic operation; this was not silently treated as solved in this phase.
+
+
+### Follow-up hardening — 2026-10-09
+
+- Restricted the admin quote workspace in the UI to owner/admin/sales. Designers continue to use the design-task workspace instead of viewing sales quote records.
+- Completed the quote-status filter so staff can directly filter requests awaiting customer details, negotiation, and archived requests; previously these statuses existed in the workflow but were missing from the filter.
+- Added a mobile-number fallback when generating the WhatsApp contact link, preventing a runtime error when a quote has no separate WhatsApp value.
+- Changed `updateDesignTask` to persist only explicitly changed fields plus `updated_at`, instead of writing an entire task assembled from a potentially stale client snapshot.
+- Live Supabase policy inspection found that `quotes_staff_read` also allowed the designer role to select full quote rows, including private sales/supplier notes. Added migration `supabase/migrations/20261009150000_restrict_quote_read_to_sales.sql` to remove that database-level access.
+- **Migration is staged only on this branch and has not been applied to Supabase.** Before production application, test it against the expected designer workflow and confirm that design-task screens do not require direct quote-table reads.
+- The existing design-task proof/comment arrays are still embedded in the task row. Concurrent submissions can still race; a normalized append-only proof/comment/event model is the durable follow-up.
