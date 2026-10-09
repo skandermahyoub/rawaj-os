@@ -70,7 +70,7 @@ export const AdminOperationsManager: React.FC = () => {
     ] as const;
     try {
       const results = await Promise.all(specs.map(([, table, , order]) =>
-        supabase.from(table).select('*').order(order, { ascending: false }).limit(500)
+        supabase.from(table as any).select('*').order(order, { ascending: false }).limit(500)
       ));
       const failed = results.find((result) => result.error);
       if (failed?.error) throw failed.error;
@@ -184,7 +184,7 @@ export const AdminOperationsManager: React.FC = () => {
 
       if (tab === 'production' && data?.id) {
         const defaultStages = ['تجهيز الملفات', 'الطباعة', 'التشطيب', 'مراقبة الجودة'];
-        const { error: stagesError } = await supabase.from('production_stages').insert(defaultStages.map((name, index) => ({
+        const { error: stagesError } = await supabase.from('production_stages' as any).insert(defaultStages.map((name, index) => ({
           production_order_id: data.id, name, sort_order: index, status: 'pending',
         })));
         if (stagesError) {
@@ -215,12 +215,12 @@ export const AdminOperationsManager: React.FC = () => {
       const phone = String(customer.mobile || customer.whatsapp || '').trim();
       let customerRow: Row | null = null;
       if (phone) {
-        const existing = await supabase.from('customers').select('*').eq('phone', phone).maybeSingle();
+        const existing = await supabase.from('customers' as any).select('*').eq('phone', phone).maybeSingle();
         if (existing.error) throw existing.error;
         customerRow = existing.data as Row | null;
       }
       if (!customerRow) {
-        const created = await supabase.from('customers').insert({
+        const created = await supabase.from('customers' as any).insert({
           customer_type: customer.company ? 'company' : 'individual',
           name: String(customer.name || 'عميل طلب تسعير').trim(),
           company_name: customer.company || null,
@@ -235,7 +235,7 @@ export const AdminOperationsManager: React.FC = () => {
         if (created.error) throw created.error;
         customerRow = created.data as Row;
       }
-      const createdQuote = await supabase.from('commercial_quotes').insert({
+      const createdQuote = await supabase.from('commercial_quotes' as any).insert({
         customer_id: customerRow.id,
         source_quote_id: request.id,
         status: 'draft',
@@ -267,7 +267,7 @@ export const AdminOperationsManager: React.FC = () => {
       }
       if (quote.status !== 'approved') throw new Error('يجب اعتماد عرض السعر قبل إنشاء مشروع تنفيذي.');
       const sourceRequest = incomingQuotes.find((request) => request.id === quote.source_quote_id);
-      const created = await supabase.from('operational_projects').insert({
+      const created = await supabase.from('operational_projects' as any).insert({
         customer_id: quote.customer_id,
         source_quote_id: quote.source_quote_id || null,
         title: 'تنفيذ عرض السعر Q-' + quote.quote_number + '-V' + quote.version,
@@ -278,7 +278,7 @@ export const AdminOperationsManager: React.FC = () => {
         notes: 'تم إنشاء المشروع من عرض السعر Q-' + quote.quote_number + '-V' + quote.version + '.',
       }).select('id').single();
       if (created.error) throw created.error;
-      const linked = await supabase.from('commercial_quotes').update({ project_id: created.data.id, status: 'converted', updated_at: new Date().toISOString() }).eq('id', quote.id);
+      const linked = await supabase.from('commercial_quotes' as any).update({ project_id: created.data.id, status: 'converted', updated_at: new Date().toISOString() }).eq('id', quote.id);
       if (linked.error) throw linked.error;
       setNotice('تم إنشاء المشروع وربطه بعرض السعر.');
       await load();
@@ -298,7 +298,7 @@ export const AdminOperationsManager: React.FC = () => {
       const now = new Date().toISOString();
       if (status === 'in_progress' && !stage.started_at) patch.started_at = now;
       if (status === 'completed') patch.completed_at = now;
-      const { error: stageError } = await supabase.from('production_stages').update(patch).eq('id', stage.id);
+      const { error: stageError } = await supabase.from('production_stages' as any).update(patch).eq('id', stage.id);
       if (stageError) throw stageError;
       setNotice('تم تحديث مرحلة الإنتاج.');
       await load();
@@ -318,7 +318,7 @@ export const AdminOperationsManager: React.FC = () => {
     setError('');
     setNotice('');
     try {
-      const { error: paymentError } = await supabase.from('payments').insert({
+      const { error: paymentError } = await supabase.from('payments' as any).insert({
         invoice_id: paymentInvoice,
         amount: Number(paymentAmount),
         method: paymentMethod,
@@ -343,7 +343,7 @@ export const AdminOperationsManager: React.FC = () => {
     setError('');
     setNotice('');
     try {
-      const { error: movementError } = await supabase.from('inventory_movements').insert({
+      const { error: movementError } = await supabase.from('inventory_movements' as any).insert({
         inventory_item_id: movementItem,
         movement_type: movementType,
         quantity: Number(movementQty),
