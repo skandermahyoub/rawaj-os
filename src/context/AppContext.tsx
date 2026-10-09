@@ -1099,10 +1099,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Theme Customizer
   const updateThemeSettings = async (settings: Partial<ThemeCustomizerSettings>): Promise<void> => {
-    const updated = { ...themeSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true });
-    setThemeSettings(updated);
-    applyThemeToDocument(updated);
+    await setDoc(doc(db, 'settings', 'theme_customizer'), settings, { merge: true });
+    setThemeSettings((current) => ({ ...current, ...settings }));
   };
 
   // Home Modules Config & Reordering
@@ -1140,9 +1138,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Promo Banners & Module
   const updatePromoSettings = async (settings: Partial<PromoModuleSettings>): Promise<void> => {
-    const updated = { ...promoSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true });
-    setPromoSettings(updated);
+    await setDoc(doc(db, 'settings', 'promo_module'), settings, { merge: true });
+    setPromoSettings((current) => ({ ...current, ...settings }));
   };
 
   const addPromoBanner = async (banner: Omit<PromoBanner, 'id'>): Promise<void> => {
@@ -1206,9 +1203,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Footer Settings
   const updateFooterSettings = async (settings: Partial<FooterSettings>): Promise<void> => {
-    const updated = { ...footerSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true });
-    setFooterSettings(updated);
+    await setDoc(doc(db, 'settings', 'footer'), settings, { merge: true });
+    setFooterSettings((current) => ({ ...current, ...settings }));
   };
 
   // Brands Mode
@@ -1893,9 +1889,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // About Us Update
   const updateAboutUsData = async (data: Partial<AboutUsModuleData>): Promise<void> => {
-    const updated = { ...aboutUsData, ...data };
-    await setDoc(doc(db, 'settings', 'about_us'), updated, { merge: true });
-    setAboutUsData(updated);
+    await setDoc(doc(db, 'settings', 'about_us'), data, { merge: true });
+    setAboutUsData((current) => ({ ...current, ...data }));
   };
 
   // Rawaj Features CRUD
