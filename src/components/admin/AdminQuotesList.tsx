@@ -20,6 +20,14 @@ import {
 } from 'lucide-react';
 import { QuoteRequest, QuoteStatus } from '../../types';
 
+const normalizeYemenWhatsAppNumber = (phone?: string): string => {
+  const digits = (phone || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('00')) return digits.slice(2);
+  if (digits.startsWith('967')) return digits;
+  return `967${digits.replace(/^0+/, '')}`;
+};
+
 export const AdminQuotesList: React.FC = () => {
   const { quoteRequests, updateQuoteStatus, assignQuoteSalesperson, updateQuoteNotes, users, siteSettings, currentUser } = useApp();
   const canEditQuotes = ['owner', 'admin', 'sales'].includes(currentUser.role);
@@ -43,6 +51,10 @@ export const AdminQuotesList: React.FC = () => {
     }
     return true;
   });
+
+  const selectedQuoteWhatsApp = selectedQuote
+    ? normalizeYemenWhatsAppNumber(selectedQuote.customer.whatsapp || selectedQuote.customer.mobile)
+    : '';
 
   const handleOpenQuote = (quote: QuoteRequest) => {
     setSelectedQuote(quote);
@@ -400,8 +412,9 @@ export const AdminQuotesList: React.FC = () => {
                 <span className="text-[11px] text-[#78716C]">عرض فقط — التعديل متاح للمبيعات والإدارة.</span>
               )}
 
+              {selectedQuoteWhatsApp ? (
               <a
-                href={`https://wa.me/${(selectedQuote.customer.whatsapp || selectedQuote.customer.mobile || '').replace(/[^0-9]/g, '')}`}
+                href={`https://wa.me/${selectedQuoteWhatsApp}`
                 target="_blank"
                 rel="noreferrer"
                 className="bg-[#25D366] text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5"
@@ -409,6 +422,9 @@ export const AdminQuotesList: React.FC = () => {
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>محادثة العميل عبر الواتساب</span>
               </a>
+              ) : (
+                <span className="text-[11px] text-[#78716C]">لا يوجد رقم صالح لواتساب</span>
+              )}
             </div>
 
           </div>
