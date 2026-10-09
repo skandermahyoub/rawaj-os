@@ -125,10 +125,13 @@ export const AdminQuotesList: React.FC = () => {
             <option value="all">جميع الحالات ({quoteRequests.length})</option>
             <option value="new">طلبات جديدة</option>
             <option value="reviewing">قيد المراجعة</option>
+            <option value="need_more_info">بانتظار تفاصيل العميل</option>
             <option value="pricing">قيد التسعير والتوريد</option>
             <option value="sent">تم الإرسال للعميل</option>
+            <option value="negotiation">قيد التفاوض</option>
             <option value="won">معتمدة (ناجحة)</option>
             <option value="lost">لم يتم الاتفاق</option>
+            <option value="archived">مؤرشفة</option>
           </select>
         </div>
       </div>
