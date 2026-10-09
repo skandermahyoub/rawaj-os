@@ -129,3 +129,7 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 - Client-logo CRUD now attempts to remove the previous Rawaj Storage object after a successful replacement or record deletion; storage-cleanup failure does not roll back the saved database change.
 - One client-logo row referenced a generic legacy upload while the other listed rows had no image. Added guarded migration `supabase/migrations/20261009150500_clear_unverified_client_logo_asset.sql` to clear only that matching URL and preserve the client record.
 - The two new SQL migrations remain staged on this branch and have not been applied to the live Supabase database.
+
+
+- Extended partial-write hardening to service, template, package, blog-post, and portfolio updates. These functions now persist only the supplied fields (plus the service timestamp), avoiding accidental replacement of unrelated values from an older in-memory object.
+- Additional persistence risk confirmed in `cloudDb.ts`: settings are stored as JSONB and merge writes currently read the current JSON value, merge in the browser, then upsert it. Two nearly simultaneous writes to the same settings key can still race. The durable fix is an atomic server-side JSONB merge operation; it is not introduced here because it requires a coordinated database migration and runtime verification.
