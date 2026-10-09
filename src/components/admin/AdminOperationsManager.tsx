@@ -234,7 +234,7 @@ export const AdminOperationsManager: React.FC = () => {
       if (tab === 'production' && data?.id) {
         const defaultStages = ['تجهيز الملفات', 'الطباعة', 'التشطيب', 'مراقبة الجودة'];
         const { error: stagesError } = await supabase.from('production_stages' as any).insert(defaultStages.map((name, index) => ({
-          production_order_id: data.id, name, sort_order: index, status: 'pending',
+          production_order_id: (data as Row).id, name, sort_order: index, status: 'pending',
         })));
         if (stagesError) {
           setNotice('تم إنشاء أمر الإنتاج، لكن تعذر إنشاء مراحل العمل الافتراضية. يمكنك متابعة الأمر بعد مراجعة الصلاحيات.');
@@ -328,7 +328,7 @@ export const AdminOperationsManager: React.FC = () => {
         notes: 'تم إنشاء المشروع من عرض السعر Q-' + quote.quote_number + '-V' + quote.version + '.',
       }).select('id').single();
       if (created.error) throw created.error;
-      const linked = await supabase.from('commercial_quotes' as any).update({ project_id: created.data.id, status: 'converted', updated_at: new Date().toISOString() }).eq('id', quote.id);
+      const linked = await supabase.from('commercial_quotes' as any).update({ project_id: (created.data as Row).id, status: 'converted', updated_at: new Date().toISOString() }).eq('id', quote.id);
       if (linked.error) throw linked.error;
       setNotice('تم إنشاء المشروع وربطه بعرض السعر.');
       await load();
