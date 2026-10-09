@@ -27,7 +27,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { DesignTask, DesignTaskStatus, User } from '../../types';
-import { uploadFileToRawajStorage } from '../../lib/storage';
+import { removeRawajStorageObject, uploadFileToRawajStorage } from '../../lib/storage';
 
 export const AdminDesignTasksManager: React.FC = () => {
   const { 
@@ -201,12 +201,14 @@ export const AdminDesignTasksManager: React.FC = () => {
     const nextVersion = (activeTask?.proof_versions.length || 0) + 1;
     setActionError('');
     setIsUploadingProof(true);
+    let uploadedPath: string | null = null;
 
     try {
       const stored = await uploadFileToRawajStorage(proofFile, {
         folder: `design-proofs/${activeTaskId}`,
         fileName: proofFile.name,
       });
+      uploadedPath = stored.path;
 
       await addDesignProof(activeTaskId, {
         version_number: nextVersion,
@@ -218,10 +220,23 @@ export const AdminDesignTasksManager: React.FC = () => {
         notes_ar: newProofData.notes_ar,
       });
 
+      // The database record now owns this object; only clean it up if saving failed.
+      uploadedPath = null;
       setProofFile(null);
       setNewProofData({ notes_ar: '' });
     } catch (error: any) {
-      setActionError(error?.message || 'تعذر رفع البروفة إلى Supabase Storage.');
+      let cleanupFailed = false;
+      if (uploadedPath) {
+        try {
+          await removeRawajStorageObject(uploadedPath);
+        } catch {
+          cleanupFailed = true;
+        }
+      }
+      const message = error?.message || 'تعذر حفظ البروفة.';
+      setActionError(cleanupFailed
+        ? `${message} كما تعذر حذف الملف المؤقت من التخزين؛ يرجى مراجعة المكتبة.`
+        : message);
     } finally {
       setIsUploadingProof(false);
     }
