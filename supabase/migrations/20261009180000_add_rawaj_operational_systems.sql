@@ -356,7 +356,11 @@ begin
     'inventory_movements','purchase_orders'
   ] loop
     execute format('drop policy if exists %I on public.%I', t || '_staff_read', t);
-    execute format('create policy %I on public.%I for select to authenticated using (private.has_any_role(array[''owner'',''admin'',''sales'',''designer'']))', t || '_staff_read', t);
+    if t in ('customers','customer_activities','commercial_quotes','invoices','payments','suppliers','purchase_orders','inventory_items','inventory_movements') then
+      execute format('create policy %I on public.%I for select to authenticated using (private.has_any_role(array[''owner'',''admin'',''sales'']))', t || '_staff_read', t);
+    else
+      execute format('create policy %I on public.%I for select to authenticated using (private.has_any_role(array[''owner'',''admin'',''sales'',''designer'']))', t || '_staff_read', t);
+    end if;
     execute format('drop policy if exists %I on public.%I', t || '_staff_insert', t);
     execute format('create policy %I on public.%I for insert to authenticated with check (private.has_any_role(array[''owner'',''admin'',''sales'']))', t || '_staff_insert', t);
     execute format('drop policy if exists %I on public.%I', t || '_staff_update', t);
