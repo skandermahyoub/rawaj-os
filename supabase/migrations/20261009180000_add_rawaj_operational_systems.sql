@@ -196,8 +196,6 @@ create table if not exists public.inventory_movements (
   created_at timestamptz not null default now()
 );
 create index if not exists inventory_movements_item_idx on public.inventory_movements(inventory_item_id,created_at desc);
-create trigger rawaj_apply_inventory_movement after insert on public.inventory_movements for each row execute function private.apply_rawaj_inventory_movement();
-create trigger rawaj_refresh_invoice_after_payment after insert or update or delete on public.payments for each row execute function private.refresh_rawaj_invoice_status();
 
 create table if not exists public.purchase_orders (
   id uuid primary key default gen_random_uuid(),
@@ -330,6 +328,9 @@ begin
   if tg_op = 'DELETE' then return old; else return new; end if;
 end;
 $;
+
+create trigger rawaj_apply_inventory_movement after insert on public.inventory_movements for each row execute function private.apply_rawaj_inventory_movement();
+create trigger rawaj_refresh_invoice_after_payment after insert or update or delete on public.payments for each row execute function private.refresh_rawaj_invoice_status();
 
 revoke all on function private.capture_rawaj_audit_event() from public, anon, authenticated;
 
