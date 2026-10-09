@@ -138,6 +138,7 @@ export const AdminOperationsManager: React.FC = () => {
         tableName = 'operational_projects';
         if (!payload.customer_id || !String(payload.title || '').trim()) throw new Error('اختر العميل وأدخل اسم المشروع.');
         payload.estimated_total = Number(payload.estimated_total || 0);
+        payload.due_date = payload.due_date || null;
       } else if (tab === 'quotes') {
         tableName = 'commercial_quotes';
         if (!payload.customer_id) throw new Error('اختر العميل.');
@@ -145,6 +146,7 @@ export const AdminOperationsManager: React.FC = () => {
         payload.discount = Number(payload.discount || 0);
         payload.tax = Number(payload.tax || 0);
         payload.project_id = payload.project_id || null;
+        payload.valid_until = payload.valid_until || null;
       } else if (tab === 'finance') {
         tableName = 'invoices';
         if (!payload.customer_id) throw new Error('اختر العميل.');
@@ -153,10 +155,12 @@ export const AdminOperationsManager: React.FC = () => {
         payload.tax = Number(payload.tax || 0);
         payload.project_id = payload.project_id || null;
         payload.commercial_quote_id = payload.commercial_quote_id || null;
+        payload.due_date = payload.due_date || null;
       } else if (tab === 'production') {
         tableName = 'production_orders';
         if (!payload.project_id) throw new Error('اختر المشروع المرتبط بأمر الإنتاج.');
         payload.specifications = {};
+        payload.due_date = payload.due_date || null;
       } else if (tab === 'followups') {
         tableName = 'customer_activities';
         if (!payload.customer_id || !String(payload.subject || '').trim()) throw new Error('اختر العميل واكتب عنوان المتابعة.');
@@ -182,6 +186,7 @@ export const AdminOperationsManager: React.FC = () => {
         tableName = 'inventory_items';
         if (!String(payload.name || '').trim()) throw new Error('اسم المادة مطلوب.');
         payload.quantity = Number(payload.quantity || 0);
+        payload.sku = payload.sku || null;
         payload.reorder_level = Number(payload.reorder_level || 0);
         payload.average_unit_cost = Number(payload.average_unit_cost || 0);
       } else {
