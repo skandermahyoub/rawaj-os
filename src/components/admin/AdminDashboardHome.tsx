@@ -51,16 +51,21 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
   const newQuotesCount = quoteRequests.filter((q) => q.status === 'new').length;
   const inProgressQuotesCount = quoteRequests.filter((q) => ['reviewing', 'pricing', 'sent', 'negotiation'].includes(q.status)).length;
   const wonQuotesCount = quoteRequests.filter((q) => q.status === 'won').length;
-  const activeDesignTasks = designTasks.filter((t) => t.status === 'in_progress' || t.status === 'proof_submitted').length;
+  const activeDesignTasks = designTasks.filter((task) =>
+    ['new', 'assigned', 'in_progress', 'proof_submitted', 'feedback_requested'].includes(task.status)
+  ).length;
 
   // Operational workload is derived from live Supabase-backed records, not static demo values.
   const quotesNeedingReview = quoteRequests.filter((q) => q.status === 'new');
   const quotesWaitingForCustomer = quoteRequests.filter((q) => q.status === 'need_more_info');
   const proofsAwaitingDecision = designTasks.filter((task) => task.status === 'proof_submitted');
   const overdueDesignTasks = designTasks.filter((task) => {
-    if (!task.deadline || task.status === 'completed') return false;
-    const deadlineTime = new Date(task.deadline).getTime();
-    return Number.isFinite(deadlineTime) && deadlineTime < Date.now();
+    if (!task.deadline || ['approved', 'sent_to_print', 'completed'].includes(task.status)) return false;
+    const deadlineIsDateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(task.deadline);
+    const deadlineValue = deadlineIsDateOnly
+      ? new Date(`${task.deadline}T23:59:59`).getTime()
+      : new Date(task.deadline).getTime();
+    return Number.isFinite(deadlineValue) && deadlineValue < Date.now();
   });
 
   const recentQuotes = quoteRequests.slice(0, 6);
@@ -152,7 +157,7 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
             <span className="block text-xl sm:text-2xl font-heading font-black text-white">
               {activeDesignTasks}
             </span>
-            <span className="text-[11px] text-[#FDE8E8]">بروفات قيد التصميم</span>
+            <span className="text-[11px] text-[#FDE8E8]">مهام تصميم مفتوحة</span>
           </div>
 
           <div className="bg-black/25 backdrop-blur-sm p-3.5 rounded-2xl border border-white/10">
