@@ -229,7 +229,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = pg_catalog, public, private
-as $$
+as $rawaj$
 declare
   old_row jsonb;
   new_row jsonb;
@@ -248,18 +248,16 @@ begin
   end if;
   insert into public.audit_events(entity_table,entity_id,action,actor_id,before_data,after_data)
   values (tg_table_name, coalesce(row_id,'unknown'), tg_op, auth.uid(), old_row, new_row);
-  if tg_op = 'DELETE' then
-    return old;
-  end if;
+  if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
-$;
+$rawaj$;
 
 create or replace function private.apply_rawaj_inventory_movement()
 returns trigger
 language plpgsql
 set search_path = pg_catalog, public
-as $
+as $rawaj$
 declare
   delta numeric(14,3);
 begin
@@ -283,16 +281,15 @@ begin
   if not found then
     raise exception 'Insufficient inventory or item not found; movement was not recorded.';
   end if;
-
   return new;
 end;
-$;
+$rawaj$;
 
 create or replace function private.refresh_rawaj_invoice_status()
 returns trigger
 language plpgsql
 set search_path = pg_catalog, public
-as $
+as $rawaj$
 declare
   invoice_id_value uuid;
   invoice_total numeric(14,2);
@@ -305,11 +302,13 @@ begin
   else
     invoice_id_value := new.invoice_id;
   end if;
+
   select total, due_date, status into invoice_total, due_date_value, current_status
   from public.invoices where id = invoice_id_value;
 
   if not found or current_status in ('draft','void') then
-    if tg_op = 'DELETE' then return old; else return new; end if;
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
   end if;
 
   select coalesce(sum(amount),0) into paid_total
@@ -325,12 +324,18 @@ begin
   updated_at = now()
   where id = invoice_id_value;
 
-  if tg_op = 'DELETE' then return old; else return new; end if;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end;
-$;
+$rawaj$;
 
-create trigger rawaj_apply_inventory_movement after insert on public.inventory_movements for each row execute function private.apply_rawaj_inventory_movement();
-create trigger rawaj_refresh_invoice_after_payment after insert or update or delete on public.payments for each row execute function private.refresh_rawaj_invoice_status();
+create trigger rawaj_apply_inventory_movement
+after insert on public.inventory_movements
+for each row execute function private.apply_rawaj_inventory_movement();
+
+create trigger rawaj_refresh_invoice_after_payment
+after insert or update or delete on public.payments
+for each row execute function private.refresh_rawaj_invoice_status();
 
 revoke all on function private.capture_rawaj_audit_event() from public, anon, authenticated;
 
