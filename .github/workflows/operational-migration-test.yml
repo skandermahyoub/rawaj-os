@@ -39,9 +39,9 @@ jobs:
           create schema private;
           create table auth.users (id uuid primary key);
           create or replace function auth.uid() returns uuid language sql stable
-          as $ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $;
+          as $function$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $function$;
           create or replace function auth.jwt() returns jsonb language sql stable
-          as $ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $;
+          as $function$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $function$;
           create table public.profiles (id uuid primary key);
           create table public.quotes (
             id text primary key, reference_number text not null, customer jsonb not null default '{}',
