@@ -21,6 +21,8 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
 export const AdminOperationsManager: React.FC = () => {
   const [tab, setTab] = useState<Tab>('overview');
   const [customers, setCustomers] = useState<Row[]>([]);
+  const [incomingQuotes, setIncomingQuotes] = useState<Row[]>([]);
+  const [stages, setStages] = useState<Row[]>([]);
   const [projects, setProjects] = useState<Row[]>([]);
   const [quotes, setQuotes] = useState<Row[]>([]);
   const [invoices, setInvoices] = useState<Row[]>([]);
@@ -48,6 +50,8 @@ export const AdminOperationsManager: React.FC = () => {
     setError('');
     const specs = [
       ['customers', 'customers', setCustomers, 'created_at'],
+      ['incomingQuotes', 'quotes', setIncomingQuotes, 'created_at'],
+      ['stages', 'production_stages', setStages, 'created_at'],
       ['projects', 'operational_projects', setProjects, 'created_at'],
       ['quotes', 'commercial_quotes', setQuotes, 'created_at'],
       ['invoices', 'invoices', setInvoices, 'issued_at'],
