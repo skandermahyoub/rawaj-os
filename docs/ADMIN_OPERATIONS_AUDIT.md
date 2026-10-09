@@ -124,3 +124,8 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 - Live Supabase policy inspection found that `quotes_staff_read` also allowed the designer role to select full quote rows, including private sales/supplier notes. Added migration `supabase/migrations/20261009150000_restrict_quote_read_to_sales.sql` to remove that database-level access.
 - **Migration is staged only on this branch and has not been applied to Supabase.** Before production application, test it against the expected designer workflow and confirm that design-task screens do not require direct quote-table reads.
 - The existing design-task proof/comment arrays are still embedded in the task row. Concurrent submissions can still race; a normalized append-only proof/comment/event model is the durable follow-up.
+
+
+- Client-logo CRUD now attempts to remove the previous Rawaj Storage object after a successful replacement or record deletion; storage-cleanup failure does not roll back the saved database change.
+- One client-logo row referenced a generic legacy upload while the other listed rows had no image. Added guarded migration `supabase/migrations/20261009150500_clear_unverified_client_logo_asset.sql` to clear only that matching URL and preserve the client record.
+- The two new SQL migrations remain staged on this branch and have not been applied to the live Supabase database.
