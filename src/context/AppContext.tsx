@@ -2005,14 +2005,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: makeEntityId('proof'),
       created_at: new Date().toISOString(),
     };
-    const updatedTask: DesignTask = {
-      ...task,
+    const proofUpdates: Partial<DesignTask> = {
       proof_versions: [...task.proof_versions, newProof],
       status: 'proof_submitted',
       updated_at: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((item) => item.id === taskId ? updatedTask : item));
+    await setDoc(doc(db, 'design_tasks', taskId), proofUpdates, { merge: true });
+    setDesignTasks((prev) => prev.map((item) => item.id === taskId
+      ? { ...item, ...proofUpdates }
+      : item
+    ));
   };
 
   const addDesignComment = async (
@@ -2026,14 +2028,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: makeEntityId('comm'),
       created_at: new Date().toISOString(),
     };
-    const updatedTask: DesignTask = {
-      ...task,
+    const commentUpdates: Partial<DesignTask> = {
       comments: [...task.comments, newComment],
       status: comment.status_change || task.status,
       updated_at: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((item) => item.id === taskId ? updatedTask : item));
+    await setDoc(doc(db, 'design_tasks', taskId), commentUpdates, { merge: true });
+    setDesignTasks((prev) => prev.map((item) => item.id === taskId
+      ? { ...item, ...commentUpdates }
+      : item
+    ));
   };
 
   const deleteDesignTask = async (id: string): Promise<void> => {
