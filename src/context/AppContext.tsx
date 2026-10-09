@@ -1412,25 +1412,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
     if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
 
-    const updatedQuote: QuoteRequest = {
-      ...targetQuote,
-      status: newStatus,
-      internal_notes: internalNotes || targetQuote.internal_notes,
-      updated_at: new Date().toISOString(),
-      timeline: [
-        ...targetQuote.timeline,
-        {
-          id: makeEntityId('tl'),
-          timestamp: new Date().toISOString(),
-          user_name: currentUser.name,
-          action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
-          notes: internalNotes,
-        },
-      ],
-    };
+    const updatedAt = new Date().toISOString();
+    const nextInternalNotes = internalNotes !== undefined ? internalNotes : targetQuote.internal_notes;
+    const nextTimeline = [
+      ...targetQuote.timeline,
+      {
+        id: makeEntityId('tl'),
+        timestamp: updatedAt,
+        user_name: currentUser.name,
+        action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
+        notes: internalNotes,
+      },
+    ];
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
+    // Persist only the fields changed by this action. Sending a full stale quote
+    // can overwrite a concurrent salesperson assignment or newer customer data.
+    await setDoc(doc(db, 'quotes', quoteId), {
+      status: newStatus,
+      internal_notes: nextInternalNotes,
+      updated_at: updatedAt,
+      timeline: nextTimeline,
+    }, { merge: true });
+
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId
+      ? { ...quote, status: newStatus, internal_notes: nextInternalNotes, updated_at: updatedAt, timeline: nextTimeline }
+      : quote
+    ));
   };
 
   const assignQuoteSalesperson = async (quoteId: string, salespersonId: string): Promise<void> => {
@@ -1470,15 +1477,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
     if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
 
-    const updatedQuote: QuoteRequest = {
-      ...targetQuote,
-      internal_notes: internalNotes !== undefined ? internalNotes : targetQuote.internal_notes,
-      supplier_notes: supplierNotes !== undefined ? supplierNotes : targetQuote.supplier_notes,
-      updated_at: new Date().toISOString(),
-    };
+    const updatedAt = new Date().toISOString();
+    const updates: Partial<QuoteRequest> = { updated_at: updatedAt };
+    if (internalNotes !== undefined) updates.internal_notes = internalNotes;
+    if (supplierNotes !== undefined) updates.supplier_notes = supplierNotes;
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
+    // A notes edit must not write unrelated fields from an older in-memory quote.
+    await setDoc(doc(db, 'quotes', quoteId), updates, { merge: true });
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId
+      ? { ...quote, ...updates }
+      : quote
+    ));
   };
 
   // Service CRUD
