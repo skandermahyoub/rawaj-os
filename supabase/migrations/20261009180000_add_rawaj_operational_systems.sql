@@ -81,6 +81,7 @@ create table if not exists public.commercial_quotes (
 );
 create index if not exists commercial_quotes_customer_idx on public.commercial_quotes(customer_id);
 create index if not exists commercial_quotes_status_idx on public.commercial_quotes(status);
+create unique index if not exists commercial_quotes_source_version_unique on public.commercial_quotes(source_quote_id,version) where source_quote_id is not null;
 
 create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
