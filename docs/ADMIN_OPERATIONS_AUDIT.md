@@ -133,3 +133,12 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 
 - Extended partial-write hardening to service, template, package, blog-post, and portfolio updates. These functions now persist only the supplied fields (plus the service timestamp), avoiding accidental replacement of unrelated values from an older in-memory object.
 - Additional persistence risk confirmed in `cloudDb.ts`: settings are stored as JSONB and merge writes currently read the current JSON value, merge in the browser, then upsert it. Two nearly simultaneous writes to the same settings key can still race. The durable fix is an atomic server-side JSONB merge operation; it is not introduced here because it requires a coordinated database migration and runtime verification.
+
+### Follow-up hardening — admin usability and assignment scope — 2026-10-09
+
+- Designer workspace now scopes its visible task list, selected task, and status counters to tasks assigned to the signed-in designer. Sales/operations roles retain the complete queue. This is a UI-level privacy improvement; it does **not** replace a server-enforced Supabase RLS policy for design_tasks.
+- Contact inbox now normalizes Yemeni phone numbers before constructing WhatsApp links: local leading zero is removed, 967 is preserved when already present, and 00 international prefixes are handled. If no usable phone is present, the interface shows a clear fallback instead of linking to an empty WhatsApp destination.
+- Contact inbox now supports filtering and explicitly marking messages as replied, using the existing replied status supported by the data model.
+- Quote workspace uses the same Yemeni number normalization and does not offer a WhatsApp link when the quote has no valid phone number.
+- GitHub Actions previously passed npm run lint and npm run build at commit 4f2e16acfa7d614979b8202ffc490267722f0730. The latest UI-hardening commits triggered a new quality run; its result is pending at the time of this update. Earlier runs triggered by each rapid push were cancelled by the workflow concurrency behavior and should not be interpreted as failures of the code itself.
+- Remaining important server-side check: ensure designers can only select/update design tasks assigned to them, and verify that the designer workflow does not require reading quote rows. Do not apply the staged quote-policy migration or any new migration to production without testing against a development database.
