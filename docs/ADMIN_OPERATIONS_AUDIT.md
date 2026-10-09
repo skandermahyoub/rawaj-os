@@ -152,3 +152,5 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 - Hardened the admin settings editor's realtime synchronization: remote updates now refresh fields that are still untouched while preserving locally edited fields. This avoids losing unsaved company/contact edits when a logo upload or another administrator updates settings during the same editing session.
 
 - Added defensive normalization at the Supabase data boundary for legacy design-task rows: missing or malformed `proof_versions` and `comments` values are exposed as empty arrays. This prevents the task workspace and proof/comment actions from crashing when older/imported rows lack those JSON arrays.
+
+- Extended partial-patch persistence to theme customizer, promotion module, footer, and About Us settings. These settings handlers no longer serialize a full object captured from stale React state; local updates are merged functionally. Array-valued settings (for example promotion banners and home-module ordering) still need server-side atomic mutation if multiple administrators edit them simultaneously.
