@@ -197,6 +197,14 @@ export const AdminDesignTasksManager: React.FC = () => {
       setActionError('اختر ملف البروفة أولاً.');
       return;
     }
+    if (!/\.(png|jpe?g|webp|gif|pdf|ai|eps|svg|zip)$/i.test(proofFile.name)) {
+      setActionError('نوع الملف غير مدعوم. استخدم صورة أو PDF أو AI أو EPS أو SVG أو ZIP.');
+      return;
+    }
+    if (proofFile.size > 50 * 1024 * 1024) {
+      setActionError('حجم الملف يتجاوز الحد المسموح (50 ميجابايت).');
+      return;
+    }
 
     const nextVersion = (activeTask?.proof_versions.length || 0) + 1;
     setActionError('');
