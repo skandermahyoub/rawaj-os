@@ -246,6 +246,8 @@ const AppContent: React.FC = () => {
 
             {currentRoute.view === 'about-contact' && <AboutContactView />}
 
+            {currentRoute.view === 'client-portal' && <CustomerPortalView />}
+
             {currentRoute.view === 'custom-quote' && (
               <CustomQuoteModal
                 isOpen={true}
