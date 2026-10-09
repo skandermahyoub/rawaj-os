@@ -186,7 +186,7 @@ create table if not exists public.inventory_items (
 create table if not exists public.inventory_movements (
   id uuid primary key default gen_random_uuid(),
   inventory_item_id uuid not null references public.inventory_items(id) on delete restrict,
-  movement_type text not null check (movement_type in ('receipt','issue','adjustment','return')),
+  movement_type text not null check (movement_type in ('receipt','issue','return','adjustment')),
   quantity numeric(14,3) not null check (quantity > 0),
   unit_cost numeric(14,2) not null default 0 check (unit_cost >= 0),
   project_id uuid references public.operational_projects(id) on delete set null,
@@ -196,6 +196,8 @@ create table if not exists public.inventory_movements (
   created_at timestamptz not null default now()
 );
 create index if not exists inventory_movements_item_idx on public.inventory_movements(inventory_item_id,created_at desc);
+create trigger rawaj_apply_inventory_movement after insert on public.inventory_movements for each row execute function private.apply_rawaj_inventory_movement();
+create trigger rawaj_refresh_invoice_after_payment after insert or update or delete on public.payments for each row execute function private.refresh_rawaj_invoice_status();
 
 create table if not exists public.purchase_orders (
   id uuid primary key default gen_random_uuid(),
@@ -248,9 +250,82 @@ begin
   end if;
   insert into public.audit_events(entity_table,entity_id,action,actor_id,before_data,after_data)
   values (tg_table_name, coalesce(row_id,'unknown'), tg_op, auth.uid(), old_row, new_row);
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$;
+
+create or replace function private.apply_rawaj_inventory_movement()
+returns trigger
+language plpgsql
+set search_path = pg_catalog, public
+as $
+declare
+  delta numeric(14,3);
+begin
+  delta := case
+    when new.movement_type in ('receipt','return','adjustment') then new.quantity
+    when new.movement_type = 'issue' then -new.quantity
+    else 0
+  end;
+
+  update public.inventory_items
+  set quantity = quantity + delta,
+      average_unit_cost = case
+        when new.movement_type = 'receipt' and quantity + delta > 0
+          then ((quantity * average_unit_cost) + (new.quantity * new.unit_cost)) / (quantity + delta)
+        else average_unit_cost
+      end,
+      updated_at = now()
+  where id = new.inventory_item_id
+    and quantity + delta >= 0;
+
+  if not found then
+    raise exception 'Insufficient inventory or item not found; movement was not recorded.';
+  end if;
+
+  return new;
+end;
+$;
+
+create or replace function private.refresh_rawaj_invoice_status()
+returns trigger
+language plpgsql
+set search_path = pg_catalog, public
+as $
+declare
+  invoice_id_value uuid;
+  invoice_total numeric(14,2);
+  paid_total numeric(14,2);
+  due_date_value date;
+  current_status text;
+begin
+  invoice_id_value := coalesce(new.invoice_id, old.invoice_id);
+  select total, due_date, status into invoice_total, due_date_value, current_status
+  from public.invoices where id = invoice_id_value;
+
+  if not found or current_status in ('draft','void') then
+    return coalesce(new, old);
+  end if;
+
+  select coalesce(sum(amount),0) into paid_total
+  from public.payments where invoice_id = invoice_id_value;
+
+  update public.invoices
+  set status = case
+    when paid_total >= invoice_total then 'paid'
+    when paid_total > 0 then 'partially_paid'
+    when due_date_value is not null and due_date_value < current_date then 'overdue'
+    else 'issued'
+  end,
+  updated_at = now()
+  where id = invoice_id_value;
+
   return coalesce(new, old);
 end;
-$$;
+$;
 
 revoke all on function private.capture_rawaj_audit_event() from public, anon, authenticated;
 
@@ -300,6 +375,13 @@ grant select, insert, update, delete on public.customers, public.customer_activi
   public.commercial_quotes, public.invoices, public.payments, public.production_orders, public.production_stages,
   public.suppliers, public.inventory_items, public.inventory_movements, public.purchase_orders to authenticated;
 grant select on public.audit_events to authenticated;
-grant usage, select on all sequences in schema public to authenticated;
+grant usage, select on sequence public.customers_id_seq to authenticated;
+grant usage, select on sequence public.customer_activities_id_seq to authenticated;
+grant usage, select on sequence public.operational_projects_project_number_seq to authenticated;
+grant usage, select on sequence public.commercial_quotes_quote_number_seq to authenticated;
+grant usage, select on sequence public.invoices_invoice_number_seq to authenticated;
+grant usage, select on sequence public.production_orders_order_number_seq to authenticated;
+grant usage, select on sequence public.purchase_orders_purchase_number_seq to authenticated;
+grant usage, select on sequence public.audit_events_id_seq to authenticated;
 
 commit;
