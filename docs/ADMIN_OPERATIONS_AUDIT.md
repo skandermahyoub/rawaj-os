@@ -154,3 +154,15 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 - Added defensive normalization at the Supabase data boundary for legacy design-task rows: missing or malformed `proof_versions` and `comments` values are exposed as empty arrays. This prevents the task workspace and proof/comment actions from crashing when older/imported rows lack those JSON arrays.
 
 - Extended partial-patch persistence to theme customizer, promotion module, footer, and About Us settings. These settings handlers no longer serialize a full object captured from stale React state; local updates are merged functionally. Array-valued settings (for example promotion banners and home-module ordering) still need server-side atomic mutation if multiple administrators edit them simultaneously.
+
+
+### Operational workspace implementation — 2026-10-09
+
+- Added the new admin route **مركز العمليات التشغيلية** under the separate **العمليات والإدارة** navigation pillar. Access is limited to owner/admin/sales roles; it is not shown to content editors or designers.
+- Added UI-backed records for customer profiles, customer follow-ups, operational projects, commercial quotations, invoices/payments, production orders/stages, project costs, inventory items/movements, suppliers, and purchase-order headers.
+- Connected storefront quote requests to a customer profile and a draft commercial quotation. Approved commercial quotations can be converted into linked operational projects; projects can then have invoices, cost entries, and production orders.
+- Added a staged database migration with RLS policies and audit-event triggers. Database-side triggers recalculate actual project costs, apply inventory movements atomically (rejecting negative stock), and update invoice status from recorded payments (rejecting overpayment).
+- The migration is staged only in GitHub and has not been applied to Supabase. The new screens will not load successfully against the current production schema until the migration is tested and applied in a controlled release.
+- A draft pull request was opened for review and test checks: https://github.com/skandermahyoub/rawaj-os/pull/4. It remains unmerged.
+- Netlify deploy-preview checks for the PR were skipped by the branch build-ignore rule (canceled due to no content change); no deploy preview was published and no production deployment was triggered.
+- Verification limitation: the current tool session has not produced a passing TypeScript/build result for the latest operational-workspace commit. Do not treat this work as release-ready until CI passes and the migration is validated against an isolated database.
