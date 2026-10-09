@@ -1767,9 +1767,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateSiteSettings = async (settings: Partial<SiteSettings>): Promise<void> => {
-    const updated = { ...siteSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'general'), updated, { merge: true });
-    setSiteSettings(updated);
+    // Persist only changed fields, then merge into the latest local state. This avoids
+    // replacing newer local/realtime values with a stale object captured before await.
+    await setDoc(doc(db, 'settings', 'general'), settings, { merge: true });
+    setSiteSettings((current) => ({ ...current, ...settings }));
   };
 
   const addUser = async (userData: Omit<User, 'id' | 'createdAt'>): Promise<User> => {
