@@ -110,3 +110,6 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 - Changes are committed to the isolated branch; `main` has not been changed.
 - No Supabase data or schema was changed by these dashboard improvements.
 - A local build could not be executed from this environment because GitHub network access was unavailable. The new GitHub Actions workflow is the next verification path; the build is **not yet claimed to pass**.
+
+- Updated `updateQuoteStatus` and `updateQuoteNotes` in `AppContext.tsx` to persist only the fields changed by the action and merge those fields into current client state. This reduces the risk that an edit based on an older in-memory quote overwrites unrelated, newer fields. Explicitly saving an empty internal note now clears it rather than silently retaining the previous value.
+- **Remaining concurrency limitation:** quote history is still stored as an embedded `timeline` array. Two simultaneous actions can still race while writing that array. A durable fix requires an append-only quote-event table or a server-side atomic operation; this was not silently treated as solved in this phase.
