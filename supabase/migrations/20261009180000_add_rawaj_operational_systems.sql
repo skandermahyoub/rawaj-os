@@ -565,7 +565,9 @@ begin
         where cm.value->>'author_role' = 'client'), '[]'::jsonb)
     ) order by d.created_at desc) from public.design_tasks d
       where regexp_replace(coalesce(d.client_phone,''), '[^0-9]', '', 'g') =
-        regexp_replace(coalesce(customer_row.phone,''), '[^0-9]', '', 'g')), '[]'::jsonb),
+        regexp_replace(coalesce(customer_row.phone,''), '[^0-9]', '', 'g')
+        and (lower(coalesce(d.client_name,'')) = lower(coalesce(customer_row.name,''))
+          or (coalesce(customer_row.company_name,'') <> '' and lower(coalesce(d.client_name,'')) = lower(customer_row.company_name)))), '[]'::jsonb),
     'activities', coalesce((select jsonb_agg(jsonb_build_object(
       'id', a.id, 'subject', a.subject, 'activity_type', a.activity_type,
       'due_at', a.due_at, 'completed_at', a.completed_at
@@ -605,6 +607,8 @@ begin
   where d.id = p_task_id
     and d.status = 'proof_submitted'
     and lower(coalesce(c.email,'')) = customer_email_value
+    and (lower(coalesce(d.client_name,'')) = lower(coalesce(c.name,''))
+      or (coalesce(c.company_name,'') <> '' and lower(coalesce(d.client_name,'')) = lower(c.company_name)))
   for update of d;
 
   if customer_name_value is null then
