@@ -90,7 +90,8 @@ export type NavigationTarget =
         | 'faq'
         | 'contact-inbox'
         | 'footer-settings'
-        | 'design-tasks'; 
+        | 'design-tasks'
+        | 'operational-workspace'; 
       editServiceId?: string; 
       editTemplateId?: string 
     };
