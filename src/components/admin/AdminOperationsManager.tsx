@@ -231,10 +231,11 @@ export const AdminOperationsManager: React.FC = () => {
       const { data, error: insertError } = result;
       if (insertError) throw insertError;
 
-      if (tab === 'production' && data?.id) {
+      const savedRow = data as Row | null;
+      if (tab === 'production' && savedRow?.id) {
         const defaultStages = ['تجهيز الملفات', 'الطباعة', 'التشطيب', 'مراقبة الجودة'];
         const { error: stagesError } = await supabase.from('production_stages' as any).insert(defaultStages.map((name, index) => ({
-          production_order_id: (data as Row).id, name, sort_order: index, status: 'pending',
+          production_order_id: savedRow.id, name, sort_order: index, status: 'pending',
         })));
         if (stagesError) {
           setNotice('تم إنشاء أمر الإنتاج، لكن تعذر إنشاء مراحل العمل الافتراضية. يمكنك متابعة الأمر بعد مراجعة الصلاحيات.');
