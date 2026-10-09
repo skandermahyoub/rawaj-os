@@ -1,5 +1,7 @@
 # Rawaj OS production configuration
 [build]
+  # Keep feature/audit branches from publishing deploy previews; production main builds remain enabled.
+  ignore = "if [ \"$BRANCH\" != \"main\" ]; then exit 0; else exit 1; fi"
   command = "node -e \"if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_PUBLISHABLE_KEY) { console.error('Missing Supabase build environment'); process.exit(1) }\" && npm run build"
   publish = "dist"
 
