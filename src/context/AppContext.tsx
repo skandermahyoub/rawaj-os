@@ -48,7 +48,7 @@ import {
   onSnapshot,
 } from '../lib/cloudDb';
 import { supabase } from '../lib/supabase';
-import { removeRawajStorageObject } from '../lib/storage';
+import { removeRawajStorageObject, removeRawajStorageUrl } from '../lib/storage';
 
 export type NavigationTarget =
   | { view: 'home' }
@@ -1927,13 +1927,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateClientLogo = async (id: string, client: Partial<ClientLogo>): Promise<void> => {
+    const existing = clientLogos.find((item) => item.id === id);
+    if (!existing) throw new Error('شعار العميل غير موجود.');
+
     await setDoc(doc(db, 'client_logos', id), client, { merge: true });
     setClientLogos((prev) => prev.map((item) => item.id === id ? { ...item, ...client } : item));
+
+    // Remove a replaced Rawaj Storage asset only after the database update succeeds.
+    if (client.logo_url !== undefined && client.logo_url !== existing.logo_url) {
+      await removeRawajStorageUrl(existing.logo_url).catch(() => undefined);
+    }
   };
 
   const deleteClientLogo = async (id: string): Promise<void> => {
+    const existing = clientLogos.find((item) => item.id === id);
     await deleteDoc(doc(db, 'client_logos', id));
     setClientLogos((prev) => prev.filter((item) => item.id !== id));
+    if (existing?.logo_url) {
+      await removeRawajStorageUrl(existing.logo_url).catch(() => undefined);
+    }
   };
 
   // Testimonials CRUD
