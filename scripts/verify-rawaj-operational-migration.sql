@@ -49,4 +49,27 @@ begin
     raise exception 'Audit trigger did not record the customer insert.';
   end if;
 end $$;
+
+-- Verify the customer-only proof approval function accepts the matched email and records a comment.
+insert into public.customers (name, phone, email)
+values ('CI portal customer', '+967700000001', 'ci-customer@example.com');
+insert into public.design_tasks (id, title_ar, client_name, client_phone, status)
+values ('CI-TASK-001', 'CI proof', 'CI portal customer', '+967700000001', 'proof_submitted');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claims', '{"email":"ci-customer@example.com"}', true);
+select private.respond_to_rawaj_proof('CI-TASK-001', 'approved', 'CI approval');
+do $
+begin
+  if (select status from public.design_tasks where id = 'CI-TASK-001') <> 'approved' then
+    raise exception 'Customer proof approval did not update the task status.';
+  end if;
+  if not exists (
+    select 1 from public.design_tasks
+    where id = 'CI-TASK-001'
+      and comments @> '[{"author_role":"client","text":"CI approval"}]'::jsonb
+  ) then
+    raise exception 'Customer proof approval did not append the customer comment.';
+  end if;
+end $;
+
 rollback;
