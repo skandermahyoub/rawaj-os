@@ -319,6 +319,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       ]
     },
     {
+      id: 'operations-hub',
+      title: 'العمليات والإدارة',
+      shortTitle: 'العمليات',
+      desc: 'ملفات العملاء والمشاريع والتسعير والتحصيل والإنتاج والمخزون',
+      icon: Briefcase,
+      options: [
+        { id: 'operational-workspace', label: 'مركز العمليات التشغيلية', shortLabel: 'مركز العمليات', desc: 'إدارة مترابطة للعملاء والمشاريع وعروض الأسعار والفواتير والإنتاج والمخزون', icon: Briefcase },
+      ]
+    },
+    {
       id: 'settings-hub',
       title: 'إعدادات الوكالة',
       shortTitle: 'الإعدادات',
