@@ -207,7 +207,7 @@ export const AdminContactInboxManager: React.FC = () => {
                         onClick={() => void markContactMessageStatus(msg.id, 'replied').catch((error) => setActionError(error?.message || 'تعذر تسجيل الرد على الرسالة.'))}
                         className="text-xs text-emerald-700 dark:text-emerald-400 hover:underline font-bold"
                       >
-                        تحديد كتم الرد
+                        تسجيل أن الرد تم
                       </button>
                     )}
 
