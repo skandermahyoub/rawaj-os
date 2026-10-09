@@ -12,6 +12,14 @@ import {
   Filter
 } from 'lucide-react';
 
+const normalizeYemenWhatsAppNumber = (phone: string): string => {
+  const digits = (phone || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('00')) return digits.slice(2);
+  if (digits.startsWith('967')) return digits;
+  return `967${digits.replace(/^0+/, '')}`;
+};
+
 export const AdminContactInboxManager: React.FC = () => {
   const { contactMessages, markContactMessageStatus, deleteContactMessage, currentUser } = useApp();
   const canDeleteMessages = ['owner', 'admin'].includes(currentUser.role);
@@ -87,6 +95,16 @@ export const AdminContactInboxManager: React.FC = () => {
         >
           المقروءة ({contactMessages.filter(m => m.status === 'read').length})
         </button>
+        <button
+          onClick={() => setFilterStatus('replied')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+            filterStatus === 'replied'
+              ? 'bg-[#B9142D] text-white shadow-xs'
+              : 'bg-white dark:bg-[#201D1C] text-[#746E67] border border-[#EBE4D5] dark:border-[#352F2D]'
+          }`}
+        >
+          تم الرد عليها ({contactMessages.filter(m => m.status === 'replied').length})
+        </button>
       </div>
 
       {/* Messages List */}
@@ -97,7 +115,7 @@ export const AdminContactInboxManager: React.FC = () => {
           </div>
         ) : (
           filteredMessages.map((msg) => {
-            const cleanPhone = msg.phone.replace(/[^0-9]/g, '');
+            const cleanPhone = normalizeYemenWhatsAppNumber(msg.phone);
             const isUnread = msg.status === 'unread';
 
             return (
@@ -144,8 +162,9 @@ export const AdminContactInboxManager: React.FC = () => {
                 {/* Actions Row */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                   <div className="flex items-center gap-2">
+                    {cleanPhone ? (
                     <a
-                      href={`https://wa.me/967${cleanPhone.replace(/^0+/, '')}?text=${encodeURIComponent(`مرحباً ${msg.name}، نتواصل معك من وكالة رواج للطباعة بخصوص استفسارك.`)}`}
+                      href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`مرحباً ${msg.name}، نتواصل معك من وكالة رواج للطباعة بخصوص استفسارك.`)}`
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs"
@@ -153,6 +172,9 @@ export const AdminContactInboxManager: React.FC = () => {
                       <MessageSquare className="w-3.5 h-3.5" />
                       <span>رد فوري عبر واتساب</span>
                     </a>
+                    ) : (
+                      <span className="text-xs text-[#78716C]">لا يوجد رقم صالح لواتساب</span>
+                    )}
 
                     <a
                       href={`tel:${msg.phone}`}
