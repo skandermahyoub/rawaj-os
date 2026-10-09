@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ArrowDownToLine, ArrowUpFromLine, Banknote, BriefcaseBusiness, Check, ClipboardList, FileText, LoaderCircle, Package, Plus, RefreshCw, Users, Wallet } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-type Tab = 'overview' | 'customers' | 'projects' | 'quotes' | 'finance' | 'production' | 'inventory';
+type Tab = 'overview' | 'customers' | 'projects' | 'quotes' | 'finance' | 'production' | 'inventory' | 'suppliers' | 'purchases';
 type Row = Record<string, any>;
 const money = (value: number | string | null | undefined) => new Intl.NumberFormat('ar-YE', { maximumFractionDigits: 2 }).format(Number(value || 0));
 const dateLabel = (value?: string | null) => value ? new Date(value).toLocaleDateString('ar-YE') : '—';
@@ -16,6 +16,8 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'finance', label: 'الفواتير والتحصيل', icon: Wallet },
   { id: 'production', label: 'الإنتاج', icon: Package },
   { id: 'inventory', label: 'المخزون', icon: Banknote },
+  { id: 'suppliers', label: 'الموردون', icon: Users },
+  { id: 'purchases', label: 'المشتريات', icon: FileText },
 ];
 
 export const AdminOperationsManager: React.FC = () => {
@@ -31,6 +33,7 @@ export const AdminOperationsManager: React.FC = () => {
   const [items, setItems] = useState<Row[]>([]);
   const [movements, setMovements] = useState<Row[]>([]);
   const [suppliers, setSuppliers] = useState<Row[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -60,6 +63,7 @@ export const AdminOperationsManager: React.FC = () => {
       ['items', 'inventory_items', setItems, 'name'],
       ['movements', 'inventory_movements', setMovements, 'created_at'],
       ['suppliers', 'suppliers', setSuppliers, 'name'],
+      ['purchaseOrders', 'purchase_orders', setPurchaseOrders, 'created_at'],
     ] as const;
     try {
       const results = await Promise.all(specs.map(([, table, , order]) =>
@@ -104,6 +108,8 @@ export const AdminOperationsManager: React.FC = () => {
       finance: { customer_id: customers[0]?.id || '', project_id: '', commercial_quote_id: '', subtotal: '0', discount: '0', tax: '0', due_date: '', notes: '' },
       production: { project_id: projects[0]?.id || '', status: 'queued', priority: 'normal', due_date: '', specifications: {}, quality_notes: '' },
       inventory: { sku: '', name: '', category: '', unit: 'متر', quantity: '0', reorder_level: '0', average_unit_cost: '0', notes: '' },
+      suppliers: { name: '', contact_name: '', phone: '', email: '', address: '', payment_terms: '', lead_time_days: '', notes: '', is_active: true },
+      purchases: { supplier_id: suppliers[0]?.id || '', status: 'draft', expected_at: '', total: '0', notes: '' },
     };
     setForm(defaults[kind] || {});
     setFormOpen(true);
@@ -143,6 +149,16 @@ export const AdminOperationsManager: React.FC = () => {
         tableName = 'production_orders';
         if (!payload.project_id) throw new Error('اختر المشروع المرتبط بأمر الإنتاج.');
         payload.specifications = {};
+      } else if (tab === 'suppliers') {
+        tableName = 'suppliers';
+        if (!String(payload.name || '').trim()) throw new Error('اسم المورد مطلوب.');
+        payload.name = String(payload.name).trim();
+        payload.lead_time_days = payload.lead_time_days ? Number(payload.lead_time_days) : null;
+      } else if (tab === 'purchases') {
+        tableName = 'purchase_orders';
+        if (!payload.supplier_id) throw new Error('اختر المورد.');
+        payload.total = Number(payload.total || 0);
+        payload.expected_at = payload.expected_at || null;
       } else if (tab === 'inventory') {
         tableName = 'inventory_items';
         if (!String(payload.name || '').trim()) throw new Error('اسم المادة مطلوب.');
