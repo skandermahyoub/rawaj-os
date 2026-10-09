@@ -1512,16 +1512,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateService = async (id: string, serviceData: Partial<Service>): Promise<void> => {
     const existing = services.find((service) => service.id === id);
     if (!existing) throw new Error('الخدمة غير موجودة.');
-    const updatedService: Service = {
-      ...existing,
+    const persistedUpdates: Partial<Service> = {
       ...serviceData,
       updated_at: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'services', id), updatedService, { merge: true });
-    setServices((prev) => {
-      const updated = prev.map((service) => service.id === id ? updatedService : service);
-      return updated;
-    });
+    await setDoc(doc(db, 'services', id), persistedUpdates, { merge: true });
+    setServices((prev) => prev.map((service) => service.id === id
+      ? { ...service, ...persistedUpdates }
+      : service
+    ));
   };
 
   const deleteService = async (id: string): Promise<void> => {
@@ -1570,9 +1569,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const existing = templates.find((template) => template.id === id);
     if (!existing) throw new Error('القالب غير موجود.');
-    const updatedTemplate = { ...existing, ...templateData };
-    await setDoc(doc(db, 'templates', id), updatedTemplate, { merge: true });
-    setTemplates((prev) => prev.map((template) => template.id === id ? updatedTemplate : template));
+    await setDoc(doc(db, 'templates', id), templateData, { merge: true });
+    setTemplates((prev) => prev.map((template) => template.id === id
+      ? { ...template, ...templateData }
+      : template
+    ));
   };
 
   const deleteTemplate = async (id: string): Promise<void> => {
@@ -1632,9 +1633,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updatePackage = async (id: string, pkg: Partial<Package>): Promise<void> => {
     const existing = packages.find((item) => item.id === id);
     if (!existing) throw new Error('الباقة غير موجودة.');
-    const updated = { ...existing, ...pkg };
-    await setDoc(doc(db, 'packages', id), updated, { merge: true });
-    setPackages((prev) => prev.map((item) => item.id === id ? updated : item));
+    await setDoc(doc(db, 'packages', id), pkg, { merge: true });
+    setPackages((prev) => prev.map((item) => item.id === id ? { ...item, ...pkg } : item));
   };
 
   const deletePackage = async (id: string): Promise<void> => {
@@ -1655,9 +1655,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateBlogPost = async (id: string, post: Partial<BlogPost>): Promise<void> => {
     const existing = blogPosts.find((item) => item.id === id);
     if (!existing) throw new Error('المقال غير موجود.');
-    const updated = { ...existing, ...post };
-    await setDoc(doc(db, 'blog', id), updated, { merge: true });
-    setBlogPosts((prev) => prev.map((item) => item.id === id ? updated : item));
+    await setDoc(doc(db, 'blog', id), post, { merge: true });
+    setBlogPosts((prev) => prev.map((item) => item.id === id ? { ...item, ...post } : item));
   };
 
   const deleteBlogPost = async (id: string): Promise<void> => {
@@ -1683,9 +1682,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const existing = portfolioProjects.find((item) => item.id === id);
     if (!existing) throw new Error('المشروع غير موجود.');
-    const updated = { ...existing, ...project };
-    await setDoc(doc(db, 'portfolio', id), updated, { merge: true });
-    setPortfolioProjects((prev) => prev.map((item) => item.id === id ? updated : item));
+    await setDoc(doc(db, 'portfolio', id), project, { merge: true });
+    setPortfolioProjects((prev) => prev.map((item) => item.id === id
+      ? { ...item, ...project }
+      : item
+    ));
   };
 
   const deletePortfolioProject = async (id: string): Promise<void> => {
