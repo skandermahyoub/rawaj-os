@@ -150,3 +150,5 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 - Fixed a stale-state regression in `updateSiteSettings`: settings writes now send only changed fields through the existing merge path, and local state merges those fields into the latest React state after persistence. This prevents a delayed write from replacing unrelated, newer local/realtime settings in the same browser. It does not eliminate the separately documented cross-browser race in JSONB read/merge/upsert; that still requires an atomic database-side operation.
 
 - Hardened the admin settings editor's realtime synchronization: remote updates now refresh fields that are still untouched while preserving locally edited fields. This avoids losing unsaved company/contact edits when a logo upload or another administrator updates settings during the same editing session.
+
+- Added defensive normalization at the Supabase data boundary for legacy design-task rows: missing or malformed `proof_versions` and `comments` values are exposed as empty arrays. This prevents the task workspace and proof/comment actions from crashing when older/imported rows lack those JSON arrays.
