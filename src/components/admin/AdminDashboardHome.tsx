@@ -61,12 +61,19 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
   const proofsAwaitingDecision = designTasks.filter((task) => task.status === 'proof_submitted');
   const overdueDesignTasks = designTasks.filter((task) => {
     if (!task.deadline || ['approved', 'sent_to_print', 'completed'].includes(task.status)) return false;
-    const deadlineIsDateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(task.deadline);
+    const deadlineIsDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(task.deadline);
     const deadlineValue = deadlineIsDateOnly
       ? new Date(`${task.deadline}T23:59:59`).getTime()
       : new Date(task.deadline).getTime();
     return Number.isFinite(deadlineValue) && deadlineValue < Date.now();
   });
+
+  const followUpRecordCount = new Set([
+    ...quotesNeedingReview.map((quote) => `quote:${quote.id}`),
+    ...quotesWaitingForCustomer.map((quote) => `quote:${quote.id}`),
+    ...proofsAwaitingDecision.map((task) => `task:${task.id}`),
+    ...overdueDesignTasks.map((task) => `task:${task.id}`),
+  ]).size;
 
   const recentQuotes = quoteRequests.slice(0, 6);
 
@@ -407,7 +414,7 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
             </p>
           </div>
           <span className="text-[11px] text-[#706A62] dark:text-[#A0988F]">
-            {quotesNeedingReview.length + quotesWaitingForCustomer.length + proofsAwaitingDecision.length + overdueDesignTasks.length} إجراء يحتاج متابعة
+            {followUpRecordCount} سجل يحتاج متابعة
           </span>
         </div>
 
@@ -453,7 +460,7 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
           </button>
         </div>
 
-        {quotesNeedingReview.length + quotesWaitingForCustomer.length + proofsAwaitingDecision.length + overdueDesignTasks.length === 0 && (
+        {followUpRecordCount === 0 && (
           <div className="flex items-center gap-3 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-sm text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="w-5 h-5 shrink-0" />
             لا توجد إجراءات تحتاج متابعة ضمن المؤشرات الحالية.
