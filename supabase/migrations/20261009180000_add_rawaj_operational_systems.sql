@@ -302,12 +302,16 @@ declare
   due_date_value date;
   current_status text;
 begin
-  invoice_id_value := coalesce(new.invoice_id, old.invoice_id);
+  if tg_op = 'DELETE' then
+    invoice_id_value := old.invoice_id;
+  else
+    invoice_id_value := new.invoice_id;
+  end if;
   select total, due_date, status into invoice_total, due_date_value, current_status
   from public.invoices where id = invoice_id_value;
 
   if not found or current_status in ('draft','void') then
-    return coalesce(new, old);
+    if tg_op = 'DELETE' then return old; else return new; end if;
   end if;
 
   select coalesce(sum(amount),0) into paid_total
@@ -323,7 +327,7 @@ begin
   updated_at = now()
   where id = invoice_id_value;
 
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then return old; else return new; end if;
 end;
 $;
 
@@ -375,8 +379,6 @@ grant select, insert, update, delete on public.customers, public.customer_activi
   public.commercial_quotes, public.invoices, public.payments, public.production_orders, public.production_stages,
   public.suppliers, public.inventory_items, public.inventory_movements, public.purchase_orders to authenticated;
 grant select on public.audit_events to authenticated;
-grant usage, select on sequence public.customers_id_seq to authenticated;
-grant usage, select on sequence public.customer_activities_id_seq to authenticated;
 grant usage, select on sequence public.operational_projects_project_number_seq to authenticated;
 grant usage, select on sequence public.commercial_quotes_quote_number_seq to authenticated;
 grant usage, select on sequence public.invoices_invoice_number_seq to authenticated;
