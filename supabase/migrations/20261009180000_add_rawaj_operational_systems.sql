@@ -277,11 +277,24 @@ as $rawaj$
 declare
   project_id_value uuid;
 begin
-  if tg_op = 'DELETE' then project_id_value := old.project_id; else project_id_value := new.project_id; end if;
+  if tg_op = 'DELETE' then
+    project_id_value := old.project_id;
+  else
+    project_id_value := new.project_id;
+  end if;
+
   update public.operational_projects p
   set actual_cost = coalesce((select sum(c.amount) from public.project_costs c where c.project_id = project_id_value),0),
       updated_at = now()
   where p.id = project_id_value;
+
+  if tg_op = 'UPDATE' and old.project_id is distinct from new.project_id then
+    update public.operational_projects p
+    set actual_cost = coalesce((select sum(c.amount) from public.project_costs c where c.project_id = old.project_id),0),
+        updated_at = now()
+    where p.id = old.project_id;
+  end if;
+
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
@@ -347,6 +360,10 @@ begin
 
   select coalesce(sum(amount),0) into paid_total
   from public.payments where invoice_id = invoice_id_value;
+
+  if paid_total > invoice_total then
+    raise exception 'Recorded payments cannot exceed the invoice total.';
+  end if;
 
   update public.invoices
   set status = case
