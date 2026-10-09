@@ -59,7 +59,7 @@ insert into auth.users (id, email, email_confirmed_at) values ('00000000-0000-00
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claims', '{"email":"ci-customer@example.com"}', true);
 select private.respond_to_rawaj_proof('CI-TASK-001', 'approved', 'CI approval');
-do $
+do $test$
 begin
   if (select status from public.design_tasks where id = 'CI-TASK-001') <> 'approved' then
     raise exception 'Customer proof approval did not update the task status.';
@@ -71,6 +71,12 @@ begin
   ) then
     raise exception 'Customer proof approval did not append the customer comment.';
   end if;
-end $;
+  if (public.get_rawaj_customer_portal_data()->'customer'->>'email') <> 'ci-customer@example.com' then
+    raise exception 'Customer portal RPC did not return the matched customer profile.';
+  end if;
+  if (public.get_rawaj_customer_portal_data()->'customer') ? 'notes' then
+    raise exception 'Customer portal RPC leaked internal customer notes.';
+  end if;
+end $test$;
 
 rollback;
