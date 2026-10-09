@@ -453,88 +453,130 @@ grant usage, select on sequence public.production_orders_order_number_seq to aut
 grant usage, select on sequence public.purchase_orders_purchase_number_seq to authenticated;
 
 
--- Customer self-service access is bound to the authenticated, verified email address.
+-- Customer portal data is served through a verified-email RPC so internal notes and
+-- staff-only fields are never exposed by broad table SELECT policies.
 drop policy if exists rawaj_customer_self_read on public.customers;
-create policy rawaj_customer_self_read on public.customers for select to authenticated
-using (lower(coalesce(email,'')) = lower(coalesce(auth.jwt()->>'email','')));
-
 drop policy if exists rawaj_customer_quote_requests_read on public.quotes;
-create policy rawaj_customer_quote_requests_read on public.quotes for select to authenticated
-using (lower(coalesce(customer->>'email','')) = lower(coalesce(auth.jwt()->>'email','')));
+drop policy if exists rawaj_customer_projects_read on public.operational_projects;
+drop policy if exists rawaj_customer_commercial_quotes_read on public.commercial_quotes;
+drop policy if exists rawaj_customer_invoices_read on public.invoices;
+drop policy if exists rawaj_customer_payments_read on public.payments;
+drop policy if exists rawaj_customer_production_orders_read on public.production_orders;
+drop policy if exists rawaj_customer_production_stages_read on public.production_stages;
+drop policy if exists rawaj_customer_activities_read on public.customer_activities;
+drop policy if exists rawaj_customer_design_tasks_read on public.design_tasks;
+
+create or replace function private.rawaj_authenticated_customer_email()
+returns text
+language sql
+stable
+security definer
+set search_path = pg_catalog, auth
+as $rawaj$
+  select lower(u.email)
+  from auth.users u
+  where u.id = auth.uid()
+    and u.email_confirmed_at is not null
+  limit 1
+$rawaj$;
+revoke all on function private.rawaj_authenticated_customer_email() from public, anon;
+grant execute on function private.rawaj_authenticated_customer_email() to authenticated;
+
 drop policy if exists rawaj_customer_quote_requests_insert on public.quotes;
 create policy rawaj_customer_quote_requests_insert on public.quotes for insert to authenticated
 with check (
-  lower(coalesce(customer->>'email','')) = lower(coalesce(auth.jwt()->>'email',''))
+  private.rawaj_authenticated_customer_email() is not null
+  and lower(coalesce(customer->>'email','')) = private.rawaj_authenticated_customer_email()
   and coalesce(status,'new') = 'new'
 );
 
-drop policy if exists rawaj_customer_projects_read on public.operational_projects;
-create policy rawaj_customer_projects_read on public.operational_projects for select to authenticated
-using (exists (
-  select 1 from public.customers c
-  where c.id = operational_projects.customer_id
-    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
-));
+create or replace function public.get_rawaj_customer_portal_data()
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public, private, auth
+as $rawaj$
+declare
+  customer_email_value text := private.rawaj_authenticated_customer_email();
+  customer_row record;
+  portal_data jsonb;
+begin
+  if auth.uid() is null or customer_email_value is null or customer_email_value = '' then
+    raise exception 'A confirmed customer account is required.';
+  end if;
 
-drop policy if exists rawaj_customer_commercial_quotes_read on public.commercial_quotes;
-create policy rawaj_customer_commercial_quotes_read on public.commercial_quotes for select to authenticated
-using (exists (
-  select 1 from public.customers c
-  where c.id = commercial_quotes.customer_id
-    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
-));
+  select c.id, c.name, c.company_name, c.phone, c.whatsapp, c.email, c.city, c.address
+  into customer_row
+  from public.customers c
+  where lower(coalesce(c.email,'')) = customer_email_value
+  order by c.created_at desc
+  limit 1;
 
-drop policy if exists rawaj_customer_invoices_read on public.invoices;
-create policy rawaj_customer_invoices_read on public.invoices for select to authenticated
-using (exists (
-  select 1 from public.customers c
-  where c.id = invoices.customer_id
-    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
-));
+  if not found then
+    return jsonb_build_object('customer', null, 'projects', '[]'::jsonb, 'quotes', '[]'::jsonb,
+      'invoices', '[]'::jsonb, 'payments', '[]'::jsonb, 'orders', '[]'::jsonb,
+      'stages', '[]'::jsonb, 'proofs', '[]'::jsonb, 'activities', '[]'::jsonb);
+  end if;
 
-drop policy if exists rawaj_customer_payments_read on public.payments;
-create policy rawaj_customer_payments_read on public.payments for select to authenticated
-using (exists (
-  select 1 from public.invoices i
-  join public.customers c on c.id = i.customer_id
-  where i.id = payments.invoice_id
-    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
-));
+  select jsonb_build_object(
+    'customer', jsonb_build_object('id', customer_row.id, 'name', customer_row.name,
+      'company_name', customer_row.company_name, 'phone', customer_row.phone,
+      'whatsapp', customer_row.whatsapp, 'email', customer_row.email,
+      'city', customer_row.city, 'address', customer_row.address),
+    'projects', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', p.id, 'project_number', p.project_number, 'title', p.title,
+      'description', p.description, 'status', p.status, 'priority', p.priority,
+      'start_date', p.start_date, 'due_date', p.due_date, 'delivered_at', p.delivered_at,
+      'estimated_total', p.estimated_total, 'created_at', p.created_at
+    ) order by p.created_at desc) from public.operational_projects p where p.customer_id = customer_row.id), '[]'::jsonb),
+    'quotes', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', q.id, 'quote_number', q.quote_number, 'version', q.version,
+      'project_id', q.project_id, 'status', q.status, 'currency', q.currency,
+      'subtotal', q.subtotal, 'discount', q.discount, 'tax', q.tax, 'total', q.total,
+      'valid_until', q.valid_until, 'terms', q.terms, 'line_items', q.line_items, 'created_at', q.created_at
+    ) order by q.created_at desc) from public.commercial_quotes q where q.customer_id = customer_row.id), '[]'::jsonb),
+    'invoices', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', i.id, 'invoice_number', i.invoice_number, 'project_id', i.project_id,
+      'commercial_quote_id', i.commercial_quote_id, 'status', i.status, 'currency', i.currency,
+      'subtotal', i.subtotal, 'discount', i.discount, 'tax', i.tax, 'total', i.total,
+      'due_date', i.due_date, 'issued_at', i.issued_at
+    ) order by i.issued_at desc) from public.invoices i where i.customer_id = customer_row.id), '[]'::jsonb),
+    'payments', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', pay.id, 'invoice_id', pay.invoice_id, 'amount', pay.amount,
+      'method', pay.method, 'reference', pay.reference, 'received_at', pay.received_at
+    ) order by pay.received_at desc) from public.payments pay join public.invoices i on i.id = pay.invoice_id
+      where i.customer_id = customer_row.id), '[]'::jsonb),
+    'orders', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', o.id, 'order_number', o.order_number, 'project_id', o.project_id,
+      'status', o.status, 'priority', o.priority, 'due_date', o.due_date, 'created_at', o.created_at
+    ) order by o.created_at desc) from public.production_orders o
+      join public.operational_projects p on p.id = o.project_id where p.customer_id = customer_row.id), '[]'::jsonb),
+    'stages', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', s.id, 'production_order_id', s.production_order_id, 'name', s.name,
+      'status', s.status, 'due_date', s.due_date, 'sort_order', s.sort_order,
+      'started_at', s.started_at, 'completed_at', s.completed_at
+    ) order by s.sort_order) from public.production_stages s
+      join public.production_orders o on o.id = s.production_order_id
+      join public.operational_projects p on p.id = o.project_id where p.customer_id = customer_row.id), '[]'::jsonb),
+    'proofs', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', d.id, 'title_ar', d.title_ar, 'deadline', d.deadline, 'status', d.status,
+      'proof_versions', d.proof_versions,
+      'comments', coalesce((select jsonb_agg(cm.value) from jsonb_array_elements(coalesce(d.comments,'[]'::jsonb)) cm(value)
+        where cm.value->>'author_role' = 'client'), '[]'::jsonb)
+    ) order by d.created_at desc) from public.design_tasks d
+      where regexp_replace(coalesce(d.client_phone,''), '[^0-9]', '', 'g') =
+        regexp_replace(coalesce(customer_row.phone,''), '[^0-9]', '', 'g')), '[]'::jsonb),
+    'activities', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', a.id, 'subject', a.subject, 'activity_type', a.activity_type,
+      'due_at', a.due_at, 'completed_at', a.completed_at
+    ) order by a.created_at desc) from public.customer_activities a where a.customer_id = customer_row.id), '[]'::jsonb)
+  ) into portal_data;
 
-drop policy if exists rawaj_customer_production_orders_read on public.production_orders;
-create policy rawaj_customer_production_orders_read on public.production_orders for select to authenticated
-using (exists (
-  select 1 from public.operational_projects p
-  join public.customers c on c.id = p.customer_id
-  where p.id = production_orders.project_id
-    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
-));
-
-drop policy if exists rawaj_customer_production_stages_read on public.production_stages;
-create policy rawaj_customer_production_stages_read on public.production_stages for select to authenticated
-using (exists (
-  select 1 from public.production_orders o
-  join public.operational_projects p on p.id = o.project_id
-  join public.customers c on c.id = p.customer_id
-  where o.id = production_stages.production_order_id
-    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
-));
-
-drop policy if exists rawaj_customer_activities_read on public.customer_activities;
-create policy rawaj_customer_activities_read on public.customer_activities for select to authenticated
-using (exists (
-  select 1 from public.customers c
-  where c.id = customer_activities.customer_id
-    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
-));
-
-drop policy if exists rawaj_customer_design_tasks_read on public.design_tasks;
-create policy rawaj_customer_design_tasks_read on public.design_tasks for select to authenticated
-using (exists (
-  select 1 from public.customers c
-  where regexp_replace(coalesce(c.phone,''), '[^0-9]', '', 'g') = regexp_replace(coalesce(design_tasks.client_phone,''), '[^0-9]', '', 'g')
-    and lower(coalesce(c.email,'')) = lower(coalesce(auth.jwt()->>'email',''))
-));
+  return portal_data;
+end;
+$rawaj$;
+revoke all on function public.get_rawaj_customer_portal_data() from public, anon;
+grant execute on function public.get_rawaj_customer_portal_data() to authenticated;
 
 create or replace function private.respond_to_rawaj_proof(
   p_task_id text,
