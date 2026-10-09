@@ -164,7 +164,7 @@ export const AdminContactInboxManager: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {cleanPhone ? (
                     <a
-                      href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`مرحباً ${msg.name}، نتواصل معك من وكالة رواج للطباعة بخصوص استفسارك.`)}`
+                      href={"https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent("مرحباً " + msg.name + "، نتواصل معك من وكالة رواج للطباعة بخصوص استفسارك.")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs"
