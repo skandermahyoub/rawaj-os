@@ -398,7 +398,7 @@ begin
     'inventory_movements','purchase_orders'
   ] loop
     execute format('drop policy if exists %I on public.%I', t || '_staff_read', t);
-    if t in ('customers','customer_activities','project_costs','commercial_quotes','invoices','payments','suppliers','purchase_orders','inventory_items','inventory_movements') then
+    if t in ('customers','customer_activities','operational_projects','project_costs','commercial_quotes','invoices','payments','production_orders','production_stages','suppliers','purchase_orders','inventory_items','inventory_movements') then
       execute format('create policy %I on public.%I for select to authenticated using (private.has_any_role(array[''owner'',''admin'',''sales'']))', t || '_staff_read', t);
     else
       execute format('create policy %I on public.%I for select to authenticated using (private.has_any_role(array[''owner'',''admin'',''sales'',''designer'']))', t || '_staff_read', t);
