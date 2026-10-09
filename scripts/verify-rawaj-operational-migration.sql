@@ -55,6 +55,7 @@ insert into public.customers (name, phone, email)
 values ('CI portal customer', '+967700000001', 'ci-customer@example.com');
 insert into public.design_tasks (id, title_ar, client_name, client_phone, status)
 values ('CI-TASK-001', 'CI proof', 'CI portal customer', '+967700000001', 'proof_submitted');
+insert into auth.users (id, email, email_confirmed_at) values ('00000000-0000-0000-0000-000000000001', 'ci-customer@example.com', now());
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claims', '{"email":"ci-customer@example.com"}', true);
 select private.respond_to_rawaj_proof('CI-TASK-001', 'approved', 'CI approval');
