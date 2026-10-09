@@ -46,7 +46,6 @@ import { AdminFAQManager } from './components/admin/AdminFAQManager';
 import { AdminContactInboxManager } from './components/admin/AdminContactInboxManager';
 import { AdminOperationsManager } from './components/admin/AdminOperationsManager';
 import { CustomerPortalView } from './components/storefront/CustomerPortalView';
-import { CustomerPortalView } from './components/storefront/CustomerPortalView';
 import { AdminFooterManager } from './components/admin/AdminFooterManager';
 import { canAccessAdminView } from './lib/adminAccess';
 import { BrandLogo } from './components/common/BrandLogo';
@@ -249,7 +248,6 @@ const AppContent: React.FC = () => {
 
             {currentRoute.view === 'client-portal' && <CustomerPortalView />}
 
-            {currentRoute.view === 'client-portal' && <CustomerPortalView />}
 
             {currentRoute.view === 'custom-quote' && (
               <CustomQuoteModal
