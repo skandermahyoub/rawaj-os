@@ -1980,13 +1980,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateDesignTask = async (id: string, updates: Partial<DesignTask>): Promise<void> => {
     const existing = designTasks.find((task) => task.id === id);
     if (!existing) throw new Error('مهمة التصميم غير موجودة.');
-    const updatedTask: DesignTask = {
-      ...existing,
+
+    // Persist only the requested fields. Writing a full task assembled from a
+    // potentially stale snapshot can overwrite a newer assignment, status, or proof.
+    const persistedUpdates: Partial<DesignTask> = {
       ...updates,
       updated_at: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'design_tasks', id), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((task) => task.id === id ? updatedTask : task));
+    await setDoc(doc(db, 'design_tasks', id), persistedUpdates, { merge: true });
+    setDesignTasks((prev) => prev.map((task) => task.id === id
+      ? { ...task, ...persistedUpdates }
+      : task
+    ));
   };
 
   const addDesignProof = async (
