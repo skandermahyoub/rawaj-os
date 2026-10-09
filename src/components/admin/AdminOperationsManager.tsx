@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ArrowDownToLine, ArrowUpFromLine, Banknote, BriefcaseBusiness, Check, ClipboardList, FileText, LoaderCircle, Package, Plus, RefreshCw, Users, Wallet } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-type Tab = 'overview' | 'customers' | 'projects' | 'quotes' | 'finance' | 'production' | 'inventory' | 'suppliers' | 'purchases';
+type Tab = 'overview' | 'customers' | 'projects' | 'quotes' | 'finance' | 'production' | 'inventory' | 'suppliers' | 'purchases' | 'costs';
 type Row = Record<string, any>;
 const money = (value: number | string | null | undefined) => new Intl.NumberFormat('ar-YE', { maximumFractionDigits: 2 }).format(Number(value || 0));
 const dateLabel = (value?: string | null) => value ? new Date(value).toLocaleDateString('ar-YE') : '—';
@@ -18,6 +18,7 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'inventory', label: 'المخزون', icon: Banknote },
   { id: 'suppliers', label: 'الموردون', icon: Users },
   { id: 'purchases', label: 'المشتريات', icon: FileText },
+  { id: 'costs', label: 'تكاليف المشاريع', icon: Wallet },
 ];
 
 export const AdminOperationsManager: React.FC = () => {
@@ -34,6 +35,7 @@ export const AdminOperationsManager: React.FC = () => {
   const [movements, setMovements] = useState<Row[]>([]);
   const [suppliers, setSuppliers] = useState<Row[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<Row[]>([]);
+  const [costs, setCosts] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -64,6 +66,7 @@ export const AdminOperationsManager: React.FC = () => {
       ['movements', 'inventory_movements', setMovements, 'created_at'],
       ['suppliers', 'suppliers', setSuppliers, 'name'],
       ['purchaseOrders', 'purchase_orders', setPurchaseOrders, 'created_at'],
+      ['costs', 'project_costs', setCosts, 'occurred_on'],
     ] as const;
     try {
       const results = await Promise.all(specs.map(([, table, , order]) =>
@@ -110,6 +113,7 @@ export const AdminOperationsManager: React.FC = () => {
       inventory: { sku: '', name: '', category: '', unit: 'متر', quantity: '0', reorder_level: '0', average_unit_cost: '0', notes: '' },
       suppliers: { name: '', contact_name: '', phone: '', email: '', address: '', payment_terms: '', lead_time_days: '', notes: '', is_active: true },
       purchases: { supplier_id: suppliers[0]?.id || '', status: 'draft', expected_at: '', total: '0', notes: '' },
+      costs: { project_id: projects[0]?.id || '', cost_type: 'materials', description: '', quantity: '1', unit_cost: '0', supplier_id: '', occurred_on: new Date().toISOString().slice(0,10), notes: '' },
     };
     setForm(defaults[kind] || {});
     setFormOpen(true);
@@ -149,6 +153,12 @@ export const AdminOperationsManager: React.FC = () => {
         tableName = 'production_orders';
         if (!payload.project_id) throw new Error('اختر المشروع المرتبط بأمر الإنتاج.');
         payload.specifications = {};
+      } else if (tab === 'costs') {
+        tableName = 'project_costs';
+        if (!payload.project_id || !String(payload.description || '').trim()) throw new Error('اختر المشروع واكتب وصف التكلفة.');
+        payload.quantity = Number(payload.quantity || 1);
+        payload.unit_cost = Number(payload.unit_cost || 0);
+        payload.supplier_id = payload.supplier_id || null;
       } else if (tab === 'suppliers') {
         tableName = 'suppliers';
         if (!String(payload.name || '').trim()) throw new Error('اسم المورد مطلوب.');
