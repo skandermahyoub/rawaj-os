@@ -393,7 +393,7 @@ declare
   t text;
 begin
   foreach t in array array[
-    'customers','customer_activities','operational_projects','commercial_quotes','invoices',
+    'customers','customer_activities','operational_projects','project_costs','commercial_quotes','invoices',
     'payments','production_orders','production_stages','suppliers','inventory_items',
     'inventory_movements','purchase_orders'
   ] loop
