@@ -401,7 +401,7 @@ export const AdminQuotesList: React.FC = () => {
               )}
 
               <a
-                href={`https://wa.me/${selectedQuote.customer.whatsapp.replace(/[^0-9]/g, '')}`}
+                href={`https://wa.me/${(selectedQuote.customer.whatsapp || selectedQuote.customer.mobile || '').replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
                 className="bg-[#25D366] text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5"
