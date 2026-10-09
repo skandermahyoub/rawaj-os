@@ -391,6 +391,9 @@ after insert or update or delete on public.payments
 for each row execute function private.refresh_rawaj_invoice_status();
 
 revoke all on function private.capture_rawaj_audit_event() from public, anon, authenticated;
+revoke all on function private.recalculate_rawaj_project_cost() from public, anon, authenticated;
+revoke all on function private.apply_rawaj_inventory_movement() from public, anon, authenticated;
+revoke all on function private.refresh_rawaj_invoice_status() from public, anon, authenticated;
 
 do $$
 declare
@@ -447,6 +450,5 @@ grant usage, select on sequence public.commercial_quotes_quote_number_seq to aut
 grant usage, select on sequence public.invoices_invoice_number_seq to authenticated;
 grant usage, select on sequence public.production_orders_order_number_seq to authenticated;
 grant usage, select on sequence public.purchase_orders_purchase_number_seq to authenticated;
-grant usage, select on sequence public.audit_events_id_seq to authenticated;
 
 commit;
