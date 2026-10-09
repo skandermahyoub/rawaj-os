@@ -45,6 +45,7 @@ import { AdminPromoManager } from './components/admin/AdminPromoManager';
 import { AdminFAQManager } from './components/admin/AdminFAQManager';
 import { AdminContactInboxManager } from './components/admin/AdminContactInboxManager';
 import { AdminOperationsManager } from './components/admin/AdminOperationsManager';
+import { CustomerPortalView } from './components/storefront/CustomerPortalView';
 import { AdminFooterManager } from './components/admin/AdminFooterManager';
 import { canAccessAdminView } from './lib/adminAccess';
 import { BrandLogo } from './components/common/BrandLogo';
