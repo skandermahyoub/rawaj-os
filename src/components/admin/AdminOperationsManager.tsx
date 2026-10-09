@@ -311,7 +311,7 @@ export const AdminOperationsManager: React.FC = () => {
     setError('');
     setNotice('');
     try {
-      if (quote.project_id) {
+      if (quote.project_id || (quote.source_quote_id && projects.some((project) => project.source_quote_id === quote.source_quote_id))) {
         setNotice('هذا العرض مرتبط بمشروع بالفعل.');
         return;
       }
