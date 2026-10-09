@@ -11,7 +11,7 @@ const input = 'w-full rounded-xl border border-[#E7E0D3] bg-white px-3 py-3 text
 
 const statusLabels: Record<string, string> = {
   open: 'مفتوح', awaiting_approval: 'بانتظار الاعتماد', approved: 'معتمد', in_design: 'قيد التصميم',
-  in_production: 'قيد الإنتاج', quality_check: 'فحص الجودة', ready_for_delivery: 'جاهز للتسليم',
+  in_production: 'قيد الإنتاج', in_progress: 'قيد التنفيذ', pending: 'بانتظار البدء', skipped: 'تم تجاوزها', quality_check: 'فحص الجودة', ready_for_delivery: 'جاهز للتسليم',
   delivered: 'تم التسليم', closed: 'مغلق', cancelled: 'ملغي', draft: 'مسودة', sent: 'مرسل',
   rejected: 'مرفوض', expired: 'منتهي', converted: 'محوّل إلى مشروع', issued: 'صادرة',
   partially_paid: 'مدفوعة جزئيًا', paid: 'مدفوعة', overdue: 'متأخرة', void: 'ملغاة',
