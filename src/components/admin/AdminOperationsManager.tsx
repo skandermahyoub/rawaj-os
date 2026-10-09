@@ -175,6 +175,114 @@ export const AdminOperationsManager: React.FC = () => {
     }
   };
 
+  const startPricingFromRequest = async (request: Row) => {
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const alreadyLinked = quotes.find((quote) => quote.source_quote_id === request.id);
+      if (alreadyLinked) {
+        setNotice('طلب الموقع مرتبط بالفعل بعرض سعر تجاري.');
+        return;
+      }
+      const customer = request.customer || {};
+      const phone = String(customer.mobile || customer.whatsapp || '').trim();
+      let customerRow: Row | null = null;
+      if (phone) {
+        const existing = await supabase.from('customers').select('*').eq('phone', phone).maybeSingle();
+        if (existing.error) throw existing.error;
+        customerRow = existing.data as Row | null;
+      }
+      if (!customerRow) {
+        const created = await supabase.from('customers').insert({
+          customer_type: customer.company ? 'company' : 'individual',
+          name: String(customer.name || 'عميل طلب تسعير').trim(),
+          company_name: customer.company || null,
+          phone: phone || null,
+          whatsapp: customer.whatsapp || phone || null,
+          email: customer.email || null,
+          city: customer.city || null,
+          address: customer.address || null,
+          source: 'website',
+          notes: request.general_notes || null,
+        }).select('*').single();
+        if (created.error) throw created.error;
+        customerRow = created.data as Row;
+      }
+      const createdQuote = await supabase.from('commercial_quotes').insert({
+        customer_id: customerRow.id,
+        source_quote_id: request.id,
+        status: 'draft',
+        currency: 'YER',
+        subtotal: 0,
+        discount: 0,
+        tax: 0,
+        line_items: Array.isArray(request.items) ? request.items : [],
+        terms: request.general_notes || null,
+      }).select('quote_number,version').single();
+      if (createdQuote.error) throw createdQuote.error;
+      setNotice('تم إنشاء مسودة عرض تجاري وربطها بملف العميل وطلب الموقع.');
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'تعذر ربط طلب الموقع بعرض سعر.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const createProjectFromQuote = async (quote: Row) => {
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      if (quote.project_id) {
+        setNotice('هذا العرض مرتبط بمشروع بالفعل.');
+        return;
+      }
+      if (quote.status !== 'approved') throw new Error('يجب اعتماد عرض السعر قبل إنشاء مشروع تنفيذي.');
+      const sourceRequest = incomingQuotes.find((request) => request.id === quote.source_quote_id);
+      const created = await supabase.from('operational_projects').insert({
+        customer_id: quote.customer_id,
+        source_quote_id: quote.source_quote_id || null,
+        title: 'تنفيذ عرض السعر Q-' + quote.quote_number + '-V' + quote.version,
+        status: 'open',
+        priority: 'normal',
+        due_date: sourceRequest?.deadline_date || null,
+        estimated_total: Number(quote.total || 0),
+        notes: 'تم إنشاء المشروع من عرض السعر Q-' + quote.quote_number + '-V' + quote.version + '.',
+      }).select('id').single();
+      if (created.error) throw created.error;
+      const linked = await supabase.from('commercial_quotes').update({ project_id: created.data.id, status: 'converted', updated_at: new Date().toISOString() }).eq('id', quote.id);
+      if (linked.error) throw linked.error;
+      setNotice('تم إنشاء المشروع وربطه بعرض السعر.');
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'تعذر إنشاء المشروع من عرض السعر.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateStageStatus = async (stage: Row, status: string) => {
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const patch: Row = { status };
+      const now = new Date().toISOString();
+      if (status === 'in_progress' && !stage.started_at) patch.started_at = now;
+      if (status === 'completed') patch.completed_at = now;
+      const { error: stageError } = await supabase.from('production_stages').update(patch).eq('id', stage.id);
+      if (stageError) throw stageError;
+      setNotice('تم تحديث مرحلة الإنتاج.');
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'تعذر تحديث مرحلة الإنتاج.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const savePayment = async () => {
     if (!paymentInvoice || Number(paymentAmount) <= 0) {
       setError('اختر فاتورة وأدخل مبلغ دفعة أكبر من صفر.');
