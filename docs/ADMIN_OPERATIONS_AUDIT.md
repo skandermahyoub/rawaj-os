@@ -89,3 +89,24 @@ The current schema does **not** expose dedicated tables for CRM/customer account
 - No fake/demo counters or inert buttons.
 - Keep the storefront/CMS as one admin domain, not the entire admin product.
 - Keep production data safe; schema migrations should be tested on a development database branch before production application.
+
+
+## Development log — 2026-10-09
+
+### Implemented on `audit/admin-operations`
+
+- Added a live **Daily Operations Follow-up** section to `AdminDashboardHome.tsx`, based on current quote and design-task records:
+  - new quotes requiring first review;
+  - quotes awaiting missing customer details;
+  - design proofs awaiting a decision;
+  - overdue design tasks.
+- Each card navigates to the relevant existing admin module. No mock/demo counts or new database records were introduced.
+- Corrected the open-design-task KPI to include all nonterminal design states (`new`, `assigned`, `in_progress`, `proof_submitted`, `feedback_requested`).
+- Corrected overdue design-task logic so date-only deadlines remain due through the end of the specified day, and approved/sent-to-print/completed tasks are not mislabeled as overdue design work.
+- Added `.github/workflows/quality-checks.yml` to run `npm ci`, `npm run lint`, and `npm run build` on branch pushes and pull requests targeting `main`. This workflow checks code only and does not deploy to Netlify.
+
+### Verification status
+
+- Changes are committed to the isolated branch; `main` has not been changed.
+- No Supabase data or schema was changed by these dashboard improvements.
+- A local build could not be executed from this environment because GitHub network access was unavailable. The new GitHub Actions workflow is the next verification path; the build is **not yet claimed to pass**.
