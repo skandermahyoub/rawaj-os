@@ -99,6 +99,7 @@ jobs:
               'معرض الأعمال',
               'دليل المعايير والطباعة',
               'عن رواج والاتصال',
+              'بوابة العملاء',
             ];
             for (const label of routeLabels) {
               await page.getByRole('button', { name: 'فتح القائمة الرئيسية' }).click();
