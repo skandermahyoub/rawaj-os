@@ -186,11 +186,11 @@ export const CustomerPortalView: React.FC = () => {
   const respondToProof = async (task: Row, decision: 'approved' | 'feedback_requested') => {
     setSaving(true); setError(''); setNotice('');
     try {
-      const { error: rpcError } = await supabase.rpc('respond_to_rawaj_proof' as any, {
+      const { error: rpcError } = await (supabase as any).rpc('respond_to_rawaj_proof', {
         p_task_id: task.id,
         p_decision: decision,
         p_comment: proofComment[task.id] || null,
-      } as any);
+      });
       if (rpcError) throw rpcError;
       setProofComment((old) => ({ ...old, [task.id]: '' }));
       setNotice(decision === 'approved' ? 'تم اعتماد البروفة وتسجيل القرار.' : 'تم إرسال طلب التعديل إلى فريق التصميم.');
