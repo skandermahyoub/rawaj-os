@@ -48,6 +48,7 @@ export const AdminOperationsManager: React.FC = () => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [formOpen, setFormOpen] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [form, setForm] = useState<Row>({});
   const [movementType, setMovementType] = useState<'receipt' | 'issue'>('receipt');
   const [movementItem, setMovementItem] = useState('');
@@ -114,6 +115,7 @@ export const AdminOperationsManager: React.FC = () => {
   const customerName = (id?: string) => customers.find((c) => c.id === id)?.company_name || customers.find((c) => c.id === id)?.name || 'عميل غير محدد';
   const projectName = (id?: string) => projects.find((p) => p.id === id)?.title || 'مشروع غير مرتبط';
   const openForm = (kind: Tab) => {
+    setEditingQuoteId(null);
     setError('');
     setNotice('');
     const defaults: Record<string, Row> = {
@@ -129,6 +131,26 @@ export const AdminOperationsManager: React.FC = () => {
       followups: { customer_id: customers[0]?.id || '', activity_type: 'follow_up', subject: '', details: '', due_at: '', assigned_to: '' },
     };
     setForm(defaults[kind] || {});
+    setFormOpen(true);
+  };
+
+  const editCommercialQuote = (quote: Row) => {
+    setTab('quotes');
+    setError('');
+    setNotice('');
+    setEditingQuoteId(quote.id);
+    setForm({
+      customer_id: quote.customer_id,
+      project_id: quote.project_id || '',
+      status: quote.status || 'draft',
+      currency: quote.currency || 'YER',
+      subtotal: String(quote.subtotal || 0),
+      discount: String(quote.discount || 0),
+      tax: String(quote.tax || 0),
+      valid_until: quote.valid_until || '',
+      terms: quote.terms || '',
+      line_items: Array.isArray(quote.line_items) ? quote.line_items : [],
+    });
     setFormOpen(true);
   };
 
@@ -203,7 +225,10 @@ export const AdminOperationsManager: React.FC = () => {
         throw new Error('هذه الشاشة لا تدعم إنشاء سجل جديد.');
       }
       delete payload.id;
-      const { data, error: insertError } = await supabase.from(tableName as any).insert(payload).select('*').single();
+      const result = tab === 'quotes' && editingQuoteId
+        ? await supabase.from(tableName as any).update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingQuoteId).select('*').single()
+        : await supabase.from(tableName as any).insert(payload).select('*').single();
+      const { data, error: insertError } = result;
       if (insertError) throw insertError;
 
       if (tab === 'production' && data?.id) {
@@ -216,7 +241,8 @@ export const AdminOperationsManager: React.FC = () => {
         }
       }
       setFormOpen(false);
-      setNotice((current) => current || 'تم حفظ السجل في قاعدة البيانات.');
+      setEditingQuoteId(null);
+      setNotice((current) => current || (tab === 'quotes' ? 'تم حفظ عرض السعر.' : 'تم حفظ السجل في قاعدة البيانات.'));
       await load();
     } catch (e: any) {
       setError(e?.message || 'تعذر حفظ السجل. لم نعرضه كأنه حُفظ.');
@@ -482,7 +508,7 @@ export const AdminOperationsManager: React.FC = () => {
             </section>
             <section className={panelClass}>
               <div className="flex items-center justify-between gap-3"><div><h2 className="font-black">عروض الأسعار التجارية</h2><p className="mt-1 text-xs text-stone-500">عروض مرقمة وقابلة للاعتماد والتحويل إلى مشروع تنفيذي.</p></div>{createButton('إصدار عرض سعر','quotes')}</div>
-              <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[700px] text-right text-xs"><thead className="bg-stone-50 dark:bg-stone-900"><tr>{['المرجع','العميل','المشروع','الإجمالي','الصلاحية','الحالة / الإجراء'].map((h) => <th key={h} className="p-3">{h}</th>)}</tr></thead><tbody>{quotes.map((q) => <tr key={q.id} className="border-t border-stone-100 dark:border-stone-800"><td className="p-3 font-bold">Q-{q.quote_number}-V{q.version}</td><td className="p-3">{customerName(q.customer_id)}</td><td className="p-3">{projectName(q.project_id)}</td><td className="p-3">{money(q.total)} ر.ي</td><td className="p-3">{dateLabel(q.valid_until)}</td><td className="p-3"><div className="flex min-w-36 flex-col gap-2"><select className={inputClass} value={q.status} onChange={(e) => void updateStatus('commercial_quotes',q.id,e.target.value)}>{['draft','sent','approved','rejected','expired','converted'].map((s) => <option key={s} value={s}>{statusLabel[s] || s}</option>)}</select>{q.status === 'approved' && !q.project_id && <button type="button" disabled={saving} onClick={() => void createProjectFromQuote(q)} className="rounded-lg bg-emerald-600 px-2 py-1.5 text-[10px] font-bold text-white disabled:opacity-50">إنشاء مشروع</button>}</div></td></tr>)}{quotes.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-stone-500">لا توجد عروض أسعار تجارية.</td></tr>}</tbody></table></div>
+              <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[700px] text-right text-xs"><thead className="bg-stone-50 dark:bg-stone-900"><tr>{['المرجع','العميل','المشروع','الإجمالي','الصلاحية','الحالة / الإجراء'].map((h) => <th key={h} className="p-3">{h}</th>)}</tr></thead><tbody>{quotes.map((q) => <tr key={q.id} className="border-t border-stone-100 dark:border-stone-800"><td className="p-3 font-bold">Q-{q.quote_number}-V{q.version}</td><td className="p-3">{customerName(q.customer_id)}</td><td className="p-3">{projectName(q.project_id)}</td><td className="p-3">{money(q.total)} ر.ي</td><td className="p-3">{dateLabel(q.valid_until)}</td><td className="p-3"><div className="flex min-w-36 flex-col gap-2"><select className={inputClass} value={q.status} onChange={(e) => void updateStatus('commercial_quotes',q.id,e.target.value)}>{['draft','sent','approved','rejected','expired','converted'].map((s) => <option key={s} value={s}>{statusLabel[s] || s}</option>)}</select><button type="button" disabled={saving} onClick={() => editCommercialQuote(q)} className="rounded-lg border border-stone-300 px-2 py-1.5 text-[10px] font-bold dark:border-stone-700">تحرير التسعير</button>{q.status === 'approved' && !q.project_id && <button type="button" disabled={saving} onClick={() => void createProjectFromQuote(q)} className="rounded-lg bg-emerald-600 px-2 py-1.5 text-[10px] font-bold text-white disabled:opacity-50">إنشاء مشروع</button>}</div></td></tr>)}{quotes.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-stone-500">لا توجد عروض أسعار تجارية.</td></tr>}</tbody></table></div>
             </section>
           </div>}
 
@@ -499,7 +525,7 @@ export const AdminOperationsManager: React.FC = () => {
         </>
       )}
 
-      {formOpen && <div className="fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="نموذج إنشاء سجل"><div className="my-8 w-full max-w-2xl rounded-2xl bg-[#FAF8F5] p-5 shadow-2xl dark:bg-[#171514]"><div className="flex items-center justify-between"><h2 className="text-lg font-black">{tab === 'customers' ? 'ملف عميل جديد' : tab === 'projects' ? 'مشروع جديد' : tab === 'quotes' ? 'عرض سعر جديد' : tab === 'finance' ? 'فاتورة جديدة' : tab === 'production' ? 'أمر إنتاج جديد' : tab === 'suppliers' ? 'مورد جديد' : tab === 'purchases' ? 'أمر شراء جديد' : tab === 'costs' ? 'تسجيل تكلفة مشروع' : tab === 'followups' ? 'متابعة عميل جديدة' : 'مادة مخزون جديدة'}</h2><button type="button" onClick={() => setFormOpen(false)} className="rounded-lg px-3 py-1 text-xl">×</button></div><div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {formOpen && <div className="fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="نموذج إنشاء سجل"><div className="my-8 w-full max-w-2xl rounded-2xl bg-[#FAF8F5] p-5 shadow-2xl dark:bg-[#171514]"><div className="flex items-center justify-between"><h2 className="text-lg font-black">{editingQuoteId ? 'تعديل عرض السعر' : tab === 'customers' ? 'ملف عميل جديد' : tab === 'projects' ? 'مشروع جديد' : tab === 'quotes' ? 'عرض سعر جديد' : tab === 'finance' ? 'فاتورة جديدة' : tab === 'production' ? 'أمر إنتاج جديد' : tab === 'suppliers' ? 'مورد جديد' : tab === 'purchases' ? 'أمر شراء جديد' : tab === 'costs' ? 'تسجيل تكلفة مشروع' : tab === 'followups' ? 'متابعة عميل جديدة' : 'مادة مخزون جديدة'}</h2><button type="button" onClick={() => setFormOpen(false)} className="rounded-lg px-3 py-1 text-xl">×</button></div><div className="mt-4 grid gap-3 sm:grid-cols-2">
         {tab === 'customers' && <>{field('اسم جهة الاتصال / العميل','name')}{field('اسم الشركة أو المؤسسة','company_name')}{selectField('نوع العميل','customer_type',[{value:'individual',label:'فرد'},{value:'company',label:'شركة'},{value:'institution',label:'مؤسسة'}])}{field('الهاتف','phone','tel')}{field('واتساب','whatsapp','tel')}{field('البريد الإلكتروني','email','email')}{field('المدينة','city')}{field('العنوان','address')}{selectField('مصدر العميل','source',[{value:'website',label:'الموقع'},{value:'whatsapp',label:'واتساب'},{value:'referral',label:'ترشيح'},{value:'direct',label:'زيارة مباشرة'},{value:'social',label:'شبكات اجتماعية'},{value:'other',label:'أخرى'}])}{field('ملاحظات','notes')}</>}
         {tab === 'projects' && <>{selectField('العميل','customer_id',customers.map((c)=>({value:c.id,label:c.company_name||c.name})))}{field('اسم المشروع','title')}{field('وصف مختصر','description')}{selectField('الأولوية','priority',[{value:'low',label:'منخفضة'},{value:'normal',label:'عادية'},{value:'high',label:'عالية'},{value:'urgent',label:'عاجلة'}])}{field('موعد التسليم','due_date','date')}{field('القيمة التقديرية بالريال اليمني','estimated_total','number')}{field('ملاحظات داخلية','notes')}</>}
         {tab === 'quotes' && <>{selectField('العميل','customer_id',customers.map((c)=>({value:c.id,label:c.company_name||c.name})))}{selectField('المشروع (اختياري)','project_id',[{value:'',label:'بدون مشروع'} ,...projects.map((p)=>({value:p.id,label:p.title}))])}{field('القيمة قبل الخصم','subtotal','number')}{field('الخصم','discount','number')}{field('الضريبة / الرسوم','tax','number')}{field('صالح حتى','valid_until','date')}{field('الشروط','terms')}</>}
