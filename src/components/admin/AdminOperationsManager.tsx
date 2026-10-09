@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ArrowDownToLine, ArrowUpFromLine, Banknote, BriefcaseBusiness, Check, ClipboardList, FileText, LoaderCircle, Package, Plus, RefreshCw, Users, Wallet } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useApp } from '../../context/AppContext';
 
-type Tab = 'overview' | 'customers' | 'projects' | 'quotes' | 'finance' | 'production' | 'inventory' | 'suppliers' | 'purchases' | 'costs' | 'followups';
+type Tab = 'overview' | 'customers' | 'projects' | 'quotes' | 'finance' | 'production' | 'inventory' | 'suppliers' | 'purchases' | 'costs' | 'followups' | 'audit';
 type Row = Record<string, any>;
 const money = (value: number | string | null | undefined) => new Intl.NumberFormat('ar-YE', { maximumFractionDigits: 2 }).format(Number(value || 0));
 const dateLabel = (value?: string | null) => value ? new Date(value).toLocaleDateString('ar-YE') : '—';
@@ -20,9 +21,11 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'purchases', label: 'المشتريات', icon: FileText },
   { id: 'costs', label: 'تكاليف المشاريع', icon: Wallet },
   { id: 'followups', label: 'متابعات العملاء', icon: ClipboardList },
+  { id: 'audit', label: 'سجل التدقيق', icon: ClipboardList },
 ];
 
 export const AdminOperationsManager: React.FC = () => {
+  const { currentUser } = useApp();
   const [tab, setTab] = useState<Tab>('overview');
   const [customers, setCustomers] = useState<Row[]>([]);
   const [incomingQuotes, setIncomingQuotes] = useState<Row[]>([]);
@@ -38,6 +41,7 @@ export const AdminOperationsManager: React.FC = () => {
   const [purchaseOrders, setPurchaseOrders] = useState<Row[]>([]);
   const [costs, setCosts] = useState<Row[]>([]);
   const [activities, setActivities] = useState<Row[]>([]);
+  const [auditEvents, setAuditEvents] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -71,14 +75,17 @@ export const AdminOperationsManager: React.FC = () => {
       ['costs', 'project_costs', setCosts, 'occurred_on'],
       ['activities', 'customer_activities', setActivities, 'created_at'],
     ] as const;
+    const querySpecs = ['owner', 'admin'].includes(currentUser.role)
+      ? [...specs, ['auditEvents', 'audit_events', setAuditEvents, 'occurred_at'] as const]
+      : specs;
     try {
-      const results = await Promise.all(specs.map(([, table, , order]) =>
+      const results = await Promise.all(querySpecs.map(([, table, , order]) =>
         supabase.from(table as any).select('*').order(order, { ascending: false }).limit(500)
       ));
       const failed = results.find((result) => result.error);
       if (failed?.error) throw failed.error;
       results.forEach((result, index) => {
-        const setter = specs[index][2] as (value: Row[]) => void;
+        const setter = querySpecs[index][2] as (value: Row[]) => void;
         setter((result.data || []) as Row[]);
       });
     } catch (e: any) {
@@ -86,7 +93,7 @@ export const AdminOperationsManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUser.role]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -446,7 +453,7 @@ export const AdminOperationsManager: React.FC = () => {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => { setTab(id); setFormOpen(false); setError(''); setNotice(''); }} className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-bold transition ${tab === id ? 'border-[#B9142D] bg-[#B9142D] text-white' : 'border-[#E7E0D3] bg-white text-stone-600 dark:border-[#302B28] dark:bg-[#191716] dark:text-stone-300'}`}><Icon size={15} />{label}</button>)}
+        {tabs.filter(({id}) => id !== 'audit' || ['owner','admin'].includes(currentUser.role)).map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => { setTab(id); setFormOpen(false); setError(''); setNotice(''); }} className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-bold transition ${tab === id ? 'border-[#B9142D] bg-[#B9142D] text-white' : 'border-[#E7E0D3] bg-white text-stone-600 dark:border-[#302B28] dark:bg-[#191716] dark:text-stone-300'}`}><Icon size={15} />{label}</button>)}
       </div>
 
       {error && <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-300 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"><AlertCircle size={16} className="mt-0.5 shrink-0" /><span>{error}</span></div>}
