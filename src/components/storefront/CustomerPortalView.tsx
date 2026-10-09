@@ -63,55 +63,24 @@ export const CustomerPortalView: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const emailValue = String(session.user.email).trim().toLowerCase();
-      const customerResult = await supabase.from('customers' as any).select('*').ilike('email', emailValue).maybeSingle();
-      if (customerResult.error) throw customerResult.error;
-      if (!customerResult.data) {
+      const { data: portalResult, error: portalError } = await (supabase as any).rpc('get_rawaj_customer_portal_data');
+      if (portalError) throw portalError;
+      const portal = (portalResult || {}) as Row;
+      if (!portal.customer) {
         setCustomer(null);
         setProjects([]); setQuotes([]); setInvoices([]); setPayments([]); setOrders([]); setStages([]); setProofs([]); setActivities([]);
-        setError('هذا البريد مسجل الدخول، لكنه غير مرتبط بملف عميل لدى رواج. استخدم البريد المسجل في عرض السعر أو تواصل مع فريق رواج لربط الحساب.');
+        setError('هذا البريد غير مرتبط بملف عميل لدى رواج. استخدم البريد المسجل في عرض السعر أو تواصل مع فريق رواج لربط الحساب.');
         return;
       }
-      const customerRow = customerResult.data as Row;
-      setCustomer(customerRow);
-      const [projectResult, quoteResult, invoiceResult, activityResult, proofResult] = await Promise.all([
-        supabase.from('operational_projects' as any).select('*').order('created_at', { ascending: false }),
-        supabase.from('commercial_quotes' as any).select('*').order('created_at', { ascending: false }),
-        supabase.from('invoices' as any).select('*').order('issued_at', { ascending: false }),
-        supabase.from('customer_activities' as any).select('*').order('created_at', { ascending: false }),
-        supabase.from('design_tasks' as any).select('*').order('created_at', { ascending: false }),
-      ]);
-      const failed = [projectResult, quoteResult, invoiceResult, activityResult, proofResult].find((result) => result.error);
-      if (failed?.error) throw failed.error;
-      const projectRows = (projectResult.data || []) as Row[];
-      const quoteRows = (quoteResult.data || []) as Row[];
-      const invoiceRows = (invoiceResult.data || []) as Row[];
-      setProjects(projectRows); setQuotes(quoteRows); setInvoices(invoiceRows);
-      setActivities((activityResult.data || []) as Row[]);
-      setProofs((proofResult.data || []) as Row[]);
-      const projectIds = projectRows.map((p) => p.id);
-      const invoiceIds = invoiceRows.map((i) => i.id);
-      const [orderResult, paymentResult] = await Promise.all([
-        projectIds.length
-          ? supabase.from('production_orders' as any).select('*').in('project_id', projectIds).order('created_at', { ascending: false })
-          : Promise.resolve({ data: [], error: null } as any),
-        invoiceIds.length
-          ? supabase.from('payments' as any).select('*').in('invoice_id', invoiceIds).order('received_at', { ascending: false })
-          : Promise.resolve({ data: [], error: null } as any),
-      ]);
-      if (orderResult.error) throw orderResult.error;
-      if (paymentResult.error) throw paymentResult.error;
-      const orderRows = (orderResult.data || []) as Row[];
-      setOrders(orderRows);
-      setPayments((paymentResult.data || []) as Row[]);
-      const orderIds = orderRows.map((o) => o.id);
-      if (orderIds.length) {
-        const stageResult = await supabase.from('production_stages' as any).select('*').in('production_order_id', orderIds).order('sort_order');
-        if (stageResult.error) throw stageResult.error;
-        setStages((stageResult.data || []) as Row[]);
-      } else {
-        setStages([]);
-      }
+      setCustomer(portal.customer as Row);
+      setProjects((portal.projects || []) as Row[]);
+      setQuotes((portal.quotes || []) as Row[]);
+      setInvoices((portal.invoices || []) as Row[]);
+      setPayments((portal.payments || []) as Row[]);
+      setOrders((portal.orders || []) as Row[]);
+      setStages((portal.stages || []) as Row[]);
+      setProofs((portal.proofs || []) as Row[]);
+      setActivities((portal.activities || []) as Row[]);
     } catch (e: any) {
       setError(e?.message || 'تعذر تحميل بيانات حساب العميل. تأكد من أن الأنظمة التشغيلية مفعّلة وأن بريد الحساب مرتبط بملف العميل.');
     } finally {
