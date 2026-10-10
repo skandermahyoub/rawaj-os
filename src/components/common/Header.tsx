@@ -49,6 +49,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCustomQuote }) => {
     { label: 'الأقسام والمصانع', view: 'departments', icon: Layers },
     { label: 'باقات المشاريع', view: 'packages', icon: Sparkles },
     { label: 'معرض الأعمال', view: 'portfolio', icon: Briefcase },
+    { label: 'بوابة العملاء', view: 'client-portal', icon: ShieldCheck },
     { label: 'دليل المعايير والطباعة', view: 'blog', icon: BookOpen },
     { label: 'عن رواج والاتصال', view: 'about-contact', icon: Info },
   ];

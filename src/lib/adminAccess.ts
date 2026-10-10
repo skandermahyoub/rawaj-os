@@ -25,7 +25,8 @@ export type AdminSubview =
   | 'faq'
   | 'contact-inbox'
   | 'footer-settings'
-  | 'design-tasks';
+  | 'design-tasks'
+  | 'operational-workspace';
 
 const allStaff: UserRole[] = ['owner', 'admin', 'editor', 'sales', 'designer'];
 const contentStaff: UserRole[] = ['owner', 'admin', 'editor'];
@@ -33,8 +34,9 @@ const salesStaff: UserRole[] = ['owner', 'admin', 'sales'];
 
 export const ADMIN_VIEW_ACCESS: Record<AdminSubview, UserRole[]> = {
   dashboard: allStaff,
-  quotes: [...salesStaff, 'designer'],
+  quotes: salesStaff,
   'design-tasks': ['owner', 'admin', 'sales', 'designer'],
+  'operational-workspace': salesStaff,
   'contact-inbox': salesStaff,
   services: [...contentStaff, 'sales', 'designer'],
   'service-edit': contentStaff,

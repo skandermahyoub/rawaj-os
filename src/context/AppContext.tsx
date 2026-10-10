@@ -48,7 +48,7 @@ import {
   onSnapshot,
 } from '../lib/cloudDb';
 import { supabase } from '../lib/supabase';
-import { removeRawajStorageObject } from '../lib/storage';
+import { removeRawajStorageObject, removeRawajStorageUrl } from '../lib/storage';
 
 export type NavigationTarget =
   | { view: 'home' }
@@ -63,6 +63,7 @@ export type NavigationTarget =
   | { view: 'blog-post'; postId: string }
   | { view: 'about-contact' }
   | { view: 'custom-quote' }
+  | { view: 'client-portal' }
   | { 
       view: 'admin'; 
       subView?: 
@@ -90,7 +91,8 @@ export type NavigationTarget =
         | 'faq'
         | 'contact-inbox'
         | 'footer-settings'
-        | 'design-tasks'; 
+        | 'design-tasks'
+        | 'operational-workspace'; 
       editServiceId?: string; 
       editTemplateId?: string 
     };
@@ -1099,10 +1101,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Theme Customizer
   const updateThemeSettings = async (settings: Partial<ThemeCustomizerSettings>): Promise<void> => {
-    const updated = { ...themeSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'theme_customizer'), updated, { merge: true });
-    setThemeSettings(updated);
-    applyThemeToDocument(updated);
+    await setDoc(doc(db, 'settings', 'theme_customizer'), settings, { merge: true });
+    setThemeSettings((current) => ({ ...current, ...settings }));
   };
 
   // Home Modules Config & Reordering
@@ -1140,9 +1140,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Promo Banners & Module
   const updatePromoSettings = async (settings: Partial<PromoModuleSettings>): Promise<void> => {
-    const updated = { ...promoSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'promo_module'), updated, { merge: true });
-    setPromoSettings(updated);
+    await setDoc(doc(db, 'settings', 'promo_module'), settings, { merge: true });
+    setPromoSettings((current) => ({ ...current, ...settings }));
   };
 
   const addPromoBanner = async (banner: Omit<PromoBanner, 'id'>): Promise<void> => {
@@ -1206,9 +1205,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Footer Settings
   const updateFooterSettings = async (settings: Partial<FooterSettings>): Promise<void> => {
-    const updated = { ...footerSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'footer'), updated, { merge: true });
-    setFooterSettings(updated);
+    await setDoc(doc(db, 'settings', 'footer'), settings, { merge: true });
+    setFooterSettings((current) => ({ ...current, ...settings }));
   };
 
   // Brands Mode
@@ -1412,25 +1410,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
     if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
 
-    const updatedQuote: QuoteRequest = {
-      ...targetQuote,
-      status: newStatus,
-      internal_notes: internalNotes || targetQuote.internal_notes,
-      updated_at: new Date().toISOString(),
-      timeline: [
-        ...targetQuote.timeline,
-        {
-          id: makeEntityId('tl'),
-          timestamp: new Date().toISOString(),
-          user_name: currentUser.name,
-          action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
-          notes: internalNotes,
-        },
-      ],
-    };
+    const updatedAt = new Date().toISOString();
+    const nextInternalNotes = internalNotes !== undefined ? internalNotes : targetQuote.internal_notes;
+    const nextTimeline = [
+      ...targetQuote.timeline,
+      {
+        id: makeEntityId('tl'),
+        timestamp: updatedAt,
+        user_name: currentUser.name,
+        action: `تغيير الحالة إلى: ${statusNames[newStatus]}`,
+        notes: internalNotes,
+      },
+    ];
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
+    // Persist only the fields changed by this action. Sending a full stale quote
+    // can overwrite a concurrent salesperson assignment or newer customer data.
+    await setDoc(doc(db, 'quotes', quoteId), {
+      status: newStatus,
+      internal_notes: nextInternalNotes,
+      updated_at: updatedAt,
+      timeline: nextTimeline,
+    }, { merge: true });
+
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId
+      ? { ...quote, status: newStatus, internal_notes: nextInternalNotes, updated_at: updatedAt, timeline: nextTimeline }
+      : quote
+    ));
   };
 
   const assignQuoteSalesperson = async (quoteId: string, salespersonId: string): Promise<void> => {
@@ -1470,15 +1475,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetQuote = quoteRequests.find((quote) => quote.id === quoteId);
     if (!targetQuote) throw new Error('طلب التسعير غير موجود.');
 
-    const updatedQuote: QuoteRequest = {
-      ...targetQuote,
-      internal_notes: internalNotes !== undefined ? internalNotes : targetQuote.internal_notes,
-      supplier_notes: supplierNotes !== undefined ? supplierNotes : targetQuote.supplier_notes,
-      updated_at: new Date().toISOString(),
-    };
+    const updatedAt = new Date().toISOString();
+    const updates: Partial<QuoteRequest> = { updated_at: updatedAt };
+    if (internalNotes !== undefined) updates.internal_notes = internalNotes;
+    if (supplierNotes !== undefined) updates.supplier_notes = supplierNotes;
 
-    await setDoc(doc(db, 'quotes', quoteId), updatedQuote, { merge: true });
-    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId ? updatedQuote : quote));
+    // A notes edit must not write unrelated fields from an older in-memory quote.
+    await setDoc(doc(db, 'quotes', quoteId), updates, { merge: true });
+    setQuoteRequests((prev) => prev.map((quote) => quote.id === quoteId
+      ? { ...quote, ...updates }
+      : quote
+    ));
   };
 
   // Service CRUD
@@ -1503,16 +1510,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateService = async (id: string, serviceData: Partial<Service>): Promise<void> => {
     const existing = services.find((service) => service.id === id);
     if (!existing) throw new Error('الخدمة غير موجودة.');
-    const updatedService: Service = {
-      ...existing,
+    const persistedUpdates: Partial<Service> = {
       ...serviceData,
       updated_at: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'services', id), updatedService, { merge: true });
-    setServices((prev) => {
-      const updated = prev.map((service) => service.id === id ? updatedService : service);
-      return updated;
-    });
+    await setDoc(doc(db, 'services', id), persistedUpdates, { merge: true });
+    setServices((prev) => prev.map((service) => service.id === id
+      ? { ...service, ...persistedUpdates }
+      : service
+    ));
   };
 
   const deleteService = async (id: string): Promise<void> => {
@@ -1561,9 +1567,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const existing = templates.find((template) => template.id === id);
     if (!existing) throw new Error('القالب غير موجود.');
-    const updatedTemplate = { ...existing, ...templateData };
-    await setDoc(doc(db, 'templates', id), updatedTemplate, { merge: true });
-    setTemplates((prev) => prev.map((template) => template.id === id ? updatedTemplate : template));
+    await setDoc(doc(db, 'templates', id), templateData, { merge: true });
+    setTemplates((prev) => prev.map((template) => template.id === id
+      ? { ...template, ...templateData }
+      : template
+    ));
   };
 
   const deleteTemplate = async (id: string): Promise<void> => {
@@ -1623,9 +1631,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updatePackage = async (id: string, pkg: Partial<Package>): Promise<void> => {
     const existing = packages.find((item) => item.id === id);
     if (!existing) throw new Error('الباقة غير موجودة.');
-    const updated = { ...existing, ...pkg };
-    await setDoc(doc(db, 'packages', id), updated, { merge: true });
-    setPackages((prev) => prev.map((item) => item.id === id ? updated : item));
+    await setDoc(doc(db, 'packages', id), pkg, { merge: true });
+    setPackages((prev) => prev.map((item) => item.id === id ? { ...item, ...pkg } : item));
   };
 
   const deletePackage = async (id: string): Promise<void> => {
@@ -1646,9 +1653,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateBlogPost = async (id: string, post: Partial<BlogPost>): Promise<void> => {
     const existing = blogPosts.find((item) => item.id === id);
     if (!existing) throw new Error('المقال غير موجود.');
-    const updated = { ...existing, ...post };
-    await setDoc(doc(db, 'blog', id), updated, { merge: true });
-    setBlogPosts((prev) => prev.map((item) => item.id === id ? updated : item));
+    await setDoc(doc(db, 'blog', id), post, { merge: true });
+    setBlogPosts((prev) => prev.map((item) => item.id === id ? { ...item, ...post } : item));
   };
 
   const deleteBlogPost = async (id: string): Promise<void> => {
@@ -1674,9 +1680,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<void> => {
     const existing = portfolioProjects.find((item) => item.id === id);
     if (!existing) throw new Error('المشروع غير موجود.');
-    const updated = { ...existing, ...project };
-    await setDoc(doc(db, 'portfolio', id), updated, { merge: true });
-    setPortfolioProjects((prev) => prev.map((item) => item.id === id ? updated : item));
+    await setDoc(doc(db, 'portfolio', id), project, { merge: true });
+    setPortfolioProjects((prev) => prev.map((item) => item.id === id
+      ? { ...item, ...project }
+      : item
+    ));
   };
 
   const deletePortfolioProject = async (id: string): Promise<void> => {
@@ -1757,9 +1765,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateSiteSettings = async (settings: Partial<SiteSettings>): Promise<void> => {
-    const updated = { ...siteSettings, ...settings };
-    await setDoc(doc(db, 'settings', 'general'), updated, { merge: true });
-    setSiteSettings(updated);
+    // Persist only changed fields, then merge into the latest local state. This avoids
+    // replacing newer local/realtime values with a stale object captured before await.
+    await setDoc(doc(db, 'settings', 'general'), settings, { merge: true });
+    setSiteSettings((current) => ({ ...current, ...settings }));
   };
 
   const addUser = async (userData: Omit<User, 'id' | 'createdAt'>): Promise<User> => {
@@ -1882,9 +1891,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // About Us Update
   const updateAboutUsData = async (data: Partial<AboutUsModuleData>): Promise<void> => {
-    const updated = { ...aboutUsData, ...data };
-    await setDoc(doc(db, 'settings', 'about_us'), updated, { merge: true });
-    setAboutUsData(updated);
+    await setDoc(doc(db, 'settings', 'about_us'), data, { merge: true });
+    setAboutUsData((current) => ({ ...current, ...data }));
   };
 
   // Rawaj Features CRUD
@@ -1918,13 +1926,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateClientLogo = async (id: string, client: Partial<ClientLogo>): Promise<void> => {
+    const existing = clientLogos.find((item) => item.id === id);
+    if (!existing) throw new Error('شعار العميل غير موجود.');
+
     await setDoc(doc(db, 'client_logos', id), client, { merge: true });
     setClientLogos((prev) => prev.map((item) => item.id === id ? { ...item, ...client } : item));
+
+    // Remove a replaced Rawaj Storage asset only after the database update succeeds.
+    if (client.logo_url !== undefined && client.logo_url !== existing.logo_url) {
+      await removeRawajStorageUrl(existing.logo_url).catch(() => undefined);
+    }
   };
 
   const deleteClientLogo = async (id: string): Promise<void> => {
+    const existing = clientLogos.find((item) => item.id === id);
     await deleteDoc(doc(db, 'client_logos', id));
     setClientLogos((prev) => prev.filter((item) => item.id !== id));
+    if (existing?.logo_url) {
+      await removeRawajStorageUrl(existing.logo_url).catch(() => undefined);
+    }
   };
 
   // Testimonials CRUD
@@ -1971,13 +1991,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateDesignTask = async (id: string, updates: Partial<DesignTask>): Promise<void> => {
     const existing = designTasks.find((task) => task.id === id);
     if (!existing) throw new Error('مهمة التصميم غير موجودة.');
-    const updatedTask: DesignTask = {
-      ...existing,
+
+    // Persist only the requested fields. Writing a full task assembled from a
+    // potentially stale snapshot can overwrite a newer assignment, status, or proof.
+    const persistedUpdates: Partial<DesignTask> = {
       ...updates,
       updated_at: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'design_tasks', id), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((task) => task.id === id ? updatedTask : task));
+    await setDoc(doc(db, 'design_tasks', id), persistedUpdates, { merge: true });
+    setDesignTasks((prev) => prev.map((task) => task.id === id
+      ? { ...task, ...persistedUpdates }
+      : task
+    ));
   };
 
   const addDesignProof = async (
@@ -1991,14 +2016,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: makeEntityId('proof'),
       created_at: new Date().toISOString(),
     };
-    const updatedTask: DesignTask = {
-      ...task,
+    const proofUpdates: Partial<DesignTask> = {
       proof_versions: [...task.proof_versions, newProof],
       status: 'proof_submitted',
       updated_at: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((item) => item.id === taskId ? updatedTask : item));
+    await setDoc(doc(db, 'design_tasks', taskId), proofUpdates, { merge: true });
+    setDesignTasks((prev) => prev.map((item) => item.id === taskId
+      ? { ...item, ...proofUpdates }
+      : item
+    ));
   };
 
   const addDesignComment = async (
@@ -2012,14 +2039,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: makeEntityId('comm'),
       created_at: new Date().toISOString(),
     };
-    const updatedTask: DesignTask = {
-      ...task,
+    const commentUpdates: Partial<DesignTask> = {
       comments: [...task.comments, newComment],
       status: comment.status_change || task.status,
       updated_at: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'design_tasks', taskId), updatedTask, { merge: true });
-    setDesignTasks((prev) => prev.map((item) => item.id === taskId ? updatedTask : item));
+    await setDoc(doc(db, 'design_tasks', taskId), commentUpdates, { merge: true });
+    setDesignTasks((prev) => prev.map((item) => item.id === taskId
+      ? { ...item, ...commentUpdates }
+      : item
+    ));
   };
 
   const deleteDesignTask = async (id: string): Promise<void> => {

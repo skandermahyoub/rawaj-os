@@ -65,6 +65,19 @@ const rowToDocument = (table: LogicalTable, row: any): SnapshotDocument => {
     };
   }
 
+  if (table === 'design_tasks') {
+    // Older or manually imported rows may predate these JSON arrays.
+    // Normalize at the data boundary so every UI and mutation path is safe.
+    return {
+      id: row.id,
+      data: () => ({
+        ...row,
+        proof_versions: Array.isArray(row.proof_versions) ? row.proof_versions : [],
+        comments: Array.isArray(row.comments) ? row.comments : [],
+      }),
+    };
+  }
+
   return { id: row.id, data: () => row };
 };
 

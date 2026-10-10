@@ -24,21 +24,52 @@ export const AdminSettingsManager: React.FC = () => {
   const [announcementEnabled, setAnnouncementEnabled] = useState(Boolean(siteSettings.announcement_banner?.enabled));
   const [savedToast, setSavedToast] = useState(false);
 
+  const previousSettingsRef = useRef(siteSettings);
+
   React.useEffect(() => {
-    setCompanyNameAr(siteSettings.company_name_ar);
-    setCompanyNameEn(siteSettings.company_name_en);
-    setSloganAr(siteSettings.slogan_ar || '');
-    setSloganEn(siteSettings.slogan_en || '');
-    setLogoUrl(siteSettings.logo_url || '');
-    setFoundingYear(siteSettings.founding_year || 2008);
-    setPhone(siteSettings.phone);
-    setMobileWhatsapp(siteSettings.mobile_whatsapp);
-    setEmail(siteSettings.email);
-    setAddressAr(siteSettings.address_ar);
-    setWorkingHoursAr(siteSettings.working_hours_ar);
-    setAnnouncementText(siteSettings.announcement_banner?.text_ar || '');
-    setAnnouncementEnabled(Boolean(siteSettings.announcement_banner?.enabled));
-  }, [siteSettings]);
+    const previous = previousSettingsRef.current;
+    const syncIfUnedited = <T,>(
+      currentValue: T,
+      previousValue: T,
+      nextValue: T,
+      setValue: React.Dispatch<React.SetStateAction<T>>
+    ) => {
+      if (Object.is(currentValue, previousValue)) setValue(nextValue);
+    };
+
+    // Apply remote/realtime changes only to fields the user has not edited locally.
+    // This prevents a logo update or another admin's save from erasing an in-progress form.
+    syncIfUnedited(companyNameAr, previous.company_name_ar, siteSettings.company_name_ar, setCompanyNameAr);
+    syncIfUnedited(companyNameEn, previous.company_name_en, siteSettings.company_name_en, setCompanyNameEn);
+    syncIfUnedited(sloganAr, previous.slogan_ar || '', siteSettings.slogan_ar || '', setSloganAr);
+    syncIfUnedited(sloganEn, previous.slogan_en || '', siteSettings.slogan_en || '', setSloganEn);
+    syncIfUnedited(logoUrl, previous.logo_url || '', siteSettings.logo_url || '', setLogoUrl);
+    syncIfUnedited(foundingYear, previous.founding_year || 2008, siteSettings.founding_year || 2008, setFoundingYear);
+    syncIfUnedited(phone, previous.phone, siteSettings.phone, setPhone);
+    syncIfUnedited(mobileWhatsapp, previous.mobile_whatsapp, siteSettings.mobile_whatsapp, setMobileWhatsapp);
+    syncIfUnedited(email, previous.email, siteSettings.email, setEmail);
+    syncIfUnedited(addressAr, previous.address_ar, siteSettings.address_ar, setAddressAr);
+    syncIfUnedited(workingHoursAr, previous.working_hours_ar, siteSettings.working_hours_ar, setWorkingHoursAr);
+    syncIfUnedited(announcementText, previous.announcement_banner?.text_ar || '', siteSettings.announcement_banner?.text_ar || '', setAnnouncementText);
+    syncIfUnedited(Boolean(announcementEnabled), Boolean(previous.announcement_banner?.enabled), Boolean(siteSettings.announcement_banner?.enabled), setAnnouncementEnabled);
+
+    previousSettingsRef.current = siteSettings;
+  }, [
+    siteSettings,
+    companyNameAr,
+    companyNameEn,
+    sloganAr,
+    sloganEn,
+    logoUrl,
+    foundingYear,
+    phone,
+    mobileWhatsapp,
+    email,
+    addressAr,
+    workingHoursAr,
+    announcementText,
+    announcementEnabled,
+  ]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -27,7 +27,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { DesignTask, DesignTaskStatus, User } from '../../types';
-import { uploadFileToRawajStorage } from '../../lib/storage';
+import { removeRawajStorageObject, uploadFileToRawajStorage } from '../../lib/storage';
 
 export const AdminDesignTasksManager: React.FC = () => {
   const { 
@@ -82,10 +82,14 @@ export const AdminDesignTasksManager: React.FC = () => {
   const canDeleteTasks = ['owner', 'admin'].includes(currentUser.role);
   const isDesigner = currentUser.role === 'designer';
 
-  const activeTask = designTasks.find((t) => t.id === activeTaskId);
+  // Designers only see work assigned to their own account; managers retain the full queue.
+  const visibleTasks = isDesigner
+    ? designTasks.filter((task) => task.designer_id === currentUser.id)
+    : designTasks;
+  const activeTask = visibleTasks.find((t) => t.id === activeTaskId);
 
   // Filtered Tasks
-  const filteredTasks = designTasks.filter((task) => {
+  const filteredTasks = visibleTasks.filter((task) => {
     const matchesSearch = 
       task.title_ar.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,10 +102,10 @@ export const AdminDesignTasksManager: React.FC = () => {
   });
 
   // Status Stats
-  const totalTasks = designTasks.length;
-  const inProgressCount = designTasks.filter((t) => t.status === 'in_progress' || t.status === 'assigned').length;
-  const proofSubmittedCount = designTasks.filter((t) => t.status === 'proof_submitted' || t.status === 'feedback_requested').length;
-  const approvedCount = designTasks.filter((t) => t.status === 'approved' || t.status === 'sent_to_print' || t.status === 'completed').length;
+  const totalTasks = visibleTasks.length;
+  const inProgressCount = visibleTasks.filter((t) => t.status === 'in_progress' || t.status === 'assigned').length;
+  const proofSubmittedCount = visibleTasks.filter((t) => t.status === 'proof_submitted' || t.status === 'feedback_requested').length;
+  const approvedCount = visibleTasks.filter((t) => t.status === 'approved' || t.status === 'sent_to_print' || t.status === 'completed').length;
 
   const getStatusBadge = (status: DesignTaskStatus) => {
     switch (status) {
@@ -193,16 +197,26 @@ export const AdminDesignTasksManager: React.FC = () => {
       setActionError('اختر ملف البروفة أولاً.');
       return;
     }
+    if (!/\.(png|jpe?g|webp|gif|pdf|ai|eps|svg|zip)$/i.test(proofFile.name)) {
+      setActionError('نوع الملف غير مدعوم. استخدم صورة أو PDF أو AI أو EPS أو SVG أو ZIP.');
+      return;
+    }
+    if (proofFile.size > 50 * 1024 * 1024) {
+      setActionError('حجم الملف يتجاوز الحد المسموح (50 ميجابايت).');
+      return;
+    }
 
     const nextVersion = (activeTask?.proof_versions.length || 0) + 1;
     setActionError('');
     setIsUploadingProof(true);
+    let uploadedPath: string | null = null;
 
     try {
       const stored = await uploadFileToRawajStorage(proofFile, {
         folder: `design-proofs/${activeTaskId}`,
         fileName: proofFile.name,
       });
+      uploadedPath = stored.path;
 
       await addDesignProof(activeTaskId, {
         version_number: nextVersion,
@@ -214,10 +228,23 @@ export const AdminDesignTasksManager: React.FC = () => {
         notes_ar: newProofData.notes_ar,
       });
 
+      // The database record now owns this object; only clean it up if saving failed.
+      uploadedPath = null;
       setProofFile(null);
       setNewProofData({ notes_ar: '' });
     } catch (error: any) {
-      setActionError(error?.message || 'تعذر رفع البروفة إلى Supabase Storage.');
+      let cleanupFailed = false;
+      if (uploadedPath) {
+        try {
+          await removeRawajStorageObject(uploadedPath);
+        } catch {
+          cleanupFailed = true;
+        }
+      }
+      const message = error?.message || 'تعذر حفظ البروفة.';
+      setActionError(cleanupFailed
+        ? `${message} كما تعذر حذف الملف المؤقت من التخزين؛ يرجى مراجعة المكتبة.`
+        : message);
     } finally {
       setIsUploadingProof(false);
     }

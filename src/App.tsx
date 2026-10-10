@@ -44,6 +44,8 @@ import { AdminDesignTasksManager } from './components/admin/AdminDesignTasksMana
 import { AdminPromoManager } from './components/admin/AdminPromoManager';
 import { AdminFAQManager } from './components/admin/AdminFAQManager';
 import { AdminContactInboxManager } from './components/admin/AdminContactInboxManager';
+import { AdminOperationsManager } from './components/admin/AdminOperationsManager';
+import { CustomerPortalView } from './components/storefront/CustomerPortalView';
 import { AdminFooterManager } from './components/admin/AdminFooterManager';
 import { canAccessAdminView } from './lib/adminAccess';
 import { BrandLogo } from './components/common/BrandLogo';
@@ -176,6 +178,7 @@ const AppContent: React.FC = () => {
         {subView === 'templates' && <AdminTemplatesList />}
         {subView === 'quotes' && <AdminQuotesList />}
         {subView === 'design-tasks' && <AdminDesignTasksManager />}
+        {subView === 'operational-workspace' && <AdminOperationsManager />}
         {subView === 'taxonomy' && <AdminTaxonomyManager />}
         {subView === 'packages' && <AdminPackagesManager />}
         {subView === 'portfolio' && <AdminPortfolioManager />}
@@ -242,6 +245,9 @@ const AppContent: React.FC = () => {
             )}
 
             {currentRoute.view === 'about-contact' && <AboutContactView />}
+
+            {currentRoute.view === 'client-portal' && <CustomerPortalView />}
+
 
             {currentRoute.view === 'custom-quote' && (
               <CustomQuoteModal

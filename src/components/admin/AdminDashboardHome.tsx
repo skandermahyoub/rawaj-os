@@ -6,7 +6,8 @@ import {
   Image, 
   CheckCircle2, 
   Clock, 
-  FileText, 
+  FileText,
+  MessageSquare, 
   ArrowLeft,
   Users,
   Plus,
@@ -50,7 +51,29 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
   const newQuotesCount = quoteRequests.filter((q) => q.status === 'new').length;
   const inProgressQuotesCount = quoteRequests.filter((q) => ['reviewing', 'pricing', 'sent', 'negotiation'].includes(q.status)).length;
   const wonQuotesCount = quoteRequests.filter((q) => q.status === 'won').length;
-  const activeDesignTasks = designTasks.filter((t) => t.status === 'in_progress' || t.status === 'proof_submitted').length;
+  const activeDesignTasks = designTasks.filter((task) =>
+    ['new', 'assigned', 'in_progress', 'proof_submitted', 'feedback_requested'].includes(task.status)
+  ).length;
+
+  // Operational workload is derived from live Supabase-backed records, not static demo values.
+  const quotesNeedingReview = quoteRequests.filter((q) => q.status === 'new');
+  const quotesWaitingForCustomer = quoteRequests.filter((q) => q.status === 'need_more_info');
+  const proofsAwaitingDecision = designTasks.filter((task) => task.status === 'proof_submitted');
+  const overdueDesignTasks = designTasks.filter((task) => {
+    if (!task.deadline || ['approved', 'sent_to_print', 'completed'].includes(task.status)) return false;
+    const deadlineIsDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(task.deadline);
+    const deadlineValue = deadlineIsDateOnly
+      ? new Date(`${task.deadline}T23:59:59`).getTime()
+      : new Date(task.deadline).getTime();
+    return Number.isFinite(deadlineValue) && deadlineValue < Date.now();
+  });
+
+  const followUpRecordCount = new Set([
+    ...quotesNeedingReview.map((quote) => `quote:${quote.id}`),
+    ...quotesWaitingForCustomer.map((quote) => `quote:${quote.id}`),
+    ...proofsAwaitingDecision.map((task) => `task:${task.id}`),
+    ...overdueDesignTasks.map((task) => `task:${task.id}`),
+  ]).size;
 
   const recentQuotes = quoteRequests.slice(0, 6);
 
@@ -141,7 +164,7 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
             <span className="block text-xl sm:text-2xl font-heading font-black text-white">
               {activeDesignTasks}
             </span>
-            <span className="text-[11px] text-[#FDE8E8]">بروفات قيد التصميم</span>
+            <span className="text-[11px] text-[#FDE8E8]">مهام تصميم مفتوحة</span>
           </div>
 
           <div className="bg-black/25 backdrop-blur-sm p-3.5 rounded-2xl border border-white/10">
@@ -378,6 +401,72 @@ export const AdminDashboardHome: React.FC<{ onNavigateSubView: (view: any, editI
 
         </div>
       </div>
+
+      {/* Operational attention queue: surface work that needs a human action today. */}
+      <section className="space-y-4" aria-labelledby="daily-operations-heading">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+          <div>
+            <h3 id="daily-operations-heading" className="font-heading font-black text-base sm:text-lg text-[#171616] dark:text-[#F7F4EE]">
+              مركز المتابعة اليومية
+            </h3>
+            <p className="text-xs text-[#706A62] dark:text-[#A0988F]">
+              قائمة عمل مستخرجة من الطلبات ومهام التصميم المحفوظة فعلياً في النظام
+            </p>
+          </div>
+          <span className="text-[11px] text-[#706A62] dark:text-[#A0988F]">
+            {followUpRecordCount} سجل يحتاج متابعة
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <button type="button" onClick={() => onNavigateSubView('quotes')} className="text-right p-4 rounded-2xl bg-[#FFFDF9] dark:bg-[#181514] border border-[#E8E0D2] dark:border-[#2C2725] hover:border-[#B9142D] transition-colors focus:outline-none focus:ring-2 focus:ring-[#B9142D]/40">
+            <div className="flex items-center justify-between gap-3">
+              <span className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center"><ShoppingBag className="w-5 h-5" /></span>
+              <span className="text-2xl font-heading font-black text-[#171616] dark:text-white tabular-nums">{quotesNeedingReview.length}</span>
+            </div>
+            <span className="block mt-3 text-sm font-bold text-[#171616] dark:text-white">طلبات تحتاج مراجعة أولية</span>
+            <span className="block mt-1 text-[11px] text-[#706A62] dark:text-[#A0988F]">طلبات جديدة لم تبدأ مراجعتها</span>
+            <span className="flex items-center gap-1 mt-3 text-xs font-bold text-[#B9142D]">فتح طلبات الأسعار <ChevronLeft className="w-3.5 h-3.5" /></span>
+          </button>
+
+          <button type="button" onClick={() => onNavigateSubView('quotes')} className="text-right p-4 rounded-2xl bg-[#FFFDF9] dark:bg-[#181514] border border-[#E8E0D2] dark:border-[#2C2725] hover:border-amber-500 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500/40">
+            <div className="flex items-center justify-between gap-3">
+              <span className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center"><MessageSquare className="w-5 h-5" /></span>
+              <span className="text-2xl font-heading font-black text-[#171616] dark:text-white tabular-nums">{quotesWaitingForCustomer.length}</span>
+            </div>
+            <span className="block mt-3 text-sm font-bold text-[#171616] dark:text-white">بانتظار تفاصيل العميل</span>
+            <span className="block mt-1 text-[11px] text-[#706A62] dark:text-[#A0988F]">طلبات تتطلب استكمال معلومات</span>
+            <span className="flex items-center gap-1 mt-3 text-xs font-bold text-[#B9142D]">متابعة الطلبات <ChevronLeft className="w-3.5 h-3.5" /></span>
+          </button>
+
+          <button type="button" onClick={() => onNavigateSubView('design-tasks')} className="text-right p-4 rounded-2xl bg-[#FFFDF9] dark:bg-[#181514] border border-[#E8E0D2] dark:border-[#2C2725] hover:border-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+            <div className="flex items-center justify-between gap-3">
+              <span className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center"><CheckCircle2 className="w-5 h-5" /></span>
+              <span className="text-2xl font-heading font-black text-[#171616] dark:text-white tabular-nums">{proofsAwaitingDecision.length}</span>
+            </div>
+            <span className="block mt-3 text-sm font-bold text-[#171616] dark:text-white">بروفات بانتظار الاعتماد</span>
+            <span className="block mt-1 text-[11px] text-[#706A62] dark:text-[#A0988F]">تصاميم أُرسلت وتحتاج قراراً</span>
+            <span className="flex items-center gap-1 mt-3 text-xs font-bold text-[#B9142D]">فتح مهام التصميم <ChevronLeft className="w-3.5 h-3.5" /></span>
+          </button>
+
+          <button type="button" onClick={() => onNavigateSubView('design-tasks')} className="text-right p-4 rounded-2xl bg-[#FFFDF9] dark:bg-[#181514] border border-[#E8E0D2] dark:border-[#2C2725] hover:border-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/40">
+            <div className="flex items-center justify-between gap-3">
+              <span className="w-10 h-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center"><Clock className="w-5 h-5" /></span>
+              <span className="text-2xl font-heading font-black text-[#171616] dark:text-white tabular-nums">{overdueDesignTasks.length}</span>
+            </div>
+            <span className="block mt-3 text-sm font-bold text-[#171616] dark:text-white">مهام تصميم متأخرة</span>
+            <span className="block mt-1 text-[11px] text-[#706A62] dark:text-[#A0988F]">تجاوزت موعد التسليم ولم تُغلق</span>
+            <span className="flex items-center gap-1 mt-3 text-xs font-bold text-[#B9142D]">متابعة مواعيد التصميم <ChevronLeft className="w-3.5 h-3.5" /></span>
+          </button>
+        </div>
+
+        {followUpRecordCount === 0 && (
+          <div className="flex items-center gap-3 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-sm text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
+            لا توجد إجراءات تحتاج متابعة ضمن المؤشرات الحالية.
+          </div>
+        )}
+      </section>
 
       {/* 
         ========================================================================
