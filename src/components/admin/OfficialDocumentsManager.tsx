@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, Printer, RefreshCw, ShieldCheck, Signature } from 'lucide-react';
+import { FileText, Printer, RefreshCw, ShieldCheck, Signature, Pencil, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { SignaturePad } from './SignaturePad';
 
@@ -28,6 +28,13 @@ export const OfficialDocumentsManager: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [editing, setEditing] = useState<Row | null>(null);
+  const [draftItems, setDraftItems] = useState<Row[]>([]);
+  const [draftDiscount, setDraftDiscount] = useState('0');
+  const [draftTax, setDraftTax] = useState('0');
+  const [draftDate, setDraftDate] = useState('');
+  const [draftTerms, setDraftTerms] = useState('');
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,6 +73,53 @@ export const OfficialDocumentsManager: React.FC = () => {
       return [reference(kind, r), c?.name, c?.company_name, c?.phone, r.status].some((v) => String(v || '').toLowerCase().includes(q));
     });
   }, [kind, quotes, invoices, customers, search]);
+
+
+  const startEdit = (row: Row) => {
+    setEditing(row);
+    const existing = Array.isArray(row.line_items) ? row.line_items : [];
+    setDraftItems(existing.map((item: Row) => ({ description: String(item.description || item.name || item.service || ''), quantity: String(item.quantity ?? 1), unit_price: String(item.unit_price ?? item.price ?? 0) })));
+    setDraftDiscount(String(row.discount || 0));
+    setDraftTax(String(row.tax || 0));
+    setDraftDate(String(kind === 'quote' ? row.valid_until || '' : row.due_date || ''));
+    setDraftTerms(String(row.terms || row.notes || ''));
+    setError('');
+    setNotice('');
+  };
+
+  const updateDraftItem = (index: number, key: string, value: string) => {
+    setDraftItems((items) => items.map((item, i) => i === index ? { ...item, [key]: value } : item));
+  };
+
+  const saveDocumentDetails = async () => {
+    if (!editing) return;
+    if (draftItems.some((item) => !String(item.description || '').trim() || Number(item.quantity) <= 0 || Number(item.unit_price) < 0)) {
+      setError('أكمل وصف كل بند وتأكد أن الكمية أكبر من صفر والسعر غير سالب.');
+      return;
+    }
+    const lineItems = draftItems.map((item) => ({ description: String(item.description).trim(), quantity: Number(item.quantity), unit_price: Number(item.unit_price), total: Number(item.quantity) * Number(item.unit_price) }));
+    const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
+    const discount = Number(draftDiscount || 0);
+    const tax = Number(draftTax || 0);
+    if (discount < 0 || tax < 0 || discount > subtotal) {
+      setError('تحقق من الخصم والضريبة؛ يجب ألا يتجاوز الخصم قيمة البنود.');
+      return;
+    }
+    setSaving(true); setError(''); setNotice('');
+    try {
+      const table = kind === 'quote' ? 'commercial_quotes' : 'invoices';
+      const patch: Row = { line_items: lineItems, subtotal, discount, tax };
+      if (kind === 'quote') { patch.valid_until = draftDate || null; patch.terms = draftTerms || null; }
+      else { patch.due_date = draftDate || null; patch.terms = draftTerms || null; }
+      const result = await supabase.from(table as any).update(patch).eq('id', editing.id).select('*').single();
+      if (result.error) throw result.error;
+      setEditing(null);
+      setNotice('حُفظت بنود المستند وحُسب الإجمالي من الكميات والأسعار. التوقيعات السابقة تبقى مرتبطة بالنسخة التي وُقّعت وقتها.');
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'تعذر حفظ تفاصيل المستند.');
+    } finally { setSaving(false); }
+  };
 
   const openSign = (type: DocType, row: Row) => {
     setKind(type);
@@ -149,9 +203,17 @@ export const OfficialDocumentsManager: React.FC = () => {
     <section className={panel}>
       <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-black">عروض الأسعار والفواتير</h3><p className="mt-1 text-xs text-stone-500">ابحث بالمرجع أو اسم العميل أو الهاتف. كل توقيع جديد ينشئ سجلًا إضافيًا غير قابل للتعديل أو الحذف من الواجهة.</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setKind('quote')} className={'rounded-xl px-4 py-2 text-xs font-bold ' + (kind === 'quote' ? 'bg-[#B9142D] text-white' : 'border border-stone-300 dark:border-stone-700')}>عروض الأسعار ({quotes.length})</button><button type="button" onClick={() => setKind('invoice')} className={'rounded-xl px-4 py-2 text-xs font-bold ' + (kind === 'invoice' ? 'bg-[#B9142D] text-white' : 'border border-stone-300 dark:border-stone-700')}>الفواتير ({invoices.length})</button></div></div>
       <input className={input + ' mt-4'} value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="بحث سريع بالمرجع أو العميل أو رقم الهاتف..." />
-      {loading ? <div className="py-10 text-center text-sm text-stone-500">جارٍ تحميل الأرشيف...</div> : <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[780px] text-right text-xs"><thead className="bg-stone-50 dark:bg-stone-900"><tr>{['المرجع','العميل','الإجمالي','الحالة','التوقيعات المحفوظة','الإجراءات'].map((h)=><th key={h} className="p-3">{h}</th>)}</tr></thead><tbody>{allRows.map((row)=>{const customer=customerFor(row);const id=kind==='quote'?row.id:row.id;const signed=linkedSignatures.filter((sig)=>kind==='quote'?sig.quote_id===id:sig.invoice_id===id);return <tr key={row.id} className="border-t border-stone-100 dark:border-stone-800"><td className="p-3 font-bold">{reference(kind,row)}</td><td className="p-3">{customer?.company_name||customer?.name||'—'}<div className="mt-1 text-stone-500">{customer?.phone||''}</div></td><td className="p-3 font-bold">{money(row.total)} ر.ي</td><td className="p-3">{row.status||'—'}</td><td className="p-3">{signed.length ? <div className="space-y-1">{signed.slice(0,2).map((sig)=><div key={sig.id} className="text-[10px]"><span className="font-bold">{sig.signer_name}</span> · {sig.signer_title}<div className="text-stone-500">{dateLabel(sig.signed_at)} · {sig.signer_party==='customer'?'العميل':'رواج'}</div><button type="button" onClick={()=>printDocument(kind,row,sig)} className="mt-1 inline-flex items-center gap-1 text-[#B9142D]"><Printer size={12}/> طباعة النسخة الموقعة</button></div>)}</div> : <span className="text-stone-400">لا يوجد توقيع</span>}</td><td className="p-3"><div className="flex min-w-32 flex-col gap-2"><button type="button" onClick={()=>openSign(kind,row)} className="inline-flex items-center justify-center gap-1 rounded-lg bg-[#B9142D] px-3 py-2 font-bold text-white"><Signature size={13}/> توقيع / اعتماد</button><button type="button" onClick={()=>printDocument(kind,row,null)} className="inline-flex items-center justify-center gap-1 rounded-lg border border-stone-300 px-3 py-2 font-bold dark:border-stone-700"><FileText size={13}/> طباعة / حفظ PDF</button></div></td></tr>})}{allRows.length===0&&<tr><td colSpan={6} className="p-8 text-center text-stone-500">لا توجد مستندات مطابقة للبحث.</td></tr>}</tbody></table></div>}
+      {loading ? <div className="py-10 text-center text-sm text-stone-500">جارٍ تحميل الأرشيف...</div> : <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[780px] text-right text-xs"><thead className="bg-stone-50 dark:bg-stone-900"><tr>{['المرجع','العميل','الإجمالي','الحالة','التوقيعات المحفوظة','الإجراءات'].map((h)=><th key={h} className="p-3">{h}</th>)}</tr></thead><tbody>{allRows.map((row)=>{const customer=customerFor(row);const id=kind==='quote'?row.id:row.id;const signed=linkedSignatures.filter((sig)=>kind==='quote'?sig.quote_id===id:sig.invoice_id===id);return <tr key={row.id} className="border-t border-stone-100 dark:border-stone-800"><td className="p-3 font-bold">{reference(kind,row)}</td><td className="p-3">{customer?.company_name||customer?.name||'—'}<div className="mt-1 text-stone-500">{customer?.phone||''}</div></td><td className="p-3 font-bold">{money(row.total)} ر.ي</td><td className="p-3">{row.status||'—'}</td><td className="p-3">{signed.length ? <div className="space-y-1">{signed.slice(0,2).map((sig)=><div key={sig.id} className="text-[10px]"><span className="font-bold">{sig.signer_name}</span> · {sig.signer_title}<div className="text-stone-500">{dateLabel(sig.signed_at)} · {sig.signer_party==='customer'?'العميل':'رواج'}</div><button type="button" onClick={()=>printDocument(kind,row,sig)} className="mt-1 inline-flex items-center gap-1 text-[#B9142D]"><Printer size={12}/> طباعة النسخة الموقعة</button></div>)}</div> : <span className="text-stone-400">لا يوجد توقيع</span>}</td><td className="p-3"><div className="flex min-w-32 flex-col gap-2"><button type="button" onClick={()=>startEdit(row)} className="inline-flex items-center justify-center gap-1 rounded-lg border border-stone-300 px-3 py-2 font-bold dark:border-stone-700"><Pencil size={13}/> تحرير البنود</button><button type="button" onClick={()=>openSign(kind,row)} className="inline-flex items-center justify-center gap-1 rounded-lg bg-[#B9142D] px-3 py-2 font-bold text-white"><Signature size={13}/> توقيع / اعتماد</button><button type="button" onClick={()=>printDocument(kind,row,null)} className="inline-flex items-center justify-center gap-1 rounded-lg border border-stone-300 px-3 py-2 font-bold dark:border-stone-700"><FileText size={13}/> طباعة / حفظ PDF</button></div></td></tr>})}{allRows.length===0&&<tr><td colSpan={6} className="p-8 text-center text-stone-500">لا توجد مستندات مطابقة للبحث.</td></tr>}</tbody></table></div>}
     </section>
     <section className={panel}><div className="flex items-center gap-2"><ShieldCheck className="text-[#B9142D]" size={18}/><h3 className="font-black">ضوابط الاعتماد</h3></div><ul className="mt-3 list-disc space-y-2 pr-5 text-xs leading-6 text-stone-600 dark:text-stone-300"><li>يمكن إدخال اسم الموقّع يدويًا واختيار الصفة من قائمة أو كتابة صفة مخصصة.</li><li>اعتماد العميل لعرض السعر يحدّث حالة العرض إلى «معتمد»؛ توقيع رواج على مسودة فاتورة يصدرها.</li><li>السجل يحتفظ بصورة التوقيع ونسخة JSON من بيانات المستند وقت التوقيع؛ التوقيعات لا تُعدّل أو تُحذف عبر الواجهة.</li><li>التوقيع المرئي هنا ليس شهادة توقيع رقمي مؤهلة ولا يثبت هوية الشخص بذاته؛ لا يُنسب التوقيع إلى طرف ما إلا بعد توقيعه فعليًا.</li></ul></section>
+
+    {editing && <div className="fixed inset-0 z-[10010] flex items-center justify-center overflow-y-auto bg-black/60 p-3 sm:p-5" role="dialog" aria-modal="true" aria-label="تحرير بنود المستند"><div className="my-5 max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-[#FAF8F5] p-5 shadow-2xl dark:bg-[#171514]"><div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-black">تحرير بنود {kind==='quote'?'عرض السعر':'الفاتورة'}</h3><p className="mt-1 text-xs text-stone-500">{reference(kind,editing)} · أدخل كل خدمة أو منتج مطبوع كبند مستقل.</p></div><button type="button" onClick={()=>setEditing(null)} className="rounded-lg px-3 py-1 text-xl">×</button></div>
+      <div className="mt-4 space-y-3">{draftItems.map((item,index)=><div key={index} className="grid gap-2 rounded-xl border border-stone-200 p-3 dark:border-stone-800 sm:grid-cols-[minmax(0,2fr)_100px_130px_40px]"><label className="space-y-1 text-xs font-bold"><span>الخدمة / وصف البند</span><input className={input} value={item.description||''} onChange={(e)=>updateDraftItem(index,'description',e.target.value)} placeholder="مثال: تصميم هوية بصرية، طباعة بروشورات، لوحة واجهة، تركيب..." /></label><label className="space-y-1 text-xs font-bold"><span>الكمية</span><input className={input} type="number" min="0.001" step="0.001" value={item.quantity} onChange={(e)=>updateDraftItem(index,'quantity',e.target.value)} /></label><label className="space-y-1 text-xs font-bold"><span>سعر الوحدة (ر.ي)</span><input className={input} type="number" min="0" step="0.01" value={item.unit_price} onChange={(e)=>updateDraftItem(index,'unit_price',e.target.value)} /></label><button type="button" aria-label="حذف البند" onClick={()=>setDraftItems((items)=>items.filter((_,i)=>i!==index))} className="self-end rounded-lg border border-red-200 p-2 text-red-600"><Trash2 size={15}/></button></div>)}<button type="button" onClick={()=>setDraftItems((items)=>[...items,{description:'',quantity:'1',unit_price:'0'}])} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#B9142D]/50 px-4 py-2.5 text-xs font-bold text-[#B9142D]"><Plus size={14}/> إضافة بند خدمة أو منتج</button></div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3"><label className="space-y-1 text-xs font-bold"><span>الخصم الإجمالي</span><input className={input} type="number" min="0" step="0.01" value={draftDiscount} onChange={(e)=>setDraftDiscount(e.target.value)}/></label><label className="space-y-1 text-xs font-bold"><span>الضريبة / الرسوم (إن انطبقت)</span><input className={input} type="number" min="0" step="0.01" value={draftTax} onChange={(e)=>setDraftTax(e.target.value)}/></label><label className="space-y-1 text-xs font-bold"><span>{kind==='quote'?'صلاحية العرض حتى':'تاريخ استحقاق الفاتورة'}</span><input className={input} type="date" value={draftDate} onChange={(e)=>setDraftDate(e.target.value)}/></label></div>
+      <label className="mt-3 block space-y-1 text-xs font-bold"><span>الشروط والأحكام / ملاحظات المستند</span><textarea className={input+' min-h-24'} value={draftTerms} onChange={(e)=>setDraftTerms(e.target.value)} placeholder="شروط الدفع والتسليم، صلاحية الأسعار، نطاق العمل، ملاحظات التركيب أو المعاينة..."/></label>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-stone-100 p-3 text-sm dark:bg-stone-900"><span>قيمة البنود: <b>{money(draftItems.reduce((sum,item)=>sum+Number(item.quantity||0)*Number(item.unit_price||0),0))}</b></span><span>الصافي: <b className="text-[#B9142D]">{money(Math.max(0,draftItems.reduce((sum,item)=>sum+Number(item.quantity||0)*Number(item.unit_price||0),0)-Number(draftDiscount||0)+Number(draftTax||0)))} ر.ي</b></span></div>
+      {error&&<div className="mt-3 rounded-xl bg-red-50 p-3 text-xs text-red-800">{error}</div>}<div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setEditing(null)} className="rounded-xl border border-stone-300 px-4 py-2.5 text-xs font-bold dark:border-stone-700">إلغاء</button><button type="button" disabled={saving} onClick={()=>void saveDocumentDetails()} className="rounded-xl bg-[#B9142D] px-5 py-2.5 text-xs font-black text-white disabled:opacity-50">{saving?'جارٍ الحفظ...':'حفظ البنود والحسابات'}</button></div>
+    </div></div>}
     {selected && <div className="fixed inset-0 z-[10020] flex items-center justify-center overflow-y-auto bg-black/60 p-3 sm:p-5" role="dialog" aria-modal="true" aria-label="توقيع مستند رسمي"><div className="my-5 max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-[#FAF8F5] p-5 shadow-2xl dark:bg-[#171514]"><div className="flex items-start justify-between gap-3"><div><div className="text-[10px] font-bold tracking-widest text-[#B9142D]">RAWAJ DOCUMENT CONTROL</div><h3 className="mt-1 text-lg font-black">{kind==='quote'?'اعتماد وتوقيع عرض السعر':'اعتماد وتوقيع الفاتورة'}</h3><p className="mt-1 text-xs text-stone-500">{reference(kind,selected)} · {customerFor(selected)?.company_name||customerFor(selected)?.name||'عميل'} · {money(selected.total)} ر.ي</p></div><button type="button" onClick={()=>setSelected(null)} className="rounded-lg px-3 py-1 text-xl">×</button></div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="space-y-1.5 text-xs font-bold"><span>اسم الموقّع</span><input className={input} value={name} onChange={(e)=>setName(e.target.value)} placeholder="الاسم الكامل" /></label><label className="space-y-1.5 text-xs font-bold"><span>الصفة</span><select className={input} value={title} onChange={(e)=>setTitle(e.target.value)}><option value="">اختر الصفة</option><option value="المالك / المدير العام">المالك / المدير العام</option><option value="مدير العمليات">مدير العمليات</option><option value="مدير المبيعات">مدير المبيعات</option><option value="المحاسب">المحاسب</option><option value="المفوض بالتوقيع">المفوض بالتوقيع</option><option value="ممثل الشركة">ممثل الشركة</option><option value="العميل">العميل</option><option value="__custom__">صفة أخرى — كتابة يدوية</option></select>{title==='__custom__'&&<input className={input} value={customTitle} onChange={(e)=>setCustomTitle(e.target.value)} placeholder="اكتب الصفة الوظيفية"/>}</label><label className="space-y-1.5 text-xs font-bold"><span>الطرف الذي يمثله التوقيع</span><select className={input} value={party} onChange={(e)=>setParty(e.target.value as 'customer'|'rawaj')}><option value="customer">العميل / ممثل العميل</option><option value="rawaj">رواج / ممثل رواج</option></select></label><div className="rounded-xl bg-stone-100 p-3 text-xs leading-6 text-stone-600 dark:bg-stone-900 dark:text-stone-300">لا تُسجّل اعتمادًا باسم الطرف الآخر إلا إذا كان هو من وقّع فعليًا على هذا الجهاز.</div></div>
       <div className="mt-4"><div className="mb-2 text-xs font-black">التوقيع باللمس أو القلم</div><SignaturePad value={signature} onChange={setSignature} disabled={saving}/></div>
